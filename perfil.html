@@ -19,7 +19,7 @@
 <style>
   /* ═══════════════════════════════════════════════════════════════
      PERFIL DEL DEPORTISTA — Solo lectura. Todos los roles.
-     v1.0.0
+     v1.1.0
      ═══════════════════════════════════════════════════════════════ */
 
   /* ── Page head ── */
@@ -27,14 +27,27 @@
   .page-head__title h2 { font-size: 24px; font-weight: 800; letter-spacing: -.4px; color: var(--text-primary); margin: 0 0 5px; }
   .page-head__title p { font-size: 13px; color: var(--text-secondary); margin: 0; }
 
-  /* ── Searchbox wrapper ── */
+  /* ── Searchbox / toolbar wrapper card ── */
   .search-wrap {
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius-xl); padding: 20px 24px;
     margin-bottom: 20px;
+    /* overflow visible para que los dropdowns no queden recortados */
+    overflow: visible;
   }
-  .search-wrap__label { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; }
-  .search-wrap__row { display: flex; align-items: center; gap: 12px; }
+
+  /* Toolbar: searchbox + 3 dropdowns en la misma altura */
+  .perfil-toolbar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .perfil-toolbar__search {
+    flex: 1 1 260px; max-width: 420px; min-width: 200px;
+  }
+  .perfil-toolbar__filters {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  /* Dropdowns de filtro: ancho fijo compacto */
+  .perfil-toolbar .naowee-dropdown { width: 148px; }
 
   /* Resultados del search dropdown */
   .search-results {
@@ -81,7 +94,7 @@
   }
   .empty-state__icon svg { width: 28px; height: 28px; }
   .empty-state__title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0 0 8px; }
-  .empty-state__desc { font-size: 13px; color: var(--text-secondary); margin: 0; max-width: 360px; margin: 0 auto; }
+  .empty-state__desc { font-size: 13px; color: var(--text-secondary); margin: 0 auto; max-width: 360px; }
 
   /* ── Perfil header card ── */
   .perfil-header {
@@ -151,37 +164,7 @@
   .medal-chip--bronce { background: #fff7ed; color: #9a3412; }
   .medal-chip__ico { font-size: 15px; }
 
-  /* ── Filtros ── */
-  .filtros-bar {
-    display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
-    flex-wrap: wrap;
-  }
-  .filtros-bar__label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; flex-shrink: 0; }
-  .naowee-select {
-    height: 38px; padding: 0 10px; border: 1px solid var(--border-dark);
-    border-radius: var(--radius-md); font-family: inherit; font-size: 13px;
-    color: var(--text-primary); background: var(--surface); cursor: pointer;
-    outline: none; appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23646587' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: right 8px center; background-size: 16px;
-    padding-right: 30px;
-    transition: border-color var(--duration-fast);
-  }
-  .naowee-select:focus { border-color: var(--accent); border-width: 2px; }
-
-  /* ── Secciones de historial ── */
-  .historial-section {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-xl); margin-bottom: 16px;
-    animation: fadeInUp .4s var(--easing-smoothout) both;
-    overflow: hidden;
-  }
-  .historial-section + .historial-section { animation-delay: .06s; }
-  .historial-section:last-child { animation-delay: .12s; }
-  .hsec-header {
-    padding: 16px 20px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 10px;
-  }
+  /* ── Section icons dentro del table-card ── */
   .hsec-header__icon {
     width: 34px; height: 34px; border-radius: var(--radius-md);
     display: flex; align-items: center; justify-content: center;
@@ -191,87 +174,33 @@
   .hsec-header__icon--inscripciones { background: var(--blue-bg); color: var(--blue-info); }
   .hsec-header__icon--resultados { background: var(--orange-bg); color: var(--naranja); }
   .hsec-header__icon--medalleria { background: #fef9c3; color: #92400e; }
-  .hsec-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0; }
-  .hsec-count { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--text-muted); }
 
-  /* Tabla interna */
-  .hsec-table-wrap { overflow-x: auto; }
-  .hsec-table {
-    width: 100%; border-collapse: collapse; font-size: 13px;
-  }
-  .hsec-table thead th {
-    text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .4px;
-    text-transform: uppercase; color: var(--text-muted);
-    padding: 10px 16px 8px; background: var(--bg-soft);
-    border-bottom: 1px solid var(--border);
-  }
-  .hsec-table tbody td {
-    padding: 12px 16px; border-bottom: 1px solid var(--border);
-    vertical-align: middle;
-  }
-  .hsec-table tbody tr:last-child td { border-bottom: none; }
-  .hsec-table tbody tr:hover td { background: var(--bg-soft); }
-
-  /* Badges inline */
-  .badge-estado {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 3px 9px; border-radius: var(--radius-full);
-    font-size: 11px; font-weight: 700; letter-spacing: .2px;
-    border: 1.5px solid;
-  }
-  .badge-estado--activo { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
-  .badge-estado--finalizado { background: var(--blue-bg); color: var(--blue-info); border-color: color-mix(in srgb, var(--blue-info) 30%, transparent); }
-  .badge-estado--inscrito { background: var(--orange-bg); color: #b45309; border-color: var(--orange-border); }
-
+  /* .medal-ico y rank helpers */
   .medal-ico { font-size: 16px; }
   .rank-val { font-size: 15px; font-weight: 700; color: var(--text-primary); }
   .rank-sub { font-size: 11px; color: var(--text-muted); }
 
-  /* Empty row */
-  .hsec-empty {
-    padding: 32px 16px; text-align: center;
-    font-size: 13px; color: var(--text-muted); font-style: italic;
-  }
-
-  /* ── Focus-visible canónico (custom de la página) ── */
-  /* Search results items */
+  /* ── Focus-visible canónico ── */
   .search-result-item:focus-visible {
     outline: none;
     box-shadow: 0 0 0 3px rgba(215,64,9,.18);
   }
-  /* Filtros select */
-  .naowee-select:focus-visible {
-    outline: none;
-    border-color: var(--accent);
-    border-width: 2px;
-    box-shadow: 0 0 0 3px rgba(215,64,9,.18);
-  }
-  /* Icon-buttons genéricos en la página */
   button:focus-visible,
   [tabindex]:focus-visible {
     outline: none;
     box-shadow: 0 0 0 3px rgba(215,64,9,.18);
   }
 
-  /* Mobile stacked */
-  @media (max-width: 700px) {
-    .perfil-header { gap: 14px; }
-    .perfil-stats { margin-left: 0; }
-    .hsec-table thead th:nth-child(4),
-    .hsec-table tbody td:nth-child(4) { display: none; }
-    .search-wrap__row { flex-direction: column; align-items: stretch; }
-  }
-
-  /* ── Responsive ≤640px: tablas → stacked cards ── */
+  /* ── Stacked cards móvil en .naowee-table--in-card ── */
   @media (max-width: 640px) {
-    .hsec-table thead { display: none; }
-    .hsec-table tbody tr {
+    .naowee-table--in-card thead { display: none; }
+    .naowee-table--in-card tbody tr {
       display: block;
-      padding: 12px 16px;
+      padding: 12px 18px;
       border-bottom: 1px solid var(--border);
     }
-    .hsec-table tbody tr:last-child { border-bottom: none; }
-    .hsec-table tbody td {
+    .naowee-table--in-card tbody tr:last-child { border-bottom: none; }
+    .naowee-table--in-card tbody td {
       display: flex;
       align-items: baseline;
       gap: 8px;
@@ -279,7 +208,7 @@
       border: none;
       font-size: 13px;
     }
-    .hsec-table tbody td::before {
+    .naowee-table--in-card tbody td::before {
       content: attr(data-label);
       font-size: 10px;
       font-weight: 700;
@@ -290,16 +219,23 @@
       min-width: 80px;
       flex-shrink: 0;
     }
-    .hsec-table tbody tr:hover td { background: transparent; }
+    .naowee-table--in-card tbody tr:hover { background: transparent; }
   }
 
-  /* ── Responsive ≤600px: header + filtros a ancho completo ── */
+  /* ── Responsive ≤700px: toolbar apila ── */
+  @media (max-width: 700px) {
+    .perfil-toolbar { flex-direction: column; align-items: stretch; }
+    .perfil-toolbar__search { max-width: none; width: 100%; }
+    .perfil-toolbar__filters { width: 100%; }
+    .perfil-toolbar .naowee-dropdown { flex: 1; width: auto; min-width: 120px; }
+    .perfil-header { gap: 14px; }
+    .perfil-stats { margin-left: 0; }
+  }
+
+  /* ── Responsive ≤600px ── */
   @media (max-width: 600px) {
     .page-head { flex-direction: column; gap: 8px; }
     .page-head__title h2 { font-size: 20px; }
-    .filtros-bar { flex-direction: column; align-items: stretch; gap: 8px; }
-    .filtros-bar__label { margin-bottom: 0; }
-    .naowee-select { width: 100%; }
     .perfil-header { flex-direction: column; gap: 12px; }
     .perfil-stats { margin-left: 0; width: 100%; justify-content: flex-start; }
     .search-wrap { padding: 16px; }
@@ -311,7 +247,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .perfil-header, .historial-section, .empty-state { animation: none !important; }
+    .perfil-header, .naowee-table-card, .empty-state { animation: none !important; }
   }
 </style>
 </head>
@@ -331,26 +267,53 @@
           </div>
         </div>
 
-        <!-- Buscador de deportista -->
+        <!-- Buscador + filtros en una sola toolbar -->
         <div class="search-wrap">
-          <div class="search-wrap__label">Buscar deportista</div>
-          <div class="search-wrap__row">
-            <div class="naowee-searchbox naowee-searchbox--medium" id="deportistaSearchbox" style="flex:1;max-width:520px">
-              <div class="naowee-searchbox__input-wrap">
-                <span class="naowee-searchbox__icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                </span>
-                <input id="deportistaInput" type="text" class="naowee-searchbox__input"
-                  placeholder="Nombre o número de documento…"
-                  autocomplete="off" spellcheck="false">
-                <button class="naowee-searchbox__clear" id="deportistaClear" type="button" aria-label="Limpiar búsqueda" style="display:none">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
+          <div class="perfil-toolbar">
+            <!-- Searchbox deportista -->
+            <div class="perfil-toolbar__search">
+              <div class="naowee-searchbox naowee-searchbox--medium" id="deportistaSearchbox">
+                <div class="naowee-searchbox__input-wrap">
+                  <span class="naowee-searchbox__icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  </span>
+                  <input id="deportistaInput" type="text" class="naowee-searchbox__input"
+                    placeholder="Buscar deportista…"
+                    autocomplete="off" spellcheck="false">
+                  <button class="naowee-searchbox__clear" id="deportistaClear" type="button" aria-label="Limpiar búsqueda" style="display:none">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="search-results" id="searchResults">
+                <div class="search-results__list" id="searchResultsList" role="listbox"></div>
               </div>
             </div>
-          </div>
-          <div class="search-results" id="searchResults">
-            <div class="search-results__list" id="searchResultsList" role="listbox"></div>
+
+            <!-- Filtros canónicos: 3 naowee-dropdown -->
+            <div class="perfil-toolbar__filters" id="filtrosBar" style="display:none">
+              <div class="naowee-dropdown" data-dd="filtroAno" data-sheet-title="Año">
+                <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-label="Filtrar por año">
+                  <span class="naowee-dropdown__value is-placeholder" data-dd-val>Año</span>
+                  <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+                </button>
+                <div class="naowee-dropdown__menu" role="listbox"></div>
+              </div>
+              <div class="naowee-dropdown" data-dd="filtroDeporte" data-sheet-title="Deporte">
+                <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-label="Filtrar por deporte">
+                  <span class="naowee-dropdown__value is-placeholder" data-dd-val>Deporte</span>
+                  <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+                </button>
+                <div class="naowee-dropdown__menu" role="listbox"></div>
+              </div>
+              <div class="naowee-dropdown" data-dd="filtroEvento" data-sheet-title="Evento">
+                <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-label="Filtrar por evento">
+                  <span class="naowee-dropdown__value is-placeholder" data-dd-val>Evento</span>
+                  <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+                </button>
+                <div class="naowee-dropdown__menu" role="listbox"></div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -366,34 +329,25 @@
         <!-- Contenido del perfil (se muestra al seleccionar) -->
         <div id="perfilContent" style="display:none">
 
-          <!-- Filtros -->
-          <div class="filtros-bar" id="filtrosBar">
-            <span class="filtros-bar__label">Filtrar por</span>
-            <select class="naowee-select" id="filtroAno" aria-label="Año">
-              <option value="">Todos los años</option>
-            </select>
-            <select class="naowee-select" id="filtroDeporte" aria-label="Deporte">
-              <option value="">Todos los deportes</option>
-            </select>
-            <select class="naowee-select" id="filtroEvento" aria-label="Evento">
-              <option value="">Todos los eventos</option>
-            </select>
-          </div>
-
           <!-- Header del deportista -->
           <div class="perfil-header" id="perfilHeaderCard"></div>
 
-          <!-- Sección: Inscripciones -->
-          <div class="historial-section" id="secInscripciones">
-            <div class="hsec-header">
-              <span class="hsec-header__icon hsec-header__icon--inscripciones">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 0 0 4v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4a2 2 0 0 0 0-4z"/><line x1="12" y1="3" x2="12" y2="21" stroke-dasharray="2 2"/></svg>
-              </span>
-              <h3 class="hsec-title">Inscripciones</h3>
-              <span class="hsec-count" id="countInscripciones">—</span>
+          <!-- Tabla-card: Inscripciones -->
+          <div class="naowee-table-card" id="secInscripciones">
+            <div class="tc-head">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span class="hsec-header__icon hsec-header__icon--inscripciones">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 0 0 4v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4a2 2 0 0 0 0-4z"/><line x1="12" y1="3" x2="12" y2="21" stroke-dasharray="2 2"/></svg>
+                </span>
+                <p class="tc-head__title">Inscripciones</p>
+                <span id="countInscripciones" style="margin-left:auto;font-size:12px;font-weight:600;color:var(--text-muted)">—</span>
+              </div>
             </div>
-            <div class="hsec-table-wrap">
-              <table class="hsec-table" id="tablaInscripciones">
+            <div class="naowee-table-card__table-wrap">
+              <table class="naowee-table--in-card" id="tablaInscripciones">
+                <colgroup>
+                  <col style="width:38%"><col style="width:28%"><col style="width:18%"><col style="width:16%">
+                </colgroup>
                 <thead>
                   <tr>
                     <th>Evento</th>
@@ -407,17 +361,22 @@
             </div>
           </div>
 
-          <!-- Sección: Resultados -->
-          <div class="historial-section" id="secResultados">
-            <div class="hsec-header">
-              <span class="hsec-header__icon hsec-header__icon--resultados">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="4" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="20" y1="20" x2="20" y2="14"/></svg>
-              </span>
-              <h3 class="hsec-title">Resultados</h3>
-              <span class="hsec-count" id="countResultados">—</span>
+          <!-- Tabla-card: Resultados -->
+          <div class="naowee-table-card" id="secResultados" style="animation-delay:.06s">
+            <div class="tc-head">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span class="hsec-header__icon hsec-header__icon--resultados">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="4" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="20" y1="20" x2="20" y2="14"/></svg>
+                </span>
+                <p class="tc-head__title">Resultados</p>
+                <span id="countResultados" style="margin-left:auto;font-size:12px;font-weight:600;color:var(--text-muted)">—</span>
+              </div>
             </div>
-            <div class="hsec-table-wrap">
-              <table class="hsec-table" id="tablaResultados">
+            <div class="naowee-table-card__table-wrap">
+              <table class="naowee-table--in-card" id="tablaResultados">
+                <colgroup>
+                  <col style="width:40%"><col style="width:30%"><col style="width:14%"><col style="width:16%">
+                </colgroup>
                 <thead>
                   <tr>
                     <th>Evento</th>
@@ -431,17 +390,22 @@
             </div>
           </div>
 
-          <!-- Sección: Medallería -->
-          <div class="historial-section" id="secMedalleria">
-            <div class="hsec-header">
-              <span class="hsec-header__icon hsec-header__icon--medalleria">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="15" r="6"/><path d="M12 12v3l2 1"/><path d="M8.5 9.5L6 3M15.5 9.5L18 3"/></svg>
-              </span>
-              <h3 class="hsec-title">Medallería</h3>
-              <span class="hsec-count" id="countMedalleria">—</span>
+          <!-- Tabla-card: Medallería -->
+          <div class="naowee-table-card" id="secMedalleria" style="animation-delay:.12s">
+            <div class="tc-head">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span class="hsec-header__icon hsec-header__icon--medalleria">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="15" r="6"/><path d="M12 12v3l2 1"/><path d="M8.5 9.5L6 3M15.5 9.5L18 3"/></svg>
+                </span>
+                <p class="tc-head__title">Medallería</p>
+                <span id="countMedalleria" style="margin-left:auto;font-size:12px;font-weight:600;color:var(--text-muted)">—</span>
+              </div>
             </div>
-            <div class="hsec-table-wrap">
-              <table class="hsec-table" id="tablaMedalleria">
+            <div class="naowee-table-card__table-wrap">
+              <table class="naowee-table--in-card" id="tablaMedalleria">
+                <colgroup>
+                  <col style="width:38%"><col style="width:28%"><col style="width:18%"><col style="width:16%">
+                </colgroup>
                 <thead>
                   <tr>
                     <th>Evento</th>
@@ -471,7 +435,6 @@ import {
 } from './shared/sidebar.js';
 
 /* ─── Datos mock ─── */
-/* 6 deportistas con historial cruzado con eventos de la demo */
 const DEPORTISTAS = [
   {
     id: 'd1', nombre: 'Valentina Ríos', doc: 'CC 1.032.987.456',
@@ -574,10 +537,91 @@ mountBackdrop();
 mountDemoSwitcher({ roleCode });
 document.title = `Perfil del deportista — ${role.label}`;
 
-/* ─── Buscador ─── */
-let deportistaActual = null;
-let filtroAnoVal = '', filtroDeporteVal = '', filtroEventoVal = '';
+/* ══════════════ Dropdown canónico (flotante / bottom-sheet) ══════════════ */
+const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+const ICON_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 
+let _sheetBackdrop = null;
+function ensureBackdrop() {
+  if (_sheetBackdrop) return _sheetBackdrop;
+  _sheetBackdrop = document.createElement('div');
+  _sheetBackdrop.className = 'naowee-sheet-backdrop';
+  document.body.appendChild(_sheetBackdrop);
+  _sheetBackdrop.addEventListener('click', closeAllPopovers);
+  return _sheetBackdrop;
+}
+function isMobile() { return window.matchMedia('(max-width: 760px)').matches; }
+function closeAllPopovers() {
+  document.querySelectorAll('.naowee-dropdown.is-open').forEach((el) => el.classList.remove('is-open'));
+  if (_sheetBackdrop) _sheetBackdrop.classList.remove('is-open');
+}
+
+function setupDropdown(name, opts, onSelect, getSelected) {
+  const dd = document.querySelector(`[data-dd="${name}"]`);
+  if (!dd) return null;
+  const menu = dd.querySelector('.naowee-dropdown__menu');
+  const valEl = dd.querySelector('[data-dd-val]');
+  const trigger = dd.querySelector('.naowee-dropdown__trigger');
+  const sheetTitle = dd.getAttribute('data-sheet-title') || 'Selecciona';
+
+  function paint() {
+    const sel = getSelected ? getSelected() : null;
+    const sheetHead = `<div class="naowee-dropdown__sheet-head"><span class="naowee-dropdown__sheet-title">${sheetTitle}</span><button type="button" class="naowee-dropdown__sheet-close" data-close aria-label="Cerrar">${ICON_X}</button></div>`;
+    const body = opts.length
+      ? opts.map((o) => `
+          <button type="button" class="naowee-dropdown__opt ${o.value === sel ? 'is-selected' : ''}" data-val="${o.value}">
+            <span>${o.label}</span>
+            <span class="naowee-dropdown__opt-check">${ICON_CHECK}</span>
+          </button>`).join('')
+      : `<div class="naowee-dropdown__empty">Sin opciones disponibles</div>`;
+    menu.innerHTML = sheetHead + body;
+    menu.querySelectorAll('.naowee-dropdown__opt').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const chosen = opts.find((o) => o.value === btn.dataset.val);
+        if (chosen) onSelect(chosen);
+        close();
+      });
+    });
+    menu.querySelector('[data-close]')?.addEventListener('click', (e) => { e.stopPropagation(); close(); });
+  }
+
+  function open() {
+    if (dd.classList.contains('naowee-dropdown--disabled')) return;
+    closeAllPopovers();
+    paint();
+    dd.classList.remove('is-up');
+    if (!isMobile()) {
+      const r = trigger.getBoundingClientRect();
+      const espacioAbajo = window.innerHeight - r.bottom;
+      if (espacioAbajo < 280 && r.top > espacioAbajo) dd.classList.add('is-up');
+    }
+    dd.classList.add('is-open');
+    trigger.setAttribute('aria-expanded', 'true');
+    if (isMobile()) ensureBackdrop().classList.add('is-open');
+  }
+  function close() {
+    dd.classList.remove('is-open');
+    trigger.setAttribute('aria-expanded', 'false');
+    if (_sheetBackdrop && !document.querySelector('.naowee-dropdown.is-open')) _sheetBackdrop.classList.remove('is-open');
+  }
+
+  trigger.addEventListener('click', (e) => { e.stopPropagation(); dd.classList.contains('is-open') ? close() : open(); });
+
+  return {
+    el: dd, valEl,
+    setLabel(label, isPlaceholder) { valEl.textContent = label; valEl.classList.toggle('is-placeholder', !!isPlaceholder); },
+    setOpts(next) { opts = next; },
+    close
+  };
+}
+
+/* ─── Estado de filtros ─── */
+let deportistaActual = null;
+const filtros = { ano: '', deporte: '', evento: '' };
+let ddAno = null, ddDeporte = null, ddEvento = null;
+
+/* ─── Buscador ─── */
 const input = document.getElementById('deportistaInput');
 const clearBtn = document.getElementById('deportistaClear');
 const searchbox = document.getElementById('deportistaSearchbox');
@@ -622,10 +666,15 @@ clearBtn.addEventListener('click', () => {
 document.addEventListener('click', e => {
   if (!document.getElementById('deportistaSearchbox').contains(e.target))
     resultsList.classList.remove('is-open');
+  if (!e.target.closest('.naowee-dropdown')) closeAllPopovers();
 });
+
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllPopovers(); });
 
 function limpiarPerfil() {
   deportistaActual = null;
+  filtros.ano = ''; filtros.deporte = ''; filtros.evento = '';
+  document.getElementById('filtrosBar').style.display = 'none';
   document.getElementById('emptyState').style.display = '';
   document.getElementById('perfilContent').style.display = 'none';
 }
@@ -638,43 +687,73 @@ function seleccionarDeportista(id) {
   clearBtn.style.display = 'flex';
   searchbox.classList.add('naowee-searchbox--has-value');
   resultsList.classList.remove('is-open');
+  filtros.ano = ''; filtros.deporte = ''; filtros.evento = '';
   poblarFiltros(d);
+  document.getElementById('filtrosBar').style.display = '';
   renderPerfil(d);
 }
 
-/* ─── Filtros ─── */
+/* ─── Filtros con dropdowns canónicos ─── */
 function poblarFiltros(d) {
   const todos = [...d.inscripciones, ...d.resultados, ...d.medalleria];
   const anos = [...new Set(todos.map(r => r.fecha.slice(0, 4)))].sort().reverse();
   const deportes = [...new Set(todos.map(r => r.deporte))].sort();
   const eventos = [...new Set(todos.map(r => r.evento))].sort();
 
-  const fillSelect = (id, opts) => {
-    const sel = document.getElementById(id);
-    const cur = sel.value;
-    sel.innerHTML = `<option value="">${sel.options[0]?.textContent || 'Todos'}</option>` +
-      opts.map(o => `<option value="${o}">${o}</option>`).join('');
-    sel.value = opts.includes(cur) ? cur : '';
-  };
-  fillSelect('filtroAno', anos);
-  fillSelect('filtroDeporte', deportes);
-  fillSelect('filtroEvento', eventos);
-  filtroAnoVal = ''; filtroDeporteVal = ''; filtroEventoVal = '';
+  const optsAno = [
+    { value: '', label: 'Todos los años' },
+    ...anos.map(a => ({ value: a, label: a }))
+  ];
+  const optsDeporte = [
+    { value: '', label: 'Todos los deportes' },
+    ...deportes.map(dep => ({ value: dep, label: dep }))
+  ];
+  const optsEvento = [
+    { value: '', label: 'Todos los eventos' },
+    ...eventos.map(ev => ({ value: ev, label: ev }))
+  ];
+
+  if (!ddAno) {
+    ddAno = setupDropdown('filtroAno', optsAno, (o) => {
+      filtros.ano = o.value;
+      ddAno.setLabel(o.value ? o.label : 'Año', !o.value);
+      if (deportistaActual) renderPerfil(deportistaActual);
+    }, () => filtros.ano);
+  } else {
+    ddAno.setOpts(optsAno);
+  }
+
+  if (!ddDeporte) {
+    ddDeporte = setupDropdown('filtroDeporte', optsDeporte, (o) => {
+      filtros.deporte = o.value;
+      ddDeporte.setLabel(o.value ? o.label : 'Deporte', !o.value);
+      if (deportistaActual) renderPerfil(deportistaActual);
+    }, () => filtros.deporte);
+  } else {
+    ddDeporte.setOpts(optsDeporte);
+  }
+
+  if (!ddEvento) {
+    ddEvento = setupDropdown('filtroEvento', optsEvento, (o) => {
+      filtros.evento = o.value;
+      ddEvento.setLabel(o.value ? o.label : 'Evento', !o.value);
+      if (deportistaActual) renderPerfil(deportistaActual);
+    }, () => filtros.evento);
+  } else {
+    ddEvento.setOpts(optsEvento);
+  }
+
+  /* Reset labels al cambiar deportista */
+  ddAno.setLabel('Año', true);
+  ddDeporte.setLabel('Deporte', true);
+  ddEvento.setLabel('Evento', true);
+  filtros.ano = ''; filtros.deporte = ''; filtros.evento = '';
 }
 
-['filtroAno', 'filtroDeporte', 'filtroEvento'].forEach(id => {
-  document.getElementById(id).addEventListener('change', () => {
-    filtroAnoVal = document.getElementById('filtroAno').value;
-    filtroDeporteVal = document.getElementById('filtroDeporte').value;
-    filtroEventoVal = document.getElementById('filtroEvento').value;
-    if (deportistaActual) renderPerfil(deportistaActual);
-  });
-});
-
 function matchFiltro(r) {
-  if (filtroAnoVal && !r.fecha.startsWith(filtroAnoVal)) return false;
-  if (filtroDeporteVal && r.deporte !== filtroDeporteVal) return false;
-  if (filtroEventoVal && r.evento !== filtroEventoVal) return false;
+  if (filtros.ano && !r.fecha.startsWith(filtros.ano)) return false;
+  if (filtros.deporte && r.deporte !== filtros.deporte) return false;
+  if (filtros.evento && r.evento !== filtros.evento) return false;
   return true;
 }
 
@@ -728,7 +807,7 @@ function renderPerfil(d) {
           <td data-label="Fecha" style="color:var(--text-muted);font-size:12px">${fmtFecha(r.fecha)}</td>
           <td data-label="Estado">${estadoBadge(r.estado)}</td>
         </tr>`).join('')
-    : `<tr><td colspan="4" class="hsec-empty">No hay inscripciones con los filtros seleccionados.</td></tr>`;
+    : `<tr><td colspan="4" style="padding:32px 18px;text-align:center;font-size:13px;color:var(--text-muted);font-style:italic">No hay inscripciones con los filtros seleccionados.</td></tr>`;
 
   /* Resultados */
   document.getElementById('countResultados').textContent = `${res.length} registro${res.length !== 1 ? 's' : ''}`;
@@ -740,7 +819,7 @@ function renderPerfil(d) {
           <td data-label="Ranking"><span class="rank-val">#${r.ranking}</span></td>
           <td data-label="Fecha" style="color:var(--text-muted);font-size:12px">${fmtFecha(r.fecha)}</td>
         </tr>`).join('')
-    : `<tr><td colspan="4" class="hsec-empty">No hay resultados con los filtros seleccionados.</td></tr>`;
+    : `<tr><td colspan="4" style="padding:32px 18px;text-align:center;font-size:13px;color:var(--text-muted);font-style:italic">No hay resultados con los filtros seleccionados.</td></tr>`;
 
   /* Medallería */
   document.getElementById('countMedalleria').textContent = `${med.length} medalla${med.length !== 1 ? 's' : ''}`;
@@ -752,7 +831,7 @@ function renderPerfil(d) {
           <td data-label="Medalla"><span class="medal-ico">${medalIco(r.medalla)}</span> <span style="font-weight:700;font-size:13px">${r.medalla}</span></td>
           <td data-label="Fecha" style="color:var(--text-muted);font-size:12px">${fmtFecha(r.fecha)}</td>
         </tr>`).join('')
-    : `<tr><td colspan="4" class="hsec-empty">No hay medallas con los filtros seleccionados.</td></tr>`;
+    : `<tr><td colspan="4" style="padding:32px 18px;text-align:center;font-size:13px;color:var(--text-muted);font-style:italic">No hay medallas con los filtros seleccionados.</td></tr>`;
 }
 
 function fmtFecha(iso) {
@@ -762,13 +841,15 @@ function fmtFecha(iso) {
 }
 
 function estadoBadge(e) {
+  /* Mapea estados a badges canónicos de list-components.css */
   const map = {
-    activo: ['activo', 'Activo'],
-    finalizado: ['finalizado', 'Finalizado'],
-    inscrito: ['inscrito', 'Inscrito']
+    activo:     's-activo',
+    inscrito:   's-activo',
+    finalizado: 's-finalizado'
   };
-  const [cls, lbl] = map[e] || ['inscrito', e];
-  return `<span class="badge-estado badge-estado--${cls}">${lbl}</span>`;
+  const cls = map[e] || 's-borrador';
+  const lbl = e === 'activo' ? 'Activo' : e === 'inscrito' ? 'Inscrito' : e === 'finalizado' ? 'Finalizado' : e;
+  return `<span class="badge ${cls}">${lbl}</span>`;
 }
 
 function medalIco(m) {
