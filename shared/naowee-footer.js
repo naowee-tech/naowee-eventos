@@ -1,0 +1,55 @@
+/* ═══════════════════════════════════════════════════════════════
+   NAOWEE EVENTOS — Footer flotante canónico (mount + scroll-hide)
+   Formato canónico (paridad naowee-ivc / Project v2.0.3):
+     [logo naowee] | Todos los derechos reservados © 2026 | Eventos v0.1.0
+   La versión va en ROJO/accent. Scroll-hide: el host de scroll real es
+   .page (creado por el shell) y el evento scroll NO bubblea — por eso
+   escuchamos en capture sobre document. Patrón DESIGN-PATTERNS §3.8.
+   ═══════════════════════════════════════════════════════════════ */
+
+const MODULE_NAME = 'Eventos';
+const MODULE_VERSION = 'v0.3.0'; /* Fase 5: perfil del deportista + calendario del organismo */
+
+(function () {
+  function mount() {
+    if (document.querySelector('.naowee-footer')) return;
+    const year = new Date().getFullYear();
+    const el = document.createElement('div');
+    el.className = 'naowee-footer';
+    el.setAttribute('role', 'contentinfo');
+    el.setAttribute('aria-label', 'Pie de página Naowee');
+    el.innerHTML = `
+      <img src="shared/logos/naowee.svg" alt="Naowee" class="naowee-footer__logo" onerror="this.style.display='none'"/>
+      <div class="naowee-footer__sep"></div>
+      <span class="naowee-footer__text">Todos los derechos reservados <strong>&copy; ${year}</strong></span>
+      <div class="naowee-footer__sep"></div>
+      <span class="naowee-footer__version" aria-label="Versión del módulo: ${MODULE_NAME} ${MODULE_VERSION}">
+        ${MODULE_NAME} <strong>${MODULE_VERSION}</strong>
+      </span>`;
+    document.body.appendChild(el);
+    setupScrollHide(el);
+  }
+
+  function setupScrollHide(footer) {
+    let lastY = null;
+    /* Capture phase sobre document: el scroll de .page no bubblea. */
+    document.addEventListener('scroll', (e) => {
+      const target = e.target;
+      const y = (target && typeof target.scrollTop === 'number')
+        ? target.scrollTop
+        : (window.scrollY || window.pageYOffset || 0);
+      if (lastY === null) { lastY = y; return; }
+      const dy = y - lastY;
+      if (Math.abs(dy) < 60 && y > 0) { return; } // threshold 60px (scroll down>60 oculta)
+      if (dy > 0 && y > 60) footer.classList.add('is-hidden');
+      else footer.classList.remove('is-hidden');
+      lastY = y;
+    }, true);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', mount);
+  } else {
+    mount();
+  }
+})();

@@ -1,0 +1,57 @@
+/* ═══════════════════════════════════════════════════════════════
+   NAOWEE EVENTOS — Footer flotante canónico de versionamiento
+   Formato (paridad naowee-ivc / Project v2.0.3):
+     [logo naowee] | Todos los derechos reservados © 2026 | EVENTOS v0.1.0
+   Versión en ROJO/accent. Scroll-hide. Esquina inferior derecha.
+   ═══════════════════════════════════════════════════════════════ */
+
+.naowee-footer {
+  position: fixed; bottom: 16px; right: 20px; z-index: 50;
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 8px 14px; background: #fff;
+  border: 1px solid var(--border); border-radius: var(--radius-full);
+  box-shadow: 0 4px 12px rgba(40, 40, 52, .07);
+  font-family: 'Inter', sans-serif; font-size: 11.5px; color: var(--text-secondary);
+  /* Decorativo — no debe robar pointer-events a la UI debajo. */
+  pointer-events: none;
+  transition: opacity var(--duration-normal) ease, transform var(--duration-normal) var(--easing-smoothout);
+}
+.naowee-footer__logo, .naowee-footer__sep,
+.naowee-footer__text, .naowee-footer__version { pointer-events: auto; }
+.naowee-footer.is-hidden {
+  opacity: 0; transform: translateY(140%); pointer-events: none;
+}
+.naowee-footer__logo { height: 18px; width: auto; display: block; }
+.naowee-footer__sep { width: 1px; height: 14px; background: var(--border); flex-shrink: 0; }
+.naowee-footer__text { font-weight: 500; line-height: 1; white-space: nowrap; }
+.naowee-footer__text strong { color: var(--text-primary); font-weight: 700; }
+/* Versión en ROJO/accent — patrón canónico. */
+.naowee-footer__version {
+  font-weight: 600; line-height: 1; color: var(--text-secondary); white-space: nowrap;
+  letter-spacing: .2px;
+}
+.naowee-footer__version strong { color: var(--accent); font-weight: 800; }
+
+@media (max-width: 600px) {
+  .naowee-footer { bottom: 70px; right: 12px; left: auto; padding: 6px 11px; font-size: 10.5px; }
+  .naowee-footer__logo { height: 14px; }
+  .naowee-footer__sep { height: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .naowee-footer { transition: opacity .2s ease; }
+  .naowee-footer.is-hidden { transform: none; }
+}
+@media print { .naowee-footer { display: none; } }
+
+/* ═══ Toast de placeholder (navegación a secciones aún no construidas) ═══ */
+#evToast {
+  position: fixed; bottom: 16px; left: 50%; transform: translate(-50%, 140%);
+  z-index: 9999; max-width: min(92vw, 460px);
+  background: var(--text-primary); color: #fff;
+  padding: 12px 18px; border-radius: var(--radius-lg);
+  box-shadow: 0 10px 30px rgba(40, 40, 52, .28);
+  font-size: 13px; font-weight: 500; line-height: 1.35;
+  opacity: 0; pointer-events: none;
+  transition: opacity var(--duration-normal) ease, transform var(--duration-slow) var(--easing-smoothout);
+}
+#evToast.is-visible { opacity: 1; transform: translate(-50%, 0); }

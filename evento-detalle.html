@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Naowee Eventos — Detalle del evento</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="shared/tokens.css?v=0.3.0">
+<link rel="stylesheet" href="shared/shell.css?v=0.3.0">
+<link rel="stylesheet" href="shared/list-components.css?v=0.3.0">
+<link rel="stylesheet" href="shared/forms.css?v=0.3.0">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.3.0">
+<script src="shared/naowee-footer.js?v=0.3.0" defer></script>
+
+<style>
+  /* ═══════════════════════════════════════════════════════════════
+     EVENTO-DETALLE — Fase 3 (Administrador / Gestor)
+     UN SOLO container superior cohesivo (`.det-card`) que consolida:
+       (1) header — chevron "‹" de retroceso (accent) → NOMBRE → BADGE
+           de estado inline; a la derecha acciones ghost (Editar · Ir a
+           cargues, esta última con su gate de "Activo");
+       (2) franja de metadata "stat strip" de 4 columnas (Inicio · Fin ·
+           Lugar · Organismo);
+       (3) bloque inferior 2-col: GESTOR asignado (tile con avatar + nombre
+           + rol) + DESCRIPCIÓN.
+     Separadores finos (hairlines) marcan las 3 zonas → jerarquía clara sin
+     amontonar. Sin card aparte "Datos del evento" (se fusionó aquí). Sin
+     subtítulo de deporte (módulo LIGHT). El estado vive solo como badge;
+     Activo lo decide el Sistema al llegar la fecha de inicio.
+     Debajo del container: "Seguimiento del evento" (barras de progreso).
+     Reusa shell, tokens, badges (.badge.s-*), progreso (.prog-*),
+     botones (.naowee-btn--ghost) y el toast (#evToast).
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* ── Container superior consolidado (card PLANO, como el resto del demo:
+        sin box-shadow, solo borde 1px) ── */
+  .det-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); margin-bottom: 22px; overflow: hidden; animation: fadeInUp .4s var(--easing-smoothout) both; }
+
+  /* (1) Header del evento (chevron de retroceso + nombre + badge inline,
+        acciones ghost a la derecha) */
+  .det-head { display: flex; align-items: center; justify-content: space-between; gap: 16px 18px; padding: 20px 24px 18px; flex-wrap: wrap; }
+  .det-head__id { display: flex; gap: 12px; align-items: center; min-width: 0; flex: 1 1 auto; }
+  /* Chevron "‹" de retroceso (accent), tap-target cómodo */
+  .det-back { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; flex-shrink: 0; border-radius: var(--radius-md); color: var(--accent); background: transparent; border: none; cursor: pointer; transition: background var(--duration-normal), color var(--duration-fast); -webkit-tap-highlight-color: transparent; }
+  .det-back svg { width: 24px; height: 24px; }
+  .det-back:hover { background: var(--accent-bg); }
+  .det-back:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); }
+  .det-head__name { font-size: 23px; font-weight: 800; letter-spacing: -.4px; color: var(--text-primary); margin: 0; line-height: 1.2; min-width: 0; }
+  .det-head__actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+  /* (2) Franja de metadata (stat strip): 4 columnas con divisores finos.
+        Va dentro de la card, entre hairlines (sin fondo propio ni borde
+        externo: el contenedor ya aporta la superficie). */
+  .meta-strip { display: grid; grid-template-columns: repeat(4, 1fr); padding: 16px 24px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .meta-strip__col { display: flex; flex-direction: column; gap: 5px; padding: 0 20px; min-width: 0; border-left: 1px solid var(--border); }
+  .meta-strip__col:first-child { border-left: none; padding-left: 0; }
+  .meta-strip__lbl { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--text-muted); }
+  .meta-strip__lbl svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .meta-strip__val { font-size: 14px; font-weight: 700; color: var(--text-primary); line-height: 1.4; word-break: break-word; }
+
+  /* (3) Bloque inferior REDIAGRAMADO: gestor asignado + descripción.
+        Sin "tile gris" — ambos son campos limpios sobre la misma superficie,
+        balanceados. Gestor = campo COMPACTO a la izquierda (columna angosta
+        fija); Descripción = columna ANCHA a la derecha (es lo que más se lee).
+        Un divisor vertical fino separa los dos campos → ritmo intencional sin
+        cajas flotantes. Ambos labels comparten el mismo tratamiento (uppercase
+        micro-label) y baseline → alineación cuidada. */
+  .det-foot { display: grid; grid-template-columns: minmax(0, 250px) 1fr; gap: 0; padding: 20px 24px 22px; }
+  .det-foot__block { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  /* La descripción (2ª columna) gana el divisor + sangría → separa los campos
+     sin encajonar al gestor. */
+  .det-foot__block + .det-foot__block { border-left: 1px solid var(--border); padding-left: 28px; margin-left: 4px; }
+  .det-foot__lbl { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--text-muted); }
+  .det-foot__lbl svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .det-foot__desc { font-size: 13.5px; color: var(--text-secondary); font-weight: 400; line-height: 1.65; margin: 0; max-width: 62ch; }
+
+  /* Gestor asignado: campo LIMPIO (avatar pequeño + nombre + rol), sin caja
+     gris. Se lee como una persona, alineado a la izquierda como cualquier
+     otro campo del bloque. */
+  .gestor-field { display: flex; align-items: center; gap: 11px; min-width: 0; }
+  .gestor-field__av { width: 34px; height: 34px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12.5px; font-weight: 700; flex-shrink: 0; box-shadow: 0 0 0 2px var(--surface), 0 1px 3px rgba(40,40,52,.16); }
+  .gestor-field__meta { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .gestor-field__nm { font-size: 14px; font-weight: 700; color: var(--text-primary); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gestor-field__role { font-size: 12px; color: var(--text-secondary); font-weight: 500; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* ── Sección genérica (Seguimiento) ── */
+  .det-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 22px 24px; margin-bottom: 18px; animation: fadeInUp .4s var(--easing-smoothout) both; }
+  .det-section__head { display: flex; align-items: center; gap: 9px; margin-bottom: 18px; }
+  .det-section__head svg { width: 18px; height: 18px; color: var(--text-secondary); flex-shrink: 0; }
+  .det-section__head h3 { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0; }
+  .det-section__head .hint { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-left: auto; }
+
+  /* ── Seguimiento (progreso, reusa .prog-*) ── */
+  .track-grid { display: flex; flex-direction: column; gap: 16px; }
+  .track-grid .prog-item { grid-template-columns: 120px 1fr auto; }
+  .track-grid .prog-item__lbl { font-size: 12px; }
+  .track-empty { font-size: 12.5px; color: var(--text-muted); margin: 2px 0 0; }
+
+  /* ── Responsive: secciones apiladas ── */
+  @media (max-width: 720px) {
+    .det-head { padding: 16px 16px 14px; }
+    .det-head__name { font-size: 19px; }
+    /* La franja de 4 columnas reflowea a 2×2 (divisor vertical solo entre
+       columnas de la misma fila; las filas se separan con un borde superior). */
+    .meta-strip { grid-template-columns: repeat(2, 1fr); gap: 14px 0; padding: 16px; }
+    .meta-strip__col { padding: 0 16px; }
+    .meta-strip__col:nth-child(odd) { border-left: none; padding-left: 0; }
+    .meta-strip__col:nth-child(n+3) { padding-top: 14px; border-top: 1px solid var(--border); }
+    /* Gestor + descripción se apilan a 1 columna; el divisor pasa de vertical
+       a horizontal (borde superior) para conservar la separación. */
+    .det-foot { grid-template-columns: 1fr; gap: 18px; padding: 18px 16px 18px; }
+    .det-foot__block + .det-foot__block { border-left: none; padding-left: 0; margin-left: 0; padding-top: 18px; border-top: 1px solid var(--border); }
+    .track-grid .prog-item { grid-template-columns: 110px 1fr auto; }
+  }
+
+  /* Muy angosto: la franja a una sola columna apilada (sin divisores verticales). */
+  @media (max-width: 460px) {
+    .meta-strip { grid-template-columns: 1fr; gap: 0; }
+    .meta-strip__col { border-left: none; padding: 0; }
+    .meta-strip__col:nth-child(n+2) { padding-top: 14px; border-top: 1px solid var(--border); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .det-card, .det-section { animation: none !important; transition: none !important; }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     MODAL EDITAR EVENTO — canónico DS
+     Desktop: centrado, radius-xl, max 860px, max-height 90vh.
+     Móvil: bottom-sheet (sube desde abajo, radius arriba).
+     Solo transform/opacity; honra prefers-reduced-motion.
+     ═══════════════════════════════════════════════════════════════ */
+  .ev-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.48); z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .22s ease;
+  }
+  .ev-modal-overlay.is-open { opacity: 1; pointer-events: all; }
+  .ev-modal {
+    background: var(--surface); border-radius: var(--radius-xl);
+    width: 95vw; max-width: 860px; max-height: 90vh;
+    display: flex; flex-direction: column; overflow: hidden;
+    box-shadow: var(--shadow-card);
+    transform: translateY(24px) scale(.97); opacity: 0;
+    transition: transform .28s cubic-bezier(.4,0,.2,1), opacity .22s ease;
+  }
+  /* transform:none (no scale/translate) — un transform ≠ none crea containing block
+     y rompería el position:fixed del datepicker dentro del modal (mismo fix que calendario). */
+  .ev-modal-overlay.is-open .ev-modal { transform: none; opacity: 1; }
+
+  /* Header sticky */
+  .ev-modal__head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .ev-modal__title { font-size: 17px; font-weight: 700; color: var(--text-primary); margin: 0; }
+  .ev-modal__close {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: var(--radius-md);
+    background: transparent; border: none; cursor: pointer; color: var(--text-secondary);
+    transition: background var(--duration-fast), color var(--duration-fast);
+    flex-shrink: 0;
+  }
+  .ev-modal__close:hover { background: var(--bg-soft); color: var(--text-primary); }
+  .ev-modal__close:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215,64,9,.18); }
+  .ev-modal__close svg { width: 18px; height: 18px; }
+
+  /* Body scrolleable */
+  .ev-modal__body { flex: 1; overflow-y: auto; padding: 22px 24px; }
+
+  /* Note readonly / locked */
+  .ev-modal__note {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: var(--bg-soft); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: 10px 14px;
+    margin-bottom: 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.5;
+  }
+  .ev-modal__note svg { width: 15px; height: 15px; color: var(--accent); flex-shrink: 0; margin-top: 1px; }
+  .ev-modal__note--final { background: #fff3e6; border-color: var(--accent); }
+  .ev-modal__note--lock  { background: var(--bg-soft); }
+
+  /* Campos deshabilitados (solo lectura) dentro del modal */
+  .ev-modal__body .naowee-textfield--readonly .naowee-textfield__input-wrap,
+  .ev-modal__body .naowee-dropdown--disabled .naowee-dropdown__trigger,
+  .ev-modal__body .naowee-datepicker--disabled .naowee-datepicker__trigger {
+    background: var(--bg-soft); cursor: not-allowed; opacity: .72;
+  }
+  .ev-modal__body .naowee-textfield--readonly .naowee-textfield__input { pointer-events: none; }
+  .ev-modal__body .field-readonly-val {
+    font-size: 14px; font-weight: 600; color: var(--text-secondary);
+    padding: 0 2px; margin-top: 2px;
+  }
+  /* Icono candado junto al label de campo bloqueado */
+  .ev-modal__body .lbl-locked { display: flex; align-items: center; gap: 5px; }
+  .ev-modal__body .lbl-locked svg { width: 12px; height: 12px; color: var(--text-muted); }
+
+  /* Grid de campos (1-col en el modal, 2-col para fechas) */
+  .ev-modal__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .ev-modal__grid .col-2 { grid-column: span 2; }
+  @media (max-width: 600px) {
+    .ev-modal__grid { grid-template-columns: 1fr; }
+    .ev-modal__grid .col-2 { grid-column: span 1; }
+  }
+
+  /* Footer sticky */
+  .ev-modal__foot {
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 10px; padding: 14px 24px 18px;
+    border-top: 1px solid var(--border); flex-shrink: 0;
+  }
+
+  /* dd-opt-rich en modal (igual que crear) */
+  .ev-modal .dd-opt-rich { display: flex; flex-direction: column; line-height: 1.3; }
+  .ev-modal .dd-opt-rich small { font-size: 11.5px; color: var(--text-secondary); }
+
+  /* Mobile bottom-sheet */
+  @media (max-width: 680px) {
+    .ev-modal-overlay { align-items: flex-end; padding: 0; }
+    .ev-modal {
+      width: 100%; max-width: 100%; border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+      max-height: 94vh;
+      transform: translateY(100%); opacity: 1;
+    }
+    .ev-modal-overlay.is-open .ev-modal { transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ev-modal, .ev-modal-overlay { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div id="sidebarRoot"></div>
+  <div class="main">
+    <header class="top-header" id="topHeader"></header>
+    <div class="page">
+      <div class="page-inner" id="detailPage"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Editar evento (canónico DS) -->
+<div class="ev-modal-overlay" id="evEditOverlay" role="dialog" aria-modal="true" aria-labelledby="evModalTitle">
+  <div class="ev-modal" id="evEditModal">
+    <header class="ev-modal__head">
+      <h2 class="ev-modal__title" id="evModalTitle">Editar evento</h2>
+      <button type="button" class="ev-modal__close" id="evModalClose" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </header>
+    <div class="ev-modal__body" id="evModalBody"><!-- Contenido dinámico --></div>
+    <footer class="ev-modal__foot" id="evModalFoot"><!-- Botones dinámicos --></footer>
+  </div>
+</div>
+
+<script type="module">
+  import {
+    mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher,
+    getRoleFromQuery, ROLES
+  } from './shared/sidebar.js?v=0.3.0';
+  import { allEvents, STATUS_LABEL, getUploadHistory, updateEvent } from './shared/events-data.js?v=0.3.0';
+  /* Módulo LIGHT: el detalle NO carga catálogo deportivo (deportes/pruebas
+     viven solo como columnas de los archivos de cargue — Fase 4). Solo se
+     usa el catálogo de gestores para mostrar el responsable asignado. */
+  import { GESTORES, DEPARTAMENTOS, municipiosDeDepto } from './shared/catalogo.js?v=0.3.0';
+
+  /* ─── Iconos (stroke currentColor, paridad módulo). Solo los usados en
+     el container consolidado + Seguimiento + acciones del header. ─── */
+  const I = {
+    cal:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+    pin:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+    org:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg>',
+    user:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+    doc:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>',
+    chevL: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
+    edit:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+    ticket:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9a3 3 0 0 0 0 6v2a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z"/><line x1="13" y1="5" x2="13" y2="19" stroke-dasharray="2 3"/></svg>',
+    activity: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'
+  };
+
+  const roleCode = getRoleFromQuery();
+  const role = ROLES[roleCode] || ROLES.USER;
+
+  /* Evento por querystring (?id=). Por defecto, un Activo representativo
+     (el Festival Departamental de Atletismo). Fallback: primer Activo o el primero. */
+  const params = new URLSearchParams(location.search);
+  const wantId = params.get('id');
+  const DEFAULT_ID = 'EV-2026-002';
+
+  function findEv() {
+    const evts = allEvents();
+    return evts.find((e) => e.id === wantId) ||
+           evts.find((e) => e.id === DEFAULT_ID) ||
+           evts.find((e) => e.status === 'activo') ||
+           evts[0];
+  }
+  let ev = findEv();
+
+  let isActivo  = ev.status === 'activo';
+  let isBorrador = ev.status === 'borrador';
+  let isFinal   = ev.status === 'finalizado';
+
+  /* GATE: módulo LIGHT — los cargues se habilitan solo cuando el evento
+     está Activo (sin dependencia de catálogo deportivo). Activo lo decide
+     el Sistema al llegar la fecha de inicio. */
+  let gateOpen = isActivo;
+
+  /* Gestor asignado (mock determinístico por evento, o del campo gestorId si existe). */
+  const GESTOR_MAP = {
+    'EV-2026-001': 'g-marcela', 'EV-2026-002': 'g-andrea', 'EV-2026-003': 'g-andrea',
+    'EV-2026-004': 'g-julian', 'EV-2026-005': 'g-paola', 'EV-2026-006': 'g-diego'
+  };
+  function gestorFor() {
+    const gid = ev.gestorId || GESTOR_MAP[ev.id];
+    return GESTORES.find((g) => g.id === gid) || GESTORES[0];
+  }
+  let gestor = gestorFor();
+
+  /* ─── (2) Franja de metadata (stat strip): 4 campos LIGHT ───
+     Fecha de inicio · Fecha final · Lugar · Organismo. Va embebida dentro
+     del container consolidado (.det-card), entre hairlines. */
+  function metaStripHTML() {
+    return `
+      <div class="meta-strip" role="group" aria-label="Fechas, lugar y organismo">
+        <div class="meta-strip__col">
+          <span class="meta-strip__lbl">${I.cal} Fecha de inicio</span>
+          <span class="meta-strip__val">${ev.start}</span>
+        </div>
+        <div class="meta-strip__col">
+          <span class="meta-strip__lbl">${I.cal} Fecha final</span>
+          <span class="meta-strip__val">${ev.end}</span>
+        </div>
+        <div class="meta-strip__col">
+          <span class="meta-strip__lbl">${I.pin} Lugar</span>
+          <span class="meta-strip__val">${ev.place}</span>
+        </div>
+        <div class="meta-strip__col">
+          <span class="meta-strip__lbl">${I.org} Organismo</span>
+          <span class="meta-strip__val">${ev.org}</span>
+        </div>
+      </div>`;
+  }
+
+  /* ─── (3) Bloque inferior del container: gestor asignado + descripción ───
+     El gestor se muestra como un tile (avatar + nombre + rol); la
+     descripción ocupa el resto del ancho. (Sin card aparte "Datos del
+     evento": todo vive en el container consolidado.) */
+  function footHTML() {
+    return `
+      <div class="det-foot">
+        <div class="det-foot__block">
+          <span class="det-foot__lbl">${I.user} Gestor asignado</span>
+          <div class="gestor-field">
+            <span class="gestor-field__av" style="background:${gestor.color}" aria-hidden="true">${gestor.avatar}</span>
+            <span class="gestor-field__meta">
+              <span class="gestor-field__nm">${gestor.name}</span>
+              <span class="gestor-field__role">${gestor.area}</span>
+            </span>
+          </div>
+        </div>
+        <div class="det-foot__block">
+          <span class="det-foot__lbl">${I.doc} Descripción</span>
+          <p class="det-foot__desc">${ev.descripcion || 'Evento del calendario oficial gestionado en Naowee Eventos; la operación (inscripciones, resultados y medallería) se realiza por cargue una vez el evento está Activo.'}</p>
+        </div>
+      </div>`;
+  }
+
+  /* ─── Seguimiento (progreso) ─── */
+  function pct(d, t) { return t > 0 ? Math.round((d / t) * 100) : 0; }
+  function trackItem(lbl, fill, o) {
+    const p = pct(o.done, o.total);
+    const empty = o.total === 0;
+    return `
+      <div class="prog-item">
+        <span class="prog-item__lbl">${lbl}</span>
+        <div class="prog-track"><div class="prog-fill ${fill}" style="width:${p}%"></div></div>
+        <span class="prog-item__val ${empty ? 'is-empty' : ''}">${empty ? '—' : `${o.done.toLocaleString('es-CO')} / ${o.total.toLocaleString('es-CO')} · ${p}%`}</span>
+      </div>`;
+  }
+  function trackHTML() {
+    const noData = ev.insc.total === 0 && ev.res.total === 0 && ev.med.total === 0;
+    const body = noData
+      ? `<p class="track-empty">Aún no hay cargues registrados. El seguimiento se llenará a medida que el gestor cargue inscripciones, resultados y medallería.</p>`
+      : `<div class="track-grid">
+          ${trackItem('Inscripciones', 'f-insc', ev.insc)}
+          ${trackItem('Resultados', 'f-res', ev.res)}
+          ${trackItem('Medallería', 'f-med', ev.med)}
+        </div>`;
+    return `
+      <section class="det-section" aria-labelledby="track-title" style="animation-delay:.16s">
+        <div class="det-section__head">${I.activity}<h3 id="track-title">Seguimiento del evento</h3></div>
+        ${body}
+      </section>`;
+  }
+
+  /* ─── Acciones del header (ghost/link canónico del DS: label accent,
+     hover naranja claro, con ícono). Role-aware:
+       • "Editar evento" → SOLO Administrador (el Usuario del módulo y el
+         Gestor son de lectura para los datos del evento → no la ven).
+       • "Ir a cargues" → mantiene su gate por estado Activo (gateOpen). ─── */
+  const canEdit = roleCode === 'ADMIN';
+  function headActions() {
+    const btns = [];
+    if (canEdit) {
+      btns.push(`<button type="button" class="naowee-btn naowee-btn--ghost naowee-btn--sm" data-action="editar">${I.edit} Editar evento</button>`);
+    }
+    if (gateOpen) {
+      btns.push(`<button type="button" class="naowee-btn naowee-btn--loud naowee-btn--sm" data-gate="inscripciones">${I.ticket} Ir a cargues</button>`);
+    }
+    return btns.join('');
+  }
+
+  /* ─── Render ───
+     Container superior consolidado (.det-card): header + franja de metadata
+     + bloque gestor/descripción. Debajo, "Seguimiento del evento". */
+  function render() {
+    document.getElementById('detailPage').innerHTML = `
+      <section class="det-card" aria-label="Datos del evento">
+        <header class="det-head">
+          <div class="det-head__id">
+            <a class="det-back" href="eventos.html?role=${roleCode}" aria-label="Volver a eventos" title="Volver a eventos">${I.chevL}</a>
+            <h2 class="det-head__name">${ev.name}</h2>
+            <span class="badge s-${ev.status}">${STATUS_LABEL[ev.status]}</span>
+          </div>
+          <div class="det-head__actions">${headActions()}</div>
+        </header>
+        ${metaStripHTML()}
+        ${footHTML()}
+      </section>
+
+      ${trackHTML()}
+    `;
+    bind();
+    /* Anima barras de progreso tras pintar (rAF doble para garantizar transición). */
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      document.querySelectorAll('.prog-fill').forEach((f) => f.classList.add('is-filled'));
+    }));
+  }
+
+  /* ─── Toast placeholder (cargues = Fase 4) ─── */
+  let _t = null;
+  function flash(msg) {
+    let toast = document.getElementById('evToast');
+    if (!toast) { toast = document.createElement('div'); toast.id = 'evToast'; toast.setAttribute('role', 'status'); document.body.appendChild(toast); }
+    toast.textContent = msg;
+    toast.classList.add('is-visible');
+    clearTimeout(_t);
+    _t = setTimeout(() => toast.classList.remove('is-visible'), 2800);
+  }
+
+  function bind() {
+    document.querySelectorAll('[data-gate]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const tipo = el.dataset.gate;
+        window.location.href = `cargue.html?tipo=${tipo}&id=${ev.id}&role=${roleCode}`;
+      });
+    });
+    const editBtn = document.querySelector('[data-action="editar"]');
+    if (editBtn) editBtn.addEventListener('click', () => openEditModal());
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     MODAL EDITAR EVENTO — lógica completa
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* ── Helpers de fecha (datepicker) — mismos que evento-crear ── */
+  const MES_ABBR_M = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const MES_FULL_M = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  function fmtDateM(d) { return `${String(d.getDate()).padStart(2,'0')} ${MES_ABBR_M[d.getMonth()]} ${d.getFullYear()}`; }
+  function sameDayM(a, b) { return a && b && a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+  function parseDate(str) {
+    if (!str) return null;
+    const m = str.match(/^(\d{1,2})\s+(\w+)\s+(\d{4})$/);
+    if (!m) return null;
+    const day = parseInt(m[1],10), mon = MES_ABBR_M.indexOf(m[2].toLowerCase()), yr = parseInt(m[3],10);
+    if (mon === -1) return null;
+    return new Date(yr, mon, day);
+  }
+
+  const ICON_XM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+  const ICON_CHECK_M = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  const CHEV_M = {
+    left:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+    right: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>',
+    down:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
+    up:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>'
+  };
+  const DOW_M = ['Lun','Mar','Mié','Jue','Vie','Sab','Dom'];
+
+  const ICON_LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+  const ICON_INFO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
+
+  const REDUCE_MOTION_M = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ── Estado del modal ── */
+  let mState = {};
+  let mSaveAttempts = 0;
+
+  /* ── Sheet backdrop del modal ── */
+  let _mBackdrop = null;
+  function ensureMBackdrop() {
+    if (_mBackdrop) return _mBackdrop;
+    _mBackdrop = document.createElement('div');
+    _mBackdrop.className = 'naowee-sheet-backdrop';
+    document.getElementById('evEditModal').appendChild(_mBackdrop);
+    _mBackdrop.addEventListener('click', closeAllMPopovers);
+    return _mBackdrop;
+  }
+  function isMobileM() { return window.matchMedia('(max-width: 760px)').matches; }
+  function closeAllMPopovers() {
+    document.querySelectorAll('#evEditModal .naowee-dropdown.is-open, #evEditModal .naowee-datepicker.is-open').forEach((el) => el.classList.remove('is-open'));
+    if (_mBackdrop) _mBackdrop.classList.remove('is-open');
+  }
+
+  /* ── Dropdown del modal ── */
+  function setupMDropdown(name, opts, onSelect, getSelected, container) {
+    const root = container || document.getElementById('evEditModal');
+    const dd = root.querySelector(`[data-dd="${name}"]`);
+    if (!dd) return null;
+    const menu = dd.querySelector('.naowee-dropdown__menu');
+    const valEl = dd.querySelector('[data-dd-val]');
+    const trigger = dd.querySelector('.naowee-dropdown__trigger');
+    const sheetTitle = dd.getAttribute('data-sheet-title') || 'Selecciona';
+
+    function paint() {
+      const sel = getSelected ? getSelected() : null;
+      const sheetHead = `<div class="naowee-dropdown__sheet-head"><span class="naowee-dropdown__sheet-title">${sheetTitle}</span><button type="button" class="naowee-dropdown__sheet-close" data-close aria-label="Cerrar">${ICON_XM}</button></div>`;
+      const body = opts.length
+        ? opts.map((o) => `<button type="button" class="naowee-dropdown__opt ${o.value===sel?'is-selected':''}" data-val="${o.value}">${o.emoji?`<span class="naowee-dropdown__opt-emoji">${o.emoji}</span>`:''}${o.html||`<span>${o.label}</span>`}<span class="naowee-dropdown__opt-check">${ICON_CHECK_M}</span></button>`).join('')
+        : `<div class="naowee-dropdown__empty">Sin opciones disponibles</div>`;
+      menu.innerHTML = sheetHead + body;
+      menu.querySelectorAll('.naowee-dropdown__opt').forEach((btn) => {
+        btn.addEventListener('click', (e) => { e.stopPropagation(); const chosen = opts.find((o) => o.value===btn.dataset.val); onSelect(chosen); close(); });
+      });
+      menu.querySelector('[data-close]')?.addEventListener('click', (e) => { e.stopPropagation(); close(); });
+    }
+    function open() {
+      if (dd.classList.contains('naowee-dropdown--disabled')) return;
+      closeAllMPopovers();
+      paint();
+      dd.classList.remove('is-up');
+      if (!isMobileM()) {
+        const r = trigger.getBoundingClientRect();
+        if (window.innerHeight - r.bottom < 300 && r.top > window.innerHeight - r.bottom) dd.classList.add('is-up');
+      }
+      dd.classList.add('is-open');
+      trigger.setAttribute('aria-expanded','true');
+      if (isMobileM()) ensureMBackdrop().classList.add('is-open');
+    }
+    function close() {
+      dd.classList.remove('is-open');
+      trigger.setAttribute('aria-expanded','false');
+      if (_mBackdrop && !document.querySelector('#evEditModal .is-open')) _mBackdrop.classList.remove('is-open');
+    }
+    trigger.addEventListener('click', (e) => { e.stopPropagation(); dd.classList.contains('is-open') ? close() : open(); });
+    return {
+      el: dd, valEl,
+      setLabel(label, isPlaceholder) { valEl.textContent=label; valEl.classList.toggle('is-placeholder',!!isPlaceholder); },
+      setDisabled(d) { dd.classList.toggle('naowee-dropdown--disabled', d); },
+      setError(e) { dd.classList.toggle('naowee-dropdown--error', e); },
+      setOpts(next) { opts = next; },
+      close
+    };
+  }
+
+  /* ── Datepicker del modal ── */
+  let mDpInstances = {};
+  function setupMDatepicker(name, onPick, getMin) {
+    const dp = document.querySelector(`#evEditModal [data-datepicker="${name}"]`);
+    if (!dp) return null;
+    const trigger = dp.querySelector('.naowee-datepicker__trigger');
+    const valEl = dp.querySelector('[data-dp-val]');
+    let curMonth = 5, curYear = 2026;
+    let calView = 'days';
+    let cal = null;
+
+    function buildCal() {
+      cal = document.createElement('div');
+      cal.className = 'naowee-cal';
+      dp.appendChild(cal);
+    }
+    function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+    function paint() {
+      const selected = name === 'm-inicio' ? mState.inicio : mState.fin;
+      const minRaw = getMin ? getMin() : null;
+      const min = minRaw ? startOfDay(minRaw) : null;
+      const today = new Date(2026, 5, 2);
+      const displayName = name === 'm-inicio' ? 'Fecha de inicio' : 'Fecha de fin';
+      const headerTitle = calView==='years' ? curYear : `${MES_FULL_M[curMonth]} de ${curYear}`;
+      const headerChev = calView==='days' ? CHEV_M.down : CHEV_M.up;
+      let header = `<div class="naowee-datepicker__header">
+        <button type="button" class="naowee-datepicker__month-selector" data-toggleview aria-label="Cambiar vista">
+          <span class="naowee-datepicker__month">${headerTitle}</span>
+          <span class="naowee-datepicker__month-chevron">${headerChev}</span>
+        </button>`;
+      if (calView==='days') {
+        header += `<div class="naowee-datepicker__controls">
+          <button type="button" class="naowee-datepicker__nav" data-nav="-1" aria-label="Anterior">${CHEV_M.left}</button>
+          <button type="button" class="naowee-datepicker__nav" data-nav="1" aria-label="Siguiente">${CHEV_M.right}</button>
+        </div>`;
+      }
+      header += `</div>`;
+      let body = '';
+      if (calView==='months') {
+        body = '<div class="naowee-datepicker__month-grid">' +
+          MES_FULL_M.map((m,i) => `<button type="button" class="naowee-datepicker__month-item ${i===curMonth?'naowee-datepicker__month-item--selected':''}" data-month="${i}">${m}</button>`).join('') + '</div>';
+      } else if (calView==='years') {
+        const sy = curYear - (curYear%4) - 4; let cells = '';
+        for (let yi=0; yi<12; yi++) { const y=sy+yi; cells+=`<button type="button" class="naowee-datepicker__month-item ${y===curYear?'naowee-datepicker__month-item--selected':''}" data-year="${y}">${y}</button>`; }
+        body = `<div class="naowee-datepicker__month-grid">${cells}</div>`;
+      } else {
+        const first = new Date(curYear, curMonth, 1);
+        const startOffset = (first.getDay()+6)%7;
+        const daysInMonth = new Date(curYear, curMonth+1, 0).getDate();
+        const prevDays = new Date(curYear, curMonth, 0).getDate();
+        const all = [];
+        for (let pi=startOffset-1; pi>=0; pi--) all.push({d:prevDays-pi, other:true});
+        for (let ci=1; ci<=daysInMonth; ci++) all.push({d:ci, other:false});
+        const rem = 42-all.length;
+        for (let ni=1; ni<=rem; ni++) all.push({d:ni, other:true});
+        const wkHtml = '<div class="naowee-datepicker__week">'+DOW_M.map((w)=>`<span class="naowee-datepicker__weekday">${w}</span>`).join('')+'</div>';
+        let weeksHtml = '';
+        for (let w=0; w<6; w++) {
+          weeksHtml += '<div class="naowee-datepicker__week">';
+          for (let di=0; di<7; di++) {
+            const cell = all[w*7+di];
+            const cls = ['naowee-datepicker__day'];
+            let disabled = false;
+            if (cell.other) cls.push('naowee-datepicker__day--other-month');
+            else {
+              const date = new Date(curYear, curMonth, cell.d);
+              if (min && date < min) { cls.push('naowee-datepicker__day--disabled'); disabled = true; }
+              if (sameDayM(date, selected)) cls.push('naowee-datepicker__day--selected');
+              if (sameDayM(date, today)) cls.push('naowee-datepicker__day--today');
+            }
+            weeksHtml += `<button type="button" class="${cls.join(' ')}"${(cell.other||disabled)?'':` data-d="${cell.d}"`}>${cell.d}</button>`;
+          }
+          weeksHtml += '</div>';
+        }
+        body = `<div class="naowee-datepicker__content">${wkHtml}${weeksHtml}</div>`;
+      }
+      cal.innerHTML =
+        `<div class="naowee-cal__sheet-head"><span class="naowee-cal__sheet-title">${displayName}</span><button type="button" class="naowee-cal__sheet-close" data-close aria-label="Cerrar">${ICON_XM}</button></div>` +
+        `<div class="naowee-datepicker__calendar">${header}${body}</div>`;
+      cal.querySelector('[data-toggleview]')?.addEventListener('click', (e) => { e.stopPropagation(); calView=calView==='days'?'months':calView==='months'?'years':'days'; paint(); });
+      cal.querySelectorAll('[data-nav]').forEach((b) => b.addEventListener('click', (e) => {
+        e.stopPropagation(); const delta=Number(b.dataset.nav);
+        if (calView==='days') { curMonth+=delta; if (curMonth>11){curMonth=0;curYear++;} if (curMonth<0){curMonth=11;curYear--;} }
+        else if (calView==='years') { curYear+=delta*4; }
+        paint();
+      }));
+      cal.querySelectorAll('[data-month]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); curMonth=Number(b.dataset.month); calView='days'; paint(); }));
+      cal.querySelectorAll('[data-year]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); curYear=Number(b.dataset.year); calView='months'; paint(); }));
+      cal.querySelectorAll('.naowee-datepicker__day[data-d]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); onPick(new Date(curYear, curMonth, Number(b.dataset.d))); close(); }));
+      cal.querySelector('[data-close]')?.addEventListener('click', (e) => { e.stopPropagation(); close(); });
+    }
+    function placeCal() {
+      cal.classList.remove('is-up','is-right');
+      cal.style.position=''; cal.style.top=''; cal.style.bottom=''; cal.style.left=''; cal.style.right='';
+      const r = trigger.getBoundingClientRect();
+      const calH=cal.offsetHeight, calW=cal.offsetWidth;
+      const HDR=96, FTR=80, GAP=6, M=8;
+      const belowSpace = window.innerHeight - r.bottom - FTR;
+      const aboveSpace = r.top - HDR;
+      if (r.left+calW > window.innerWidth-M) cal.classList.add('is-right');
+      if (belowSpace >= calH+GAP) { /* cabe abajo */ }
+      else if (aboveSpace >= calH+GAP) { cal.classList.add('is-up'); }
+      else {
+        cal.classList.remove('is-right');
+        const top = Math.max(HDR, Math.min(r.bottom+GAP, window.innerHeight-FTR-calH-M));
+        const left = Math.max(M, Math.min(r.left, window.innerWidth-calW-M));
+        cal.style.position='fixed'; cal.style.top=top+'px'; cal.style.bottom='auto';
+        cal.style.left=left+'px'; cal.style.right='auto';
+      }
+    }
+    function open() {
+      closeAllMPopovers();
+      if (!cal) buildCal();
+      const sel = name==='m-inicio' ? mState.inicio : mState.fin;
+      if (sel) { curMonth=sel.getMonth(); curYear=sel.getFullYear(); }
+      calView='days'; paint();
+      if (!isMobileM()) placeCal();
+      dp.classList.add('is-open');
+      if (isMobileM()) ensureMBackdrop().classList.add('is-open');
+    }
+    function close() {
+      dp.classList.remove('is-open');
+      if (cal) { cal.classList.remove('is-up','is-right'); cal.style.position=''; cal.style.top=''; cal.style.bottom=''; cal.style.left=''; cal.style.right=''; }
+      if (_mBackdrop && !document.querySelector('#evEditModal .is-open')) _mBackdrop.classList.remove('is-open');
+    }
+    trigger.addEventListener('click', (e) => { e.stopPropagation(); dp.classList.contains('is-open') ? close() : open(); });
+    return {
+      el: dp,
+      setValue(d) { valEl.textContent=d?fmtDateM(d):'Selecciona una fecha'; valEl.classList.toggle('is-placeholder',!d); },
+      setError(e) { dp.classList.toggle('naowee-datepicker--error', e); },
+      close
+    };
+  }
+
+  /* ── Helpers de error del modal ── */
+  function mFieldEl(name) { return document.querySelector(`#evEditModal [data-field="${name}"]`); }
+  function mControlEl(f) { return f.querySelector('.naowee-textfield__input-wrap, .naowee-datepicker__trigger, .naowee-dropdown__trigger'); }
+  function mWiggle(el) {
+    if (!el || REDUCE_MOTION_M) return;
+    el.classList.remove('naowee-shake'); void el.offsetWidth;
+    el.classList.add('naowee-shake');
+    el.addEventListener('animationend', () => el.classList.remove('naowee-shake'), {once:true});
+  }
+  function mSetError(name, msg, doWiggle) {
+    const f = mFieldEl(name); if (!f) return;
+    f.classList.add('naowee-textfield--error');
+    const m = f.querySelector('[data-msg]');
+    if (m) { m.innerHTML='<span class="naowee-helper naowee-helper--negative naowee-helper--loud"><span class="naowee-helper__text"><span class="naowee-helper__badge"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="6" fill="#c4031d"/><path d="M3.75 6h4.5" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg></span><span>'+msg+'</span></span></span>'; m.style.display='block'; m.setAttribute('aria-live','polite'); }
+    if (name==='m-inicio' && mDpInstances['m-inicio']) mDpInstances['m-inicio'].setError(true);
+    if (name==='m-fin'    && mDpInstances['m-fin'])    mDpInstances['m-fin'].setError(true);
+    if (doWiggle) mWiggle(mControlEl(f));
+  }
+  function mClearError(name) {
+    const f = mFieldEl(name); if (!f) return;
+    f.classList.remove('naowee-textfield--error');
+    const m = f.querySelector('[data-msg]'); if (m) m.style.display='none';
+    if (name==='m-inicio' && mDpInstances['m-inicio']) mDpInstances['m-inicio'].setError(false);
+    if (name==='m-fin'    && mDpInstances['m-fin'])    mDpInstances['m-fin'].setError(false);
+  }
+
+  /* ── Construir HTML del cuerpo del modal según estado ── */
+  function buildModalBody() {
+    const body = document.getElementById('evModalBody');
+    const foot = document.getElementById('evModalFoot');
+    const isLockedAll = isFinal;
+    const lockPlace = isActivo; /* Activo: inicio + lugar bloqueados */
+
+    const lockNote = lockPlace && !isLockedAll
+      ? `<div class="ev-modal__note ev-modal__note--lock">${ICON_LOCK}<span>El evento ya está activo: la <strong>fecha de inicio</strong> y el <strong>lugar</strong> no se pueden modificar.</span></div>`
+      : '';
+    const readonlyNote = isLockedAll
+      ? `<div class="ev-modal__note ev-modal__note--final">${ICON_INFO}<span>Evento finalizado &middot; <strong>solo lectura.</strong> No es posible editar sus datos.</span></div>`
+      : '';
+
+    /* ── Campo Fecha inicio (disabled si Activo o Finalizado) ── */
+    const inicioLocked = lockPlace || isLockedAll;
+    const finLocked = isLockedAll;
+    const lugarLocked = lockPlace || isLockedAll;
+    const allLocked = isLockedAll;
+
+    const dpIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+    const ddChevIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+
+    body.innerHTML = `
+      ${readonlyNote}${lockNote}
+      <div class="ev-modal__grid">
+        <!-- Nombre -->
+        <div class="naowee-textfield col-2 ${allLocked?'naowee-textfield--readonly':''}" data-field="m-nombre">
+          <label class="naowee-textfield__label ${allLocked?'':'naowee-textfield__label--required'}" for="mf-nombre">Nombre del evento</label>
+          <div class="naowee-textfield__input-wrap">
+            <input type="text" class="naowee-textfield__input" id="mf-nombre" autocomplete="off"
+              value="${ev.name.replace(/"/g,'&quot;')}" ${allLocked?'disabled':''}
+              placeholder="Nombre del evento">
+          </div>
+          <span class="naowee-textfield__msg" data-msg style="display:none"></span>
+        </div>
+
+        <!-- Fecha inicio (locked si Activo/Finalizado) -->
+        <div data-field="m-inicio">
+          <label class="naowee-textfield__label ${inicioLocked?'lbl-locked':''}" id="mlbl-inicio">
+            ${inicioLocked?ICON_LOCK+' ':''}Fecha de inicio
+          </label>
+          ${inicioLocked
+            ? `<div class="field-readonly-val">${ev.start}</div>`
+            : `<div class="naowee-datepicker" data-datepicker="m-inicio">
+                <button type="button" class="naowee-datepicker__trigger" aria-haspopup="dialog" aria-labelledby="mlbl-inicio">
+                  <span class="naowee-datepicker__ico">${dpIcon}</span>
+                  <span class="naowee-datepicker__val is-placeholder" data-dp-val>Selecciona una fecha</span>
+                </button>
+              </div>`
+          }
+          <span class="naowee-textfield__msg" data-msg style="display:none"></span>
+        </div>
+
+        <!-- Fecha fin -->
+        <div data-field="m-fin">
+          <label class="naowee-textfield__label ${finLocked?'lbl-locked':''}" id="mlbl-fin">
+            ${finLocked?ICON_LOCK+' ':''}Fecha de fin
+          </label>
+          ${finLocked
+            ? `<div class="field-readonly-val">${ev.end}</div>`
+            : `<div class="naowee-datepicker" data-datepicker="m-fin">
+                <button type="button" class="naowee-datepicker__trigger" aria-haspopup="dialog" aria-labelledby="mlbl-fin">
+                  <span class="naowee-datepicker__ico">${dpIcon}</span>
+                  <span class="naowee-datepicker__val is-placeholder" data-dp-val>Selecciona una fecha</span>
+                </button>
+              </div>`
+          }
+          <span class="naowee-textfield__msg" data-msg style="display:none"></span>
+        </div>
+
+        <!-- Departamento (locked si Activo/Finalizado) -->
+        <div data-field="m-departamento">
+          <label class="naowee-textfield__label ${lugarLocked?'lbl-locked':''}" id="mlbl-depto">
+            ${lugarLocked?ICON_LOCK+' ':''}Departamento
+          </label>
+          ${lugarLocked
+            ? `<div class="field-readonly-val">${ev.departamento || (ev.place||'').split(', ').slice(-1)[0] || ev.place || '—'}</div>`
+            : `<div class="naowee-dropdown" data-dd="m-departamento" data-sheet-title="Departamento">
+                <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-labelledby="mlbl-depto">
+                  <span class="naowee-dropdown__value is-placeholder" data-dd-val>Selecciona un departamento…</span>
+                  <span class="naowee-dropdown__chevron">${ddChevIcon}</span>
+                </button>
+                <div class="naowee-dropdown__menu" role="listbox"></div>
+              </div>`
+          }
+          <span class="naowee-textfield__msg" data-msg style="display:none"></span>
+        </div>
+
+        <!-- Municipio (locked si Activo/Finalizado) -->
+        <div data-field="m-municipio" id="mMuniField" ${lugarLocked?'':'hidden'}>
+          <label class="naowee-textfield__label ${lugarLocked?'lbl-locked':''}" id="mlbl-muni">
+            ${lugarLocked?ICON_LOCK+' ':''}Municipio
+          </label>
+          ${lugarLocked
+            ? `<div class="field-readonly-val">${ev.municipio || (ev.place||'').split(', ')[0] || '—'}</div>`
+            : `<div class="naowee-dropdown" data-dd="m-municipio" data-sheet-title="Municipio">
+                <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-labelledby="mlbl-muni">
+                  <span class="naowee-dropdown__value is-placeholder" data-dd-val>Selecciona un municipio…</span>
+                  <span class="naowee-dropdown__chevron">${ddChevIcon}</span>
+                </button>
+                <div class="naowee-dropdown__menu" role="listbox"></div>
+              </div>`
+          }
+          <span class="naowee-textfield__msg" data-msg style="display:none"></span>
+        </div>
+
+        <!-- Gestor -->
+        <div data-field="m-gestor" class="col-2">
+          <label class="naowee-textfield__label" id="mlbl-gestor">Gestor asignado</label>
+          ${allLocked
+            ? `<div class="field-readonly-val">${gestor.name}</div>`
+            : `<div class="naowee-dropdown" data-dd="m-gestor" data-sheet-title="Asignar al gestor">
+                <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-labelledby="mlbl-gestor">
+                  <span class="naowee-dropdown__value is-placeholder" data-dd-val>Selecciona un gestor…</span>
+                  <span class="naowee-dropdown__chevron">${ddChevIcon}</span>
+                </button>
+                <div class="naowee-dropdown__menu" role="listbox"></div>
+              </div>`
+          }
+          <span class="naowee-textfield__msg" data-msg style="display:none"></span>
+        </div>
+
+        <!-- Descripción -->
+        <div class="naowee-textfield naowee-textfield--textarea col-2 ${allLocked?'naowee-textfield--readonly':''}" data-field="m-descripcion">
+          <label class="naowee-textfield__label" for="mf-desc">Descripción</label>
+          <div class="naowee-textfield__input-wrap">
+            <textarea class="naowee-textfield__input" id="mf-desc" rows="3"
+              placeholder="Resumen del evento, alcance y notas para los participantes (opcional)."
+              ${allLocked?'disabled':''}></textarea>
+          </div>
+        </div>
+      </div>`;
+
+    foot.innerHTML = isLockedAll
+      ? `<button type="button" class="naowee-btn naowee-btn--ghost" id="mBtnClose">Cerrar</button>`
+      : `<button type="button" class="naowee-btn naowee-btn--link" id="mBtnCancel">Cancelar</button>
+         <button type="button" class="naowee-btn naowee-btn--loud" id="mBtnSave">
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+           Guardar cambios
+         </button>`;
+  }
+
+  /* ── Inicializar controles del modal con valores preexistentes ── */
+  function initModalControls() {
+    const lockPlace  = isActivo;
+    const allLocked  = isFinal;
+
+    /* Precargar estado del modal desde ev */
+    mState = {
+      nombre: ev.name,
+      inicio: parseDate(ev.start),
+      fin:    parseDate(ev.end),
+      departamento: ev.departamento || (ev.place ? ev.place.split(', ').pop() : ''),
+      municipio:    ev.municipio    || (ev.place ? ev.place.split(', ')[0]    : ''),
+      gestorId: ev.gestorId || ((() => { return (GESTOR_MAP[ev.id] || 'g-andrea'); })()),
+      descripcion: ev.descripcion || ''
+    };
+    mSaveAttempts = 0;
+
+    if (allLocked) {
+      /* Solo lectura: precarga valores visuales */
+      const ta = document.getElementById('mf-desc');
+      if (ta) ta.value = mState.descripcion;
+      return;
+    }
+
+    /* Nombre */
+    const nomInput = document.getElementById('mf-nombre');
+    if (nomInput) {
+      nomInput.value = mState.nombre;
+      nomInput.addEventListener('input', () => { mState.nombre = nomInput.value; if (nomInput.value.trim()) mClearError('m-nombre'); });
+    }
+
+    /* Descripción */
+    const descTA = document.getElementById('mf-desc');
+    if (descTA) {
+      descTA.value = mState.descripcion;
+      descTA.addEventListener('input', () => { mState.descripcion = descTA.value; });
+    }
+
+    /* Fecha inicio (solo si Borrador) */
+    if (!inicioLocked()) {
+      mDpInstances['m-inicio'] = setupMDatepicker('m-inicio', (d) => {
+        mState.inicio = d;
+        mDpInstances['m-inicio'].setValue(d);
+        mClearError('m-inicio');
+        if (mState.fin && mState.fin < d) mSetError('m-fin','La fecha de fin debe ser igual o posterior al inicio.');
+        else if (mState.fin) mClearError('m-fin');
+      });
+      if (mState.inicio) { mDpInstances['m-inicio'].setValue(mState.inicio); }
+      else mDpInstances['m-inicio'].setValue(null);
+    }
+
+    /* Fecha fin (disponible si no Finalizado) */
+    mDpInstances['m-fin'] = setupMDatepicker('m-fin', (d) => {
+      mState.fin = d;
+      mDpInstances['m-fin'].setValue(d);
+      if (mState.inicio && d < mState.inicio) mSetError('m-fin','La fecha de fin debe ser igual o posterior al inicio.');
+      else mClearError('m-fin');
+    }, () => mState.inicio);
+    if (mState.fin) mDpInstances['m-fin'].setValue(mState.fin);
+    else mDpInstances['m-fin'].setValue(null);
+
+    /* Lugar (solo si Borrador) */
+    if (!lockPlace) {
+      const deptoOpts = DEPARTAMENTOS.map((d) => ({ value:d, label:d }));
+      const mMuniField = document.getElementById('mMuniField');
+      let ddMDepto, ddMMunicipio;
+
+      ddMMunicipio = setupMDropdown('m-municipio', [], (o) => {
+        mState.municipio = o.value;
+        ddMMunicipio.setLabel(o.label, false);
+        mClearError('m-municipio');
+      }, () => mState.municipio);
+
+      ddMDepto = setupMDropdown('m-departamento', deptoOpts, (o) => {
+        mState.departamento = o.value;
+        ddMDepto.setLabel(o.label, false);
+        mClearError('m-departamento');
+        mState.municipio = '';
+        const next = municipiosDeDepto(o.value).map((m) => ({ value:m, label:m }));
+        if (ddMMunicipio) { ddMMunicipio.setOpts(next); ddMMunicipio.setLabel('Selecciona un municipio…', true); }
+        mClearError('m-municipio');
+        if (mMuniField) mMuniField.hidden = false;
+      }, () => mState.departamento);
+
+      /* Precargar depto si ya había uno */
+      if (mState.departamento && ddMDepto) {
+        ddMDepto.setLabel(mState.departamento, false);
+        const muniOpts = municipiosDeDepto(mState.departamento).map((m) => ({ value:m, label:m }));
+        if (ddMMunicipio) {
+          ddMMunicipio.setOpts(muniOpts);
+          if (mMuniField) mMuniField.hidden = false;
+          if (mState.municipio) ddMMunicipio.setLabel(mState.municipio, false);
+        }
+      }
+    }
+
+    /* Gestor */
+    const gestorOpts = GESTORES.map((g) => ({
+      value: g.id, label: g.name,
+      html: `<span class="dd-opt-rich"><span>${g.name}</span><small>${g.area}</small></span>`
+    }));
+    const ddMGestor = setupMDropdown('m-gestor', gestorOpts, (o) => {
+      mState.gestorId = o.value;
+      const gFound = GESTORES.find((x) => x.id === o.value);
+      if (ddMGestor && gFound) ddMGestor.setLabel(gFound.name, false);
+      mClearError('m-gestor');
+    }, () => mState.gestorId);
+    if (mState.gestorId && ddMGestor) {
+      const gFound = GESTORES.find((x) => x.id === mState.gestorId);
+      if (gFound) ddMGestor.setLabel(gFound.name, false);
+    }
+
+    /* Botones del footer */
+    document.getElementById('mBtnCancel')?.addEventListener('click', closeEditModal);
+    document.getElementById('mBtnSave')?.addEventListener('click', () => {
+      closeAllMPopovers();
+      if (mValidate()) { doSaveEdit(); return; }
+      mSaveAttempts++;
+      if (mSaveAttempts >= 2) {
+        flash('Continuando con datos incompletos (modo demo).');
+        doSaveEdit();
+      } else {
+        flash('Revisa los campos marcados. Vuelve a tocar Guardar para continuar.');
+      }
+    });
+  }
+
+  function inicioLocked() { return isActivo || isFinal; }
+
+  /* ── Validación del modal ── */
+  function mValidate() {
+    let firstErr = null;
+    const fail = (name, msg) => { if (!firstErr) firstErr = name; mSetError(name, msg, false); };
+
+    if (!mState.nombre.trim()) fail('m-nombre','El nombre del evento es obligatorio.');
+    if (!inicioLocked() && !mState.inicio) fail('m-inicio','Selecciona la fecha de inicio.');
+    if (!isFinal && !mState.fin) fail('m-fin','Selecciona la fecha de fin.');
+    if (!inicioLocked() && mState.inicio && mState.fin && mState.fin < mState.inicio) fail('m-fin','La fecha de fin debe ser igual o posterior al inicio.');
+    if (!isActivo && !isFinal && !mState.departamento) fail('m-departamento','Selecciona el departamento.');
+    if (!isActivo && !isFinal && mState.departamento && !mState.municipio) fail('m-municipio','Selecciona el municipio.');
+
+    if (firstErr) {
+      const f = mFieldEl(firstErr);
+      if (f) { f.scrollIntoView({ behavior: REDUCE_MOTION_M?'auto':'smooth', block:'center' }); mWiggle(mControlEl(f)); }
+      return false;
+    }
+    return true;
+  }
+
+  /* ── Guardar edición ── */
+  function doSaveEdit() {
+    const patch = { name: mState.nombre.trim() };
+    if (!inicioLocked() && mState.inicio) patch.start = fmtDateM(mState.inicio);
+    if (!isFinal && mState.fin) patch.end = fmtDateM(mState.fin);
+    if (!isActivo && !isFinal) {
+      if (mState.departamento && mState.municipio) {
+        patch.place = `${mState.municipio}, ${mState.departamento}`;
+        patch.departamento = mState.departamento;
+        patch.municipio = mState.municipio;
+      }
+    }
+    if (mState.gestorId) patch.gestorId = mState.gestorId;
+    patch.descripcion = mState.descripcion || '';
+
+    updateEvent(ev.id, patch);
+
+    /* Re-read ev from store and re-render */
+    ev = findEv();
+    isActivo  = ev.status === 'activo';
+    isBorrador = ev.status === 'borrador';
+    isFinal   = ev.status === 'finalizado';
+    gateOpen  = isActivo;
+    gestor    = gestorFor();
+
+    closeEditModal();
+    render();
+    flash('Cambios guardados.');
+  }
+
+  /* ── Abrir / Cerrar modal ── */
+  let _mTriggerEl = null; /* Elemento que disparó el modal (para devolver el foco al cerrar) */
+
+  const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+
+  function trapFocus(e) {
+    const modal = document.getElementById('evEditModal');
+    const focusable = Array.from(modal.querySelectorAll(FOCUSABLE)).filter((el) => !el.closest('[hidden]'));
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last  = focusable[focusable.length - 1];
+    if (e.key === 'Tab') {
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last)  { e.preventDefault(); first.focus(); }
+      }
+    }
+  }
+
+  function openEditModal() {
+    /* Recuerda el disparador para devolver el foco al cerrar */
+    _mTriggerEl = document.activeElement;
+    mDpInstances = {};
+    const overlay = document.getElementById('evEditOverlay');
+    buildModalBody();
+    overlay.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+    initModalControls();
+    /* Botón cerrar del header */
+    document.getElementById('evModalClose').addEventListener('click', closeEditModal, { once: true });
+    document.getElementById('mBtnClose')?.addEventListener('click', closeEditModal);
+    /* Foco al primer control (o al botón cerrar como fallback) */
+    /* Foco tras la transición de apertura (.22s): el panel arranca en opacity:0 y
+       el navegador descarta .focus() si corre durante la transición (rAF era muy pronto). */
+    setTimeout(() => {
+      const modal = document.getElementById('evEditModal');
+      const first = modal.querySelector(FOCUSABLE);
+      (first || document.getElementById('evModalClose'))?.focus({ preventScroll: true });
+    }, 240);
+    /* Escape + trap de Tab */
+    document.addEventListener('keydown', onModalEsc);
+    document.addEventListener('keydown', trapFocus);
+  }
+  function closeEditModal() {
+    const overlay = document.getElementById('evEditOverlay');
+    overlay.classList.remove('is-open');
+    document.body.style.overflow = '';
+    document.removeEventListener('keydown', onModalEsc);
+    document.removeEventListener('keydown', trapFocus);
+    closeAllMPopovers();
+    /* Devuelve el foco al disparador */
+    if (_mTriggerEl && typeof _mTriggerEl.focus === 'function') {
+      requestAnimationFrame(() => _mTriggerEl.focus());
+    }
+  }
+  function onModalEsc(e) { if (e.key === 'Escape') closeEditModal(); }
+
+  /* Click en overlay (fuera del .ev-modal) cierra */
+  document.getElementById('evEditOverlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeEditModal();
+  });
+
+  /* ─── Bootstrap ─── */
+  mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: 'eventos' });
+  mountHeader({ headerEl: document.getElementById('topHeader'), role, title: 'Detalle del evento', subtitle: `${ev.id} · Ministerio del Deporte` });
+  mountBackdrop();
+  mountDemoSwitcher({ roleCode });
+  render();
+
+  document.title = `Naowee Eventos — ${ev.name}`;
+</script>
+
+</body>
+</html>

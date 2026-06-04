@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Naowee Eventos — Gestión de usuarios</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="shared/tokens.css?v=0.3.0">
+<link rel="stylesheet" href="shared/shell.css?v=0.3.0">
+<link rel="stylesheet" href="shared/list-components.css?v=0.3.0">
+<link rel="stylesheet" href="shared/forms.css?v=0.3.0">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.3.0">
+<script src="shared/naowee-footer.js?v=0.3.0" defer></script>
+
+<style>
+  /* ═══════════════════════════════════════════════════════════════
+     USUARIOS — Gestión de usuarios del módulo Eventos (solo ADMIN)
+     Patrón: equipo.html (naowee-ivc) adaptado a Eventos.
+     v1.0.0
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* ─── Page head ─── */
+  .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
+  .page-head__title h2 { font-size: 24px; font-weight: 800; letter-spacing: -.4px; color: var(--text-primary); margin: 0 0 5px; }
+  .page-head__title p { font-size: 13px; color: var(--text-secondary); margin: 0; max-width: 560px; }
+  .page-head__actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+  /* ─── Stat grid ─── */
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 0 0 24px; }
+  @media (max-width: 900px) { .stat-grid { grid-template-columns: 1fr; } }
+  @media (min-width: 601px) and (max-width: 900px) { .stat-grid { grid-template-columns: repeat(3, 1fr); } }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 20px 22px;
+    display: flex; flex-direction: column; gap: 4px;
+    animation: fadeInUp .38s cubic-bezier(.4,0,.2,1) both;
+  }
+  .stat-card:nth-child(1) { animation-delay: .04s; }
+  .stat-card:nth-child(2) { animation-delay: .08s; }
+  .stat-card:nth-child(3) { animation-delay: .12s; }
+  .stat-card__value {
+    font-size: 32px; font-weight: 800; letter-spacing: -.5px;
+    color: var(--text-primary); line-height: 1;
+  }
+  .stat-card__value--accent  { color: var(--accent); }
+  .stat-card__value--caution { color: #e67e00; }
+  .stat-card__value--info    { color: var(--blue-info); }
+  .stat-card__label { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 4px; }
+  .stat-card__hint  { font-size: 12px; color: var(--text-secondary); }
+
+  /* ─── Toolbar ─── */
+  .usuarios-toolbar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .usuarios-toolbar__search { flex: 0 1 300px; min-width: 220px; }
+  .usuarios-toolbar__filters { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
+  .usuarios-toolbar__spacer  { flex: 1 1 auto; }
+  .usuarios-toolbar .naowee-dropdown { width: 164px !important; }
+  @media (max-width: 700px) {
+    .usuarios-toolbar { flex-direction: column; align-items: stretch; }
+    .usuarios-toolbar__search { flex: none; width: 100%; }
+    .usuarios-toolbar__filters { width: 100%; }
+    .usuarios-toolbar .naowee-dropdown { flex: 1; width: auto !important; }
+    .btn-clear-filtros { font-size: 12px; }
+  }
+
+  /* ─── Table persona-cell (paridad equipo.html) ─── */
+  .persona-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; flex-shrink: 0;
+    font-family: 'Inter', sans-serif; letter-spacing: .3px;
+  }
+  .persona-avatar--p1 { background: #ffe8e0; color: #c0392b; }
+  .persona-avatar--p2 { background: #fff3e6; color: #d97706; }
+  .persona-avatar--p3 { background: #fef9c3; color: #a16207; }
+  .persona-avatar--p4 { background: #e8f5e9; color: #1f8923; }
+  .persona-avatar--p5 { background: #e0f2fe; color: #0369a1; }
+  .persona-avatar--p6 { background: #f0fdfa; color: #0d9488; }
+  .persona-avatar--p7 { background: #e0f4ff; color: #0284c7; }
+  .persona-avatar--p8 { background: #f3eeff; color: #7c3aed; }
+  .persona-avatar--pendiente { background: var(--bg-soft, #f5f6fa); color: var(--text-secondary); }
+
+  .persona-cell { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .persona-cell__body { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .persona-cell__name  { font-size: 13.5px; font-weight: 600; color: var(--text-primary); font-family: 'Inter', sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .persona-cell__email { font-size: 12px; color: var(--text-secondary); font-family: 'Inter', sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .row-rol-label  { font-size: 13px; font-weight: 500; color: var(--text-primary); font-family: 'Inter', sans-serif; }
+  .row-acceso     { font-size: 12px; color: var(--text-secondary); font-family: 'Inter', sans-serif; white-space: nowrap; }
+  .row-acceso--never { font-style: italic; color: var(--text-secondary); opacity: .7; }
+
+  /* ─── Row actions (paridad equipo.html v1.13.38) ─── */
+  .row-actions {
+    display: inline-flex; align-items: center; gap: 4px; justify-content: center;
+  }
+  .naowee-table-card,
+  .naowee-table-card__body,
+  .row-actions,
+  .row-actions .naowee-tooltip { overflow: visible !important; }
+  .naowee-table-card > div[style*="overflow-x"] {
+    overflow-x: auto !important; overflow-y: visible !important;
+  }
+  .naowee-tooltip__content { z-index: 9999 !important; }
+  .naowee-tooltip:hover .naowee-tooltip__content,
+  .naowee-tooltip:focus-within .naowee-tooltip__content { opacity: 1; pointer-events: auto; transform: translateY(-6px); }
+
+  /* ── Focus-visible canónico (custom de la página) ── */
+  .naowee-modal__dismiss:focus-visible,
+  [data-action]:focus-visible,
+  .naowee-dropdown__trigger:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(215,64,9,.18);
+  }
+
+  /* ─── Mobile: ocultar col email y último acceso ≤700px ─── */
+  @media (max-width: 700px) {
+    .naowee-table-card .naowee-table tbody td:nth-of-type(3),
+    .naowee-table-card .naowee-table tbody td:nth-of-type(5) { display: none; }
+    .naowee-table-card .naowee-table thead th:nth-of-type(3),
+    .naowee-table-card .naowee-table thead th:nth-of-type(5) { display: none; }
+    .naowee-table-card > div[style*="overflow-x"] { overflow-x: visible !important; }
+    .naowee-badge { white-space: nowrap; }
+  }
+
+  /* ── Responsive ≤640px: tabla usuarios → stacked cards ── */
+  @media (max-width: 640px) {
+    .naowee-table-card > div[style*="overflow-x"] { overflow-x: visible !important; }
+    .naowee-table thead { display: none; }
+    .naowee-table tbody tr {
+      display: block;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .naowee-table tbody tr:last-child { border-bottom: none; }
+    .naowee-table tbody td {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+      border: none;
+      font-size: 13px;
+    }
+    .naowee-table tbody td::before {
+      content: attr(data-label);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      min-width: 72px;
+      flex-shrink: 0;
+    }
+    /* Acción centrada sin label */
+    .naowee-table tbody td[data-label=""] {
+      justify-content: flex-end;
+    }
+    .naowee-table tbody td[data-label=""]::before { display: none; }
+    .naowee-badge { white-space: nowrap; }
+    .persona-cell__email { display: none; }
+  }
+
+  /* ─── Form grid dentro del modal ─── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+  .form-grid__field--full { grid-column: 1 / -1; }
+  @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+
+  /* ─── Modal canónico (overlay + panel) — base que faltaba (el demo no carga el DS) ─── */
+  .naowee-modal-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+    background: rgba(40, 40, 52, .48);
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--duration-normal) var(--easing-smoothout);
+  }
+  .naowee-modal-overlay.open { opacity: 1; pointer-events: auto; }
+  .naowee-modal {
+    background: var(--surface); border-radius: var(--radius-xl);
+    max-height: 90vh; display: flex; flex-direction: column; overflow: hidden;
+    box-shadow: var(--shadow-card);
+    transform: translateY(10px) scale(.985); opacity: .5;
+    transition: transform var(--duration-normal) var(--easing-smoothout),
+                opacity var(--duration-normal) var(--easing-smoothout);
+  }
+  .naowee-modal-overlay.open .naowee-modal { transform: none; opacity: 1; }
+  .naowee-modal__header {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+    padding: 22px 28px 16px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: var(--surface); z-index: 2;
+  }
+  .naowee-modal__title { font-size: 18px; font-weight: 700; color: var(--text-primary); margin: 0; line-height: 1.3; }
+  .naowee-modal__subtitle { font-size: 13px; color: var(--text-secondary); margin: 5px 0 0; line-height: 1.5; }
+  .naowee-modal__dismiss {
+    width: 34px; height: 34px; flex-shrink: 0; border: none; background: transparent;
+    border-radius: var(--radius-md); color: var(--text-secondary); cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background var(--duration-fast), color var(--duration-fast);
+  }
+  .naowee-modal__dismiss:hover { background: var(--bg-soft); color: var(--text-primary); }
+  .naowee-modal__footer {
+    display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+    padding: 16px 28px 20px; border-top: 1px solid var(--border);
+    position: sticky; bottom: 0; background: var(--surface);
+  }
+  @media (max-width: 600px) {
+    .naowee-modal-overlay { align-items: flex-end; padding: 0; }
+    .naowee-modal { width: 100% !important; max-width: none !important; max-height: 92vh;
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0; transform: translateY(100%); }
+    .naowee-modal-overlay.open .naowee-modal { transform: none; }
+  }
+
+  .naowee-modal .naowee-modal__body { flex: 1; overflow-y: auto; padding: 24px 28px; }
+  .naowee-modal .naowee-dropdown[data-mod] { position: static; }
+  .naowee-modal .naowee-dropdown[data-mod] .naowee-dropdown__menu {
+    position: absolute; z-index: 10100;
+  }
+
+  /* ─── Animations ─── */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(.94); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .stat-card { animation: none !important; }
+    .naowee-modal-overlay, .naowee-modal { transition: none !important; }
+  }
+
+  /* ─── Responsive header ─── */
+  @media (max-width: 600px) {
+    .page-head { gap: 12px; }
+    .page-head__title h2 { font-size: 20px; }
+    .page-head__actions { width: 100%; }
+    .page-head__actions .naowee-btn { flex: 1; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div id="sidebarRoot"></div>
+  <div class="main">
+    <header class="top-header" id="topHeader"></header>
+    <div class="page">
+      <div class="page-inner" id="usuariosPage"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     Modal: Invitar / Editar usuario
+     ════════════════════════════════════════════════════════════════ -->
+<div class="naowee-modal-overlay" id="modalUsuario" role="dialog" aria-modal="true" aria-labelledby="usuarioModalTitle">
+  <div class="naowee-modal" style="width:95vw; max-width: 600px;">
+    <div class="naowee-modal__header">
+      <div class="naowee-modal__title-group">
+        <h2 class="naowee-modal__title" id="usuarioModalTitle">Invitar usuario</h2>
+        <p class="naowee-modal__subtitle" id="usuarioModalSubtitle">Se enviará una invitación al correo institucional para confirmar el acceso.</p>
+      </div>
+      <button type="button" class="naowee-modal__dismiss" id="modalDismiss" aria-label="Cerrar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="naowee-modal__body">
+      <div class="form-grid">
+        <!-- Nombre -->
+        <div class="form-grid__field--full">
+          <div class="naowee-textfield">
+            <label class="naowee-textfield__label naowee-textfield__label--required" for="invNombre">Nombre completo</label>
+            <div class="naowee-textfield__input-wrap">
+              <input type="text" class="naowee-textfield__input" id="invNombre" placeholder="Ej. Laura Méndez Ruiz" autocomplete="off"/>
+            </div>
+          </div>
+        </div>
+        <!-- Correo -->
+        <div class="form-grid__field--full">
+          <div class="naowee-textfield">
+            <label class="naowee-textfield__label naowee-textfield__label--required" for="invCorreo">Correo institucional</label>
+            <div class="naowee-textfield__input-wrap">
+              <input type="email" class="naowee-textfield__input" id="invCorreo" placeholder="nombre@mindeporte.gov.co" autocomplete="off"/>
+            </div>
+          </div>
+        </div>
+        <!-- Rol -->
+        <div class="form-grid__field--full">
+          <label class="naowee-textfield__label naowee-textfield__label--required" style="display:block;margin-bottom:6px;">Rol</label>
+          <div class="naowee-dropdown" id="ddInvRol" data-mod="1">
+            <button type="button" class="naowee-dropdown__trigger" id="ddInvRolTrigger">
+              <span class="naowee-dropdown__value" id="ddInvRolValue">Seleccionar rol…</span>
+              <span class="naowee-dropdown__chevron">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </span>
+            </button>
+            <div class="naowee-dropdown__menu" id="ddInvRolMenu" role="listbox">
+              <div class="naowee-dropdown__option" role="option" data-val="ADMIN">Administrador de eventos</div>
+              <div class="naowee-dropdown__option" role="option" data-val="GESTOR">Gestor de eventos</div>
+              <div class="naowee-dropdown__option" role="option" data-val="USER">Usuario del módulo</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="naowee-modal__footer">
+      <button type="button" class="naowee-btn naowee-btn--link" id="modalCancel">Cancelar</button>
+      <button type="button" class="naowee-btn naowee-btn--loud" id="modalSubmit" disabled>Invitar usuario</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     Modal: Confirmar desactivar / activar
+     ════════════════════════════════════════════════════════════════ -->
+<div class="naowee-modal-overlay" id="modalToggleStatus" role="dialog" aria-modal="true" aria-labelledby="toggleStatusTitle">
+  <div class="naowee-modal" style="width:95vw; max-width: 440px;">
+    <div class="naowee-modal__header">
+      <div class="naowee-modal__title-group">
+        <h2 class="naowee-modal__title" id="toggleStatusTitle">Desactivar acceso</h2>
+        <p class="naowee-modal__subtitle" id="toggleStatusSub">—</p>
+      </div>
+      <button type="button" class="naowee-modal__dismiss" id="toggleDismiss" aria-label="Cerrar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="naowee-modal__body">
+      <p id="toggleStatusBody" style="font-size:14px;color:var(--text-secondary);margin:0;line-height:1.55;"></p>
+    </div>
+    <div class="naowee-modal__footer">
+      <button type="button" class="naowee-btn naowee-btn--link" id="toggleCancel">Cancelar</button>
+      <button type="button" class="naowee-btn naowee-btn--loud" id="toggleSubmit">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import {
+    mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher,
+    getRoleFromQuery, ROLES
+  } from './shared/sidebar.js?v=0.3.0';
+  import { getUsers, addUser, updateUser, toggleUserStatus } from './shared/users-data.js?v=1.0.0';
+
+  /* ─── Guard de rol: solo ADMIN puede acceder ─── */
+  const roleCode = getRoleFromQuery();
+  if (roleCode !== 'ADMIN') {
+    /* Redirigir a home del rol correspondiente */
+    const home = roleCode === 'GESTOR' ? 'eventos.html' : 'dashboard.html';
+    window.location.replace(home + '?role=' + roleCode);
+  }
+
+  /* ─── Shell ─── */
+  mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: 'usuarios' });
+  mountHeader({ headerEl: document.getElementById('topHeader'), role: ROLES[roleCode] || ROLES.ADMIN });
+  mountBackdrop();
+  mountDemoSwitcher({ roleCode });
+
+  /* ─── Estado de la página ─── */
+  var state = {
+    filtros: { q: '', rol: '', estado: '' },
+    modalMode: 'create',   /* 'create' | 'edit' */
+    editingId: null,
+    pendingToggleId: null,
+    invRol: ''
+  };
+
+  /* ─── Labels/maps ─── */
+  var ROL_LABELS = { ADMIN: 'Administrador de eventos', GESTOR: 'Gestor de eventos', USER: 'Usuario del módulo' };
+  var ESTADO_LABELS = { activo: 'Activo', inactivo: 'Inactivo', pendiente: 'Pendiente' };
+  var ESTADO_VARIANT = { activo: 'positive', inactivo: 'neutral', pendiente: 'caution' };
+
+  /* ─── Render ─── */
+  function render() {
+    document.getElementById('usuariosPage').innerHTML = buildPage();
+    wireEvents();
+  }
+
+  function buildPage() {
+    var users = getUsers();
+    var stats = computeStats(users);
+    var filtered = applyFilters(users);
+    return (
+      '<div class="page-head">' +
+        '<div class="page-head__title">' +
+          '<h2>Gestión de usuarios</h2>' +
+          '<p>Administra quiénes tienen acceso al módulo Eventos: invita nuevos usuarios, asigna roles y gestiona el estado de acceso.</p>' +
+        '</div>' +
+        '<div class="page-head__actions">' +
+          '<button type="button" class="naowee-btn naowee-btn--loud" id="btnInvitar">' +
+            svgPlus() + ' Invitar usuario' +
+          '</button>' +
+        '</div>' +
+      '</div>' +
+      buildStatGrid(stats) +
+      '<section class="naowee-table-card">' +
+        buildToolbar() +
+        buildTable(filtered) +
+      '</section>'
+    );
+  }
+
+  function computeStats(users) {
+    return {
+      total:      users.length,
+      activos:    users.filter(function (u) { return u.estado === 'activo'; }).length,
+      pendientes: users.filter(function (u) { return u.estado === 'pendiente'; }).length
+    };
+  }
+
+  function buildStatGrid(s) {
+    return '<section class="stat-grid">' +
+      statCard('Total usuarios',    s.total,      'Registrados en el módulo', 'accent') +
+      statCard('Activos',           s.activos,    'Con acceso habilitado',    'info') +
+      statCard('Por confirmar',     s.pendientes, 'Invitación pendiente',     'caution') +
+    '</section>';
+  }
+
+  function statCard(label, value, hint, variant) {
+    return '<div class="stat-card">' +
+      '<span class="stat-card__value stat-card__value--' + variant + '">' + value + '</span>' +
+      '<span class="stat-card__label">' + escHtml(label) + '</span>' +
+      '<span class="stat-card__hint">' + escHtml(hint) + '</span>' +
+    '</div>';
+  }
+
+  function buildToolbar() {
+    var hasQ = !!state.filtros.q;
+    var hasFilters = state.filtros.rol || state.filtros.estado;
+
+    return '<div class="usuarios-toolbar">' +
+      '<div class="usuarios-toolbar__search">' +
+        '<div class="naowee-searchbox naowee-searchbox--medium' + (hasQ ? ' naowee-searchbox--has-value' : '') + '" id="searchboxWrap">' +
+          '<div class="naowee-searchbox__input-wrap">' +
+            '<div class="naowee-searchbox__icon">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+            '</div>' +
+            '<input type="text" class="naowee-searchbox__input" placeholder="Buscar por nombre o correo" id="usuariosSearch" value="' + escHtml(state.filtros.q) + '"/>' +
+            '<button type="button" class="naowee-searchbox__clear" id="searchClear" aria-label="Limpiar búsqueda"' + (hasQ ? '' : ' style="display:none;"') + '>' +
+              '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+            '</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="usuarios-toolbar__filters">' +
+        buildFilterDropdown('filtro-rol', 'Rol', [
+          { value: 'ADMIN', label: 'Administrador' },
+          { value: 'GESTOR', label: 'Gestor' },
+          { value: 'USER', label: 'Usuario' }
+        ], state.filtros.rol) +
+        buildFilterDropdown('filtro-estado', 'Estado', [
+          { value: 'activo', label: 'Activo' },
+          { value: 'pendiente', label: 'Pendiente' },
+          { value: 'inactivo', label: 'Inactivo' }
+        ], state.filtros.estado) +
+      '</div>' +
+      (hasFilters
+        ? '<button type="button" class="naowee-btn naowee-btn--link naowee-btn--sm btn-clear-filtros" id="btnClearFiltros">Limpiar filtros</button>'
+        : '') +
+    '</div>';
+  }
+
+  function buildFilterDropdown(id, placeholder, options, current) {
+    var label = current
+      ? options.find(function (o) { return o.value === current; })?.label || placeholder
+      : placeholder;
+    return '<div class="naowee-dropdown" id="' + id + '" data-mod="1">' +
+      '<button type="button" class="naowee-dropdown__trigger" id="' + id + 'Trigger"' + (current ? ' style="border-color:var(--accent);color:var(--accent);"' : '') + '>' +
+        '<span class="naowee-dropdown__value">' + escHtml(label) + '</span>' +
+        '<span class="naowee-dropdown__chevron">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
+        '</span>' +
+      '</button>' +
+      '<div class="naowee-dropdown__menu" id="' + id + 'Menu" role="listbox">' +
+        '<div class="naowee-dropdown__option' + (!current ? ' naowee-dropdown__option--selected' : '') + '" role="option" data-val="">Todos</div>' +
+        options.map(function (o) {
+          return '<div class="naowee-dropdown__option' + (o.value === current ? ' naowee-dropdown__option--selected' : '') + '" role="option" data-val="' + escHtml(o.value) + '">' + escHtml(o.label) + '</div>';
+        }).join('') +
+      '</div>' +
+    '</div>';
+  }
+
+  function buildTable(users) {
+    if (users.length === 0) {
+      return '<div class="naowee-empty-state" style="padding:48px 24px;text-align:center;">' +
+        '<div class="naowee-empty-state__icon" style="margin-bottom:14px;">' +
+          '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" opacity=".5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' +
+        '</div>' +
+        '<p style="font-size:14px;font-weight:600;color:var(--text-primary);margin:0 0 6px;">Sin resultados</p>' +
+        '<p style="font-size:13px;color:var(--text-secondary);margin:0;">Ningún usuario coincide con los filtros. Ajusta la búsqueda o invita un nuevo usuario.</p>' +
+      '</div>';
+    }
+    return '<div style="overflow-x:auto;">' +
+      '<table class="naowee-table">' +
+        '<thead><tr>' +
+          '<th>Usuario</th>' +
+          '<th>Rol</th>' +
+          '<th>Correo institucional</th>' +
+          '<th>Estado</th>' +
+          '<th>Último acceso</th>' +
+          '<th style="text-align:center;">Acciones</th>' +
+        '</tr></thead>' +
+        '<tbody>' +
+          users.map(buildRow).join('') +
+        '</tbody>' +
+      '</table>' +
+    '</div>';
+  }
+
+  function buildRow(u) {
+    var accesoHtml = u.ultimoAcceso
+      ? '<span class="row-acceso">' + escHtml(formatDate(u.ultimoAcceso)) + '</span>'
+      : '<span class="row-acceso row-acceso--never">Sin acceso aún</span>';
+
+    return '<tr>' +
+      '<td data-label="Usuario">' + buildPersonaCell(u) + '</td>' +
+      '<td data-label="Rol"><span class="row-rol-label">' + escHtml(ROL_LABELS[u.rol] || u.rol) + '</span></td>' +
+      '<td data-label="Correo"><span style="font-size:12.5px;color:var(--text-secondary);font-family:\'Inter\',sans-serif;">' + escHtml(u.correo) + '</span></td>' +
+      '<td data-label="Estado">' + buildEstadoBadge(u.estado) + '</td>' +
+      '<td data-label="Acceso">' + accesoHtml + '</td>' +
+      '<td data-label="" style="text-align:center;">' + buildRowActions(u) + '</td>' +
+    '</tr>';
+  }
+
+  function buildPersonaCell(u) {
+    var cls = u.estado === 'pendiente' ? 'persona-avatar--pendiente' : avatarPaletteClass(u.id);
+    return '<div class="persona-cell">' +
+      '<div class="persona-avatar ' + cls + '">' + escHtml(u.avatar || getInitials(u.nombre)) + '</div>' +
+      '<div class="persona-cell__body">' +
+        '<span class="persona-cell__name">' + escHtml(u.nombre) + '</span>' +
+        '<span class="persona-cell__email">' + escHtml(u.correo) + '</span>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function buildEstadoBadge(estado) {
+    var v = ESTADO_VARIANT[estado] || 'neutral';
+    var l = ESTADO_LABELS[estado] || estado;
+    return '<span class="naowee-badge naowee-badge--' + v + ' naowee-badge--quiet naowee-badge--small">' + escHtml(l) + '</span>';
+  }
+
+  function buildRowActions(u) {
+    var btns = [];
+    /* Editar (siempre disponible) */
+    btns.push(
+      '<span class="naowee-tooltip">' +
+        '<button type="button" class="naowee-btn naowee-btn--mute naowee-btn--icon naowee-btn--small" data-action="editar" data-id="' + escHtml(u.id) + '" aria-label="Editar usuario">' +
+          '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+        '</button>' +
+        '<span class="naowee-tooltip__content">Editar</span>' +
+      '</span>'
+    );
+    /* Activar / Desactivar */
+    if (u.estado === 'activo') {
+      btns.push(
+        '<span class="naowee-tooltip">' +
+          '<button type="button" class="naowee-btn naowee-btn--mute naowee-btn--icon naowee-btn--small" data-action="desactivar" data-id="' + escHtml(u.id) + '" aria-label="Desactivar acceso">' +
+            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>' +
+          '</button>' +
+          '<span class="naowee-tooltip__content">Desactivar</span>' +
+        '</span>'
+      );
+    } else if (u.estado === 'inactivo') {
+      btns.push(
+        '<span class="naowee-tooltip">' +
+          '<button type="button" class="naowee-btn naowee-btn--mute naowee-btn--icon naowee-btn--small" data-action="activar" data-id="' + escHtml(u.id) + '" aria-label="Activar acceso">' +
+            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>' +
+          '</button>' +
+          '<span class="naowee-tooltip__content">Activar</span>' +
+        '</span>'
+      );
+    }
+    return '<div class="row-actions">' + btns.join('') + '</div>';
+  }
+
+  /* ─── Filtros ─── */
+  function applyFilters(users) {
+    var f = state.filtros;
+    return users.filter(function (u) {
+      if (f.rol    && u.rol    !== f.rol)    return false;
+      if (f.estado && u.estado !== f.estado) return false;
+      if (f.q) {
+        var q = f.q.toLowerCase();
+        if (
+          !u.nombre.toLowerCase().includes(q) &&
+          !u.correo.toLowerCase().includes(q)
+        ) return false;
+      }
+      return true;
+    });
+  }
+
+  /* ─── Wire events ─── */
+  function wireEvents() {
+    /* Invitar CTA */
+    document.getElementById('btnInvitar')?.addEventListener('click', openInvitar);
+
+    /* Search */
+    var searchEl = document.getElementById('usuariosSearch');
+    var clearEl  = document.getElementById('searchClear');
+    var wrapEl   = document.getElementById('searchboxWrap');
+    if (searchEl) {
+      searchEl.addEventListener('input', function () {
+        state.filtros.q = searchEl.value;
+        if (clearEl) clearEl.style.display = searchEl.value ? '' : 'none';
+        if (wrapEl) wrapEl.classList.toggle('naowee-searchbox--has-value', !!searchEl.value);
+        render();
+      });
+    }
+    if (clearEl) {
+      clearEl.addEventListener('click', function () {
+        state.filtros.q = '';
+        render();
+      });
+    }
+
+    /* Limpiar filtros */
+    document.getElementById('btnClearFiltros')?.addEventListener('click', function () {
+      state.filtros = { q: '', rol: '', estado: '' };
+      render();
+    });
+
+    /* Filter dropdowns */
+    wireFilterDropdown('filtro-rol',    function (v) { state.filtros.rol    = v; });
+    wireFilterDropdown('filtro-estado', function (v) { state.filtros.estado = v; });
+
+    /* Row actions */
+    document.querySelectorAll('[data-action]').forEach(function (btn) {
+      if (btn.__bound) return;
+      btn.__bound = true;
+      btn.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        var action = btn.getAttribute('data-action');
+        var id     = btn.getAttribute('data-id');
+        if (action === 'editar')     openEditar(id);
+        if (action === 'desactivar') openToggleStatus(id, false);
+        if (action === 'activar')    openToggleStatus(id, true);
+      });
+    });
+  }
+
+  function wireFilterDropdown(id, onChange) {
+    var trigger = document.getElementById(id + 'Trigger');
+    var menu    = document.getElementById(id + 'Menu');
+    if (!trigger || !menu) return;
+
+    trigger.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var dd = document.getElementById(id);
+      var isOpen = dd.classList.contains('naowee-dropdown--open');
+      document.querySelectorAll('.naowee-dropdown--open').forEach(function (d) { d.classList.remove('naowee-dropdown--open'); });
+      if (!isOpen) dd.classList.add('naowee-dropdown--open');
+    });
+
+    menu.querySelectorAll('.naowee-dropdown__option').forEach(function (opt) {
+      opt.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var val = opt.getAttribute('data-val');
+        onChange(val);
+        document.getElementById(id).classList.remove('naowee-dropdown--open');
+        render();
+      });
+    });
+
+    document.addEventListener('click', function () {
+      document.getElementById(id)?.classList.remove('naowee-dropdown--open');
+    }, { once: false, capture: false });
+  }
+
+  /* ─── Modal: Invitar / Editar ─── */
+  function openInvitar() {
+    state.modalMode  = 'create';
+    state.editingId  = null;
+    state.invRol     = '';
+
+    document.getElementById('usuarioModalTitle').textContent    = 'Invitar usuario';
+    document.getElementById('usuarioModalSubtitle').textContent = 'Se enviará una invitación al correo institucional para confirmar el acceso.';
+    document.getElementById('modalSubmit').textContent = 'Invitar usuario';
+    document.getElementById('modalSubmit').disabled = true;
+    document.getElementById('invNombre').value = '';
+    document.getElementById('invCorreo').value = '';
+    resetModalDropdown();
+    document.getElementById('modalUsuario').classList.add('open');
+    setTimeout(function () { document.getElementById('invNombre').focus(); }, 60);
+    wireModalDropdown();
+    wireModalValidation();
+  }
+
+  function openEditar(id) {
+    var users = getUsers();
+    var u = users.find(function (x) { return x.id === id; });
+    if (!u) return;
+
+    state.modalMode  = 'edit';
+    state.editingId  = id;
+    state.invRol     = u.rol;
+
+    document.getElementById('usuarioModalTitle').textContent    = 'Editar usuario';
+    document.getElementById('usuarioModalSubtitle').textContent = 'Actualiza nombre, correo o rol. Los cambios se aplican inmediatamente.';
+    document.getElementById('modalSubmit').textContent = 'Guardar cambios';
+    document.getElementById('invNombre').value = u.nombre;
+    document.getElementById('invCorreo').value = u.correo;
+    setModalDropdownValue(u.rol, ROL_LABELS[u.rol] || u.rol);
+    document.getElementById('modalSubmit').disabled = false;
+    document.getElementById('modalUsuario').classList.add('open');
+    setTimeout(function () { document.getElementById('invNombre').focus(); }, 60);
+    wireModalDropdown();
+    wireModalValidation();
+  }
+
+  function resetModalDropdown() {
+    var val  = document.getElementById('ddInvRolValue');
+    var menu = document.getElementById('ddInvRolMenu');
+    if (val)  val.textContent = 'Seleccionar rol…';
+    if (menu) {
+      menu.querySelectorAll('.naowee-dropdown__option').forEach(function (o) {
+        o.classList.remove('naowee-dropdown__option--selected');
+      });
+    }
+  }
+
+  function setModalDropdownValue(val, label) {
+    var valEl = document.getElementById('ddInvRolValue');
+    if (valEl) valEl.textContent = label;
+    document.getElementById('ddInvRolMenu')?.querySelectorAll('.naowee-dropdown__option').forEach(function (o) {
+      o.classList.toggle('naowee-dropdown__option--selected', o.getAttribute('data-val') === val);
+    });
+  }
+
+  function wireModalDropdown() {
+    var trigger = document.getElementById('ddInvRolTrigger');
+    var menu    = document.getElementById('ddInvRolMenu');
+    var dd      = document.getElementById('ddInvRol');
+    if (!trigger || !menu || trigger.__modalBound) return;
+    trigger.__modalBound = true;
+
+    trigger.addEventListener('click', function (e) {
+      e.stopPropagation();
+      dd.classList.toggle('naowee-dropdown--open');
+    });
+
+    menu.querySelectorAll('.naowee-dropdown__option').forEach(function (opt) {
+      if (opt.__modalBound) return;
+      opt.__modalBound = true;
+      opt.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var v = opt.getAttribute('data-val');
+        var l = opt.textContent.trim();
+        state.invRol = v;
+        setModalDropdownValue(v, l);
+        dd.classList.remove('naowee-dropdown--open');
+        validateModalForm();
+      });
+    });
+  }
+
+  function wireModalValidation() {
+    var btn = document.getElementById('modalSubmit');
+    ['invNombre', 'invCorreo'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el || el.__validBound) return;
+      el.__validBound = true;
+      el.addEventListener('input', validateModalForm);
+    });
+    function validateModalForm() {
+      var nombre = document.getElementById('invNombre').value.trim();
+      var correo = document.getElementById('invCorreo').value.trim();
+      var hasRol = !!state.invRol;
+      btn.disabled = !(nombre && correo && hasRol);
+    }
+    validateModalForm();
+  }
+
+  function validateModalForm() {
+    var nombre = document.getElementById('invNombre')?.value.trim() || '';
+    var correo = document.getElementById('invCorreo')?.value.trim() || '';
+    var btn    = document.getElementById('modalSubmit');
+    if (btn) btn.disabled = !(nombre && correo && state.invRol);
+  }
+
+  function closeModal() {
+    document.getElementById('modalUsuario').classList.remove('open');
+    state.invRol = '';
+    /* Reset __bound flags for modal dropdown on reuse */
+    var trigger = document.getElementById('ddInvRolTrigger');
+    var menu    = document.getElementById('ddInvRolMenu');
+    if (trigger) trigger.__modalBound = false;
+    if (menu) menu.querySelectorAll('.naowee-dropdown__option').forEach(function (o) { o.__modalBound = false; });
+  }
+
+  /* ─── Modal: Toggle estado ─── */
+  function openToggleStatus(id, activate) {
+    var users = getUsers();
+    var u = users.find(function (x) { return x.id === id; });
+    if (!u) return;
+    state.pendingToggleId = id;
+    var action = activate ? 'Activar' : 'Desactivar';
+    document.getElementById('toggleStatusTitle').textContent = action + ' acceso';
+    document.getElementById('toggleStatusSub').textContent  = u.nombre + ' · ' + (ROL_LABELS[u.rol] || u.rol);
+    document.getElementById('toggleStatusBody').textContent = activate
+      ? 'El usuario ' + u.nombre + ' recuperará el acceso al módulo Eventos.'
+      : 'El usuario ' + u.nombre + ' perderá el acceso al módulo Eventos. Podrás reactivarlo en cualquier momento.';
+    document.getElementById('toggleSubmit').textContent = action;
+    document.getElementById('modalToggleStatus').classList.add('open');
+  }
+
+  function closeToggleStatus() {
+    document.getElementById('modalToggleStatus').classList.remove('open');
+    state.pendingToggleId = null;
+  }
+
+  /* ─── Modal wiring (fuera del render loop — una sola vez) ─── */
+  (function wireModals() {
+    /* Modal usuario */
+    document.getElementById('modalDismiss').addEventListener('click', closeModal);
+    document.getElementById('modalCancel').addEventListener('click', closeModal);
+    document.getElementById('modalUsuario').addEventListener('click', function (ev) {
+      if (ev.target === this) closeModal();
+    });
+
+    document.getElementById('modalSubmit').addEventListener('click', function () {
+      var nombre = document.getElementById('invNombre').value.trim();
+      var correo = document.getElementById('invCorreo').value.trim();
+      var rol    = state.invRol;
+      if (!nombre || !correo || !rol) return;
+
+      /* Verificar correo duplicado */
+      var existing = getUsers().find(function (u) {
+        return u.correo.toLowerCase() === correo.toLowerCase();
+      });
+      if (existing && existing.id !== state.editingId) {
+        showToast('Este correo ya está registrado para ' + existing.nombre + '. No se ' + (state.modalMode === 'edit' ? 'guardó el cambio' : 'envió la invitación') + '.', 'error');
+        return;
+      }
+
+      if (state.modalMode === 'edit' && state.editingId) {
+        updateUser(state.editingId, { nombre: nombre, correo: correo, rol: rol });
+        closeModal();
+        render();
+        showToast('Cambios guardados para ' + nombre + '.', 'success');
+      } else {
+        addUser({ nombre: nombre, correo: correo, rol: rol });
+        closeModal();
+        render();
+        showToast('Invitación enviada a ' + correo + ' · Estado: Pendiente.', 'success');
+      }
+    });
+
+    /* Modal toggle estado */
+    document.getElementById('toggleDismiss').addEventListener('click', closeToggleStatus);
+    document.getElementById('toggleCancel').addEventListener('click', closeToggleStatus);
+    document.getElementById('modalToggleStatus').addEventListener('click', function (ev) {
+      if (ev.target === this) closeToggleStatus();
+    });
+
+    document.getElementById('toggleSubmit').addEventListener('click', function () {
+      if (!state.pendingToggleId) return;
+      var u = toggleUserStatus(state.pendingToggleId);
+      closeToggleStatus();
+      render();
+      if (u) {
+        var label = u.estado === 'activo' ? 'Acceso activado' : 'Acceso desactivado';
+        showToast(label + ' para ' + u.nombre + '.', 'success');
+      }
+    });
+
+    /* ESC global */
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key !== 'Escape') return;
+      if (document.getElementById('modalUsuario').classList.contains('open'))      closeModal();
+      if (document.getElementById('modalToggleStatus').classList.contains('open')) closeToggleStatus();
+    });
+  })();
+
+  /* ─── Toast canónico ─── */
+  var _toastTimer = null;
+  function showToast(msg, variant) {
+    var toast = document.getElementById('evToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'evToast';
+      toast.setAttribute('role', 'status');
+      document.body.appendChild(toast);
+    }
+    toast.textContent = msg;
+    /* Variante success: fondo verde oscuro */
+    if (variant === 'success') toast.style.background = 'var(--green, #1f8923)';
+    else if (variant === 'error') toast.style.background = 'var(--red, #c0392b)';
+    else toast.style.background = '';
+    toast.classList.add('is-visible');
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(function () { toast.classList.remove('is-visible'); }, 2800);
+  }
+
+  /* ─── Utils ─── */
+  function escHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+    });
+  }
+
+  function getInitials(nombre) {
+    return (nombre || '?').split(/\s+/).filter(Boolean).slice(0, 2)
+      .map(function (w) { return w.charAt(0).toUpperCase(); }).join('');
+  }
+
+  function avatarPaletteClass(id) {
+    if (!id) return 'persona-avatar--p1';
+    var hash = 0;
+    for (var i = 0; i < id.length; i++) hash = ((hash << 5) - hash) + id.charCodeAt(i);
+    return 'persona-avatar--p' + (Math.abs(hash) % 8 + 1);
+  }
+
+  function formatDate(iso) {
+    if (!iso) return '—';
+    var d = new Date(iso);
+    if (isNaN(d)) return iso;
+    var now = new Date();
+    var diff = Math.floor((now - d) / 86400000);
+    if (diff === 0) return 'Hoy, ' + d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    if (diff === 1) return 'Ayer';
+    if (diff < 7)  return 'Hace ' + diff + ' días';
+    return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  function svgPlus() {
+    return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+  }
+
+  /* ─── Iniciar ─── */
+  render();
+</script>
+</body>
+</html>

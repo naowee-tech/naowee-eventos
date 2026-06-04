@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Naowee Eventos — Perfil del deportista</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="shared/tokens.css?v=0.3.0">
+<link rel="stylesheet" href="shared/shell.css?v=0.3.0">
+<link rel="stylesheet" href="shared/list-components.css?v=0.3.0">
+<link rel="stylesheet" href="shared/forms.css?v=0.3.0">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.3.0">
+<script src="shared/naowee-footer.js?v=0.3.0" defer></script>
+
+<style>
+  /* ═══════════════════════════════════════════════════════════════
+     PERFIL DEL DEPORTISTA — Solo lectura. Todos los roles.
+     v1.0.0
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* ── Page head ── */
+  .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
+  .page-head__title h2 { font-size: 24px; font-weight: 800; letter-spacing: -.4px; color: var(--text-primary); margin: 0 0 5px; }
+  .page-head__title p { font-size: 13px; color: var(--text-secondary); margin: 0; }
+
+  /* ── Searchbox wrapper ── */
+  .search-wrap {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-xl); padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+  .search-wrap__label { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; }
+  .search-wrap__row { display: flex; align-items: center; gap: 12px; }
+
+  /* Resultados del search dropdown */
+  .search-results {
+    position: relative; margin-top: 6px;
+  }
+  .search-results__list {
+    position: absolute; top: 4px; left: 0; right: 0; z-index: 200;
+    background: var(--surface); border: 1px solid var(--border-dark);
+    border-radius: var(--radius-lg); box-shadow: var(--shadow-md);
+    overflow: hidden; display: none;
+  }
+  .search-results__list.is-open { display: block; }
+  .search-result-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 16px; cursor: pointer;
+    transition: background var(--duration-fast);
+  }
+  .search-result-item:hover { background: var(--bg-soft); }
+  .search-result-item__avatar {
+    width: 36px; height: 36px; border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px; flex-shrink: 0;
+    background: color-mix(in srgb, var(--accent) 14%, #fff);
+    color: var(--accent);
+  }
+  .search-result-item__name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .search-result-item__meta { font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
+  .search-result-item__sport {
+    margin-left: auto; font-size: 11px; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: .4px;
+  }
+
+  /* ── Empty state (sin selección) ── */
+  .empty-state {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-xl); padding: 56px 24px;
+    text-align: center; animation: fadeInUp .4s var(--easing-smoothout) both;
+  }
+  .empty-state__icon {
+    width: 56px; height: 56px; margin: 0 auto 16px;
+    background: var(--bg-soft); border-radius: var(--radius-full);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted);
+  }
+  .empty-state__icon svg { width: 28px; height: 28px; }
+  .empty-state__title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0 0 8px; }
+  .empty-state__desc { font-size: 13px; color: var(--text-secondary); margin: 0; max-width: 360px; margin: 0 auto; }
+
+  /* ── Perfil header card ── */
+  .perfil-header {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-xl); padding: 24px 28px;
+    margin-bottom: 16px; animation: fadeInUp .35s var(--easing-smoothout) both;
+    display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap;
+  }
+  .perfil-avatar {
+    width: 64px; height: 64px; border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 22px; flex-shrink: 0;
+    background: color-mix(in srgb, var(--accent) 14%, #fff);
+    color: var(--accent);
+  }
+  .perfil-header__info { flex: 1; min-width: 200px; }
+  .perfil-header__name { font-size: 22px; font-weight: 800; letter-spacing: -.3px; color: var(--text-primary); margin: 0 0 4px; }
+  .perfil-header__doc { font-size: 13px; color: var(--text-secondary); margin: 0 0 10px; }
+  .perfil-header__badges { display: flex; flex-wrap: wrap; gap: 8px; }
+  .perfil-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: var(--radius-full);
+    font-size: 11px; font-weight: 700; letter-spacing: .3px;
+    border: 1.5px solid; background: transparent;
+  }
+  .perfil-badge--deporte { border-color: var(--border-dark); color: var(--text-secondary); }
+  .perfil-badge--club {
+    border-color: color-mix(in srgb, var(--blue-info) 35%, transparent);
+    color: var(--blue-info);
+    background: color-mix(in srgb, var(--blue-info) 8%, transparent);
+  }
+  .perfil-badge--liga {
+    border-color: color-mix(in srgb, var(--green) 35%, transparent);
+    color: var(--green);
+    background: color-mix(in srgb, var(--green) 8%, transparent);
+  }
+  .perfil-badge--federacion {
+    border-color: color-mix(in srgb, var(--naranja) 35%, transparent);
+    color: var(--naranja);
+    background: color-mix(in srgb, var(--naranja) 8%, transparent);
+  }
+
+  /* Stats de resumen */
+  .perfil-stats {
+    display: flex; gap: 12px; flex-wrap: wrap; margin-left: auto;
+    align-items: center;
+  }
+  .perfil-stat {
+    text-align: center; padding: 10px 16px;
+    background: var(--bg-soft); border-radius: var(--radius-lg);
+    min-width: 68px;
+  }
+  .perfil-stat__val { font-size: 22px; font-weight: 800; color: var(--text-primary); line-height: 1; }
+  .perfil-stat__lbl { font-size: 11px; color: var(--text-muted); margin-top: 3px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+
+  /* Medallería summary */
+  .medal-summary {
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  }
+  .medal-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 11px; border-radius: var(--radius-full);
+    font-size: 13px; font-weight: 700;
+  }
+  .medal-chip--oro { background: #fef9c3; color: #92400e; }
+  .medal-chip--plata { background: #f1f5f9; color: #475569; }
+  .medal-chip--bronce { background: #fff7ed; color: #9a3412; }
+  .medal-chip__ico { font-size: 15px; }
+
+  /* ── Filtros ── */
+  .filtros-bar {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .filtros-bar__label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; flex-shrink: 0; }
+  .naowee-select {
+    height: 38px; padding: 0 10px; border: 1px solid var(--border-dark);
+    border-radius: var(--radius-md); font-family: inherit; font-size: 13px;
+    color: var(--text-primary); background: var(--surface); cursor: pointer;
+    outline: none; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23646587' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 8px center; background-size: 16px;
+    padding-right: 30px;
+    transition: border-color var(--duration-fast);
+  }
+  .naowee-select:focus { border-color: var(--accent); border-width: 2px; }
+
+  /* ── Secciones de historial ── */
+  .historial-section {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-xl); margin-bottom: 16px;
+    animation: fadeInUp .4s var(--easing-smoothout) both;
+    overflow: hidden;
+  }
+  .historial-section + .historial-section { animation-delay: .06s; }
+  .historial-section:last-child { animation-delay: .12s; }
+  .hsec-header {
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .hsec-header__icon {
+    width: 34px; height: 34px; border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .hsec-header__icon svg { width: 18px; height: 18px; }
+  .hsec-header__icon--inscripciones { background: var(--blue-bg); color: var(--blue-info); }
+  .hsec-header__icon--resultados { background: var(--orange-bg); color: var(--naranja); }
+  .hsec-header__icon--medalleria { background: #fef9c3; color: #92400e; }
+  .hsec-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0; }
+  .hsec-count { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--text-muted); }
+
+  /* Tabla interna */
+  .hsec-table-wrap { overflow-x: auto; }
+  .hsec-table {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+  }
+  .hsec-table thead th {
+    text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .4px;
+    text-transform: uppercase; color: var(--text-muted);
+    padding: 10px 16px 8px; background: var(--bg-soft);
+    border-bottom: 1px solid var(--border);
+  }
+  .hsec-table tbody td {
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .hsec-table tbody tr:last-child td { border-bottom: none; }
+  .hsec-table tbody tr:hover td { background: var(--bg-soft); }
+
+  /* Badges inline */
+  .badge-estado {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: var(--radius-full);
+    font-size: 11px; font-weight: 700; letter-spacing: .2px;
+    border: 1.5px solid;
+  }
+  .badge-estado--activo { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
+  .badge-estado--finalizado { background: var(--blue-bg); color: var(--blue-info); border-color: color-mix(in srgb, var(--blue-info) 30%, transparent); }
+  .badge-estado--inscrito { background: var(--orange-bg); color: #b45309; border-color: var(--orange-border); }
+
+  .medal-ico { font-size: 16px; }
+  .rank-val { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+  .rank-sub { font-size: 11px; color: var(--text-muted); }
+
+  /* Empty row */
+  .hsec-empty {
+    padding: 32px 16px; text-align: center;
+    font-size: 13px; color: var(--text-muted); font-style: italic;
+  }
+
+  /* ── Focus-visible canónico (custom de la página) ── */
+  /* Search results items */
+  .search-result-item:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(215,64,9,.18);
+  }
+  /* Filtros select */
+  .naowee-select:focus-visible {
+    outline: none;
+    border-color: var(--accent);
+    border-width: 2px;
+    box-shadow: 0 0 0 3px rgba(215,64,9,.18);
+  }
+  /* Icon-buttons genéricos en la página */
+  button:focus-visible,
+  [tabindex]:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(215,64,9,.18);
+  }
+
+  /* Mobile stacked */
+  @media (max-width: 700px) {
+    .perfil-header { gap: 14px; }
+    .perfil-stats { margin-left: 0; }
+    .hsec-table thead th:nth-child(4),
+    .hsec-table tbody td:nth-child(4) { display: none; }
+    .search-wrap__row { flex-direction: column; align-items: stretch; }
+  }
+
+  /* ── Responsive ≤640px: tablas → stacked cards ── */
+  @media (max-width: 640px) {
+    .hsec-table thead { display: none; }
+    .hsec-table tbody tr {
+      display: block;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .hsec-table tbody tr:last-child { border-bottom: none; }
+    .hsec-table tbody td {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      padding: 3px 0;
+      border: none;
+      font-size: 13px;
+    }
+    .hsec-table tbody td::before {
+      content: attr(data-label);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      min-width: 80px;
+      flex-shrink: 0;
+    }
+    .hsec-table tbody tr:hover td { background: transparent; }
+  }
+
+  /* ── Responsive ≤600px: header + filtros a ancho completo ── */
+  @media (max-width: 600px) {
+    .page-head { flex-direction: column; gap: 8px; }
+    .page-head__title h2 { font-size: 20px; }
+    .filtros-bar { flex-direction: column; align-items: stretch; gap: 8px; }
+    .filtros-bar__label { margin-bottom: 0; }
+    .naowee-select { width: 100%; }
+    .perfil-header { flex-direction: column; gap: 12px; }
+    .perfil-stats { margin-left: 0; width: 100%; justify-content: flex-start; }
+    .search-wrap { padding: 16px; }
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .perfil-header, .historial-section, .empty-state { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div id="sidebarRoot"></div>
+  <div class="main">
+    <header class="top-header" id="topHeader"></header>
+    <div class="page">
+      <div class="page-inner" id="perfilPage">
+
+        <div class="page-head">
+          <div class="page-head__title">
+            <h2>Perfil del deportista</h2>
+            <p>Historial de inscripciones, resultados y medallería. Solo lectura.</p>
+          </div>
+        </div>
+
+        <!-- Buscador de deportista -->
+        <div class="search-wrap">
+          <div class="search-wrap__label">Buscar deportista</div>
+          <div class="search-wrap__row">
+            <div class="naowee-searchbox naowee-searchbox--medium" id="deportistaSearchbox" style="flex:1;max-width:520px">
+              <div class="naowee-searchbox__input-wrap">
+                <span class="naowee-searchbox__icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </span>
+                <input id="deportistaInput" type="text" class="naowee-searchbox__input"
+                  placeholder="Nombre o número de documento…"
+                  autocomplete="off" spellcheck="false">
+                <button class="naowee-searchbox__clear" id="deportistaClear" type="button" aria-label="Limpiar búsqueda" style="display:none">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="search-results" id="searchResults">
+            <div class="search-results__list" id="searchResultsList" role="listbox"></div>
+          </div>
+        </div>
+
+        <!-- Estado vacío inicial -->
+        <div id="emptyState" class="empty-state">
+          <div class="empty-state__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg>
+          </div>
+          <p class="empty-state__title">Ningún deportista seleccionado</p>
+          <p class="empty-state__desc">Escribe el nombre o documento en el buscador para ver el historial del deportista.</p>
+        </div>
+
+        <!-- Contenido del perfil (se muestra al seleccionar) -->
+        <div id="perfilContent" style="display:none">
+
+          <!-- Filtros -->
+          <div class="filtros-bar" id="filtrosBar">
+            <span class="filtros-bar__label">Filtrar por</span>
+            <select class="naowee-select" id="filtroAno" aria-label="Año">
+              <option value="">Todos los años</option>
+            </select>
+            <select class="naowee-select" id="filtroDeporte" aria-label="Deporte">
+              <option value="">Todos los deportes</option>
+            </select>
+            <select class="naowee-select" id="filtroEvento" aria-label="Evento">
+              <option value="">Todos los eventos</option>
+            </select>
+          </div>
+
+          <!-- Header del deportista -->
+          <div class="perfil-header" id="perfilHeaderCard"></div>
+
+          <!-- Sección: Inscripciones -->
+          <div class="historial-section" id="secInscripciones">
+            <div class="hsec-header">
+              <span class="hsec-header__icon hsec-header__icon--inscripciones">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 0 0 4v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4a2 2 0 0 0 0-4z"/><line x1="12" y1="3" x2="12" y2="21" stroke-dasharray="2 2"/></svg>
+              </span>
+              <h3 class="hsec-title">Inscripciones</h3>
+              <span class="hsec-count" id="countInscripciones">—</span>
+            </div>
+            <div class="hsec-table-wrap">
+              <table class="hsec-table" id="tablaInscripciones">
+                <thead>
+                  <tr>
+                    <th>Evento</th>
+                    <th>Deporte · Prueba</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="bodyInscripciones"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Sección: Resultados -->
+          <div class="historial-section" id="secResultados">
+            <div class="hsec-header">
+              <span class="hsec-header__icon hsec-header__icon--resultados">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="4" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="20" y1="20" x2="20" y2="14"/></svg>
+              </span>
+              <h3 class="hsec-title">Resultados</h3>
+              <span class="hsec-count" id="countResultados">—</span>
+            </div>
+            <div class="hsec-table-wrap">
+              <table class="hsec-table" id="tablaResultados">
+                <thead>
+                  <tr>
+                    <th>Evento</th>
+                    <th>Deporte · Prueba</th>
+                    <th>Ranking</th>
+                    <th>Fecha</th>
+                  </tr>
+                </thead>
+                <tbody id="bodyResultados"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Sección: Medallería -->
+          <div class="historial-section" id="secMedalleria">
+            <div class="hsec-header">
+              <span class="hsec-header__icon hsec-header__icon--medalleria">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="15" r="6"/><path d="M12 12v3l2 1"/><path d="M8.5 9.5L6 3M15.5 9.5L18 3"/></svg>
+              </span>
+              <h3 class="hsec-title">Medallería</h3>
+              <span class="hsec-count" id="countMedalleria">—</span>
+            </div>
+            <div class="hsec-table-wrap">
+              <table class="hsec-table" id="tablaMedalleria">
+                <thead>
+                  <tr>
+                    <th>Evento</th>
+                    <th>Deporte · Prueba</th>
+                    <th>Medalla</th>
+                    <th>Fecha</th>
+                  </tr>
+                </thead>
+                <tbody id="bodyMedalleria"></tbody>
+              </table>
+            </div>
+          </div>
+
+        </div><!-- /perfilContent -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="evToast" role="status"></div>
+
+<script type="module">
+import {
+  mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher,
+  getRoleFromQuery, ROLES
+} from './shared/sidebar.js';
+
+/* ─── Datos mock ─── */
+/* 6 deportistas con historial cruzado con eventos de la demo */
+const DEPORTISTAS = [
+  {
+    id: 'd1', nombre: 'Valentina Ríos', doc: 'CC 1.032.987.456',
+    avatar: 'VR', deporte: '🏊 Natación',
+    club: 'Club Aqua Valle', liga: 'Liga de Natación del Valle', federacion: 'Fedecua',
+    inscripciones: [
+      { evento: 'Copa Nacional de Natación 2025', deporte: 'Natación', prueba: '100m Libre', fecha: '2025-03-14', estado: 'finalizado' },
+      { evento: 'Juegos Regionales Valle 2025', deporte: 'Natación', prueba: '200m Estilo', fecha: '2025-07-10', estado: 'finalizado' },
+      { evento: 'Copa Colombia Deportes Acuáticos 2026', deporte: 'Natación', prueba: '100m Libre', fecha: '2026-02-20', estado: 'activo' }
+    ],
+    resultados: [
+      { evento: 'Copa Nacional de Natación 2025', deporte: 'Natación', prueba: '100m Libre', ranking: 2, fecha: '2025-03-14' },
+      { evento: 'Juegos Regionales Valle 2025', deporte: 'Natación', prueba: '200m Estilo', ranking: 1, fecha: '2025-07-10' }
+    ],
+    medalleria: [
+      { evento: 'Copa Nacional de Natación 2025', deporte: 'Natación', prueba: '100m Libre', medalla: 'Plata', fecha: '2025-03-14' },
+      { evento: 'Juegos Regionales Valle 2025', deporte: 'Natación', prueba: '200m Estilo', medalla: 'Oro', fecha: '2025-07-10' }
+    ]
+  },
+  {
+    id: 'd2', nombre: 'Andrés Mora', doc: 'CC 79.654.231',
+    avatar: 'AM', deporte: '⚽ Fútbol',
+    club: 'Deportivo Cali Amateur', liga: 'Liga de Fútbol del Valle', federacion: 'Difútbol',
+    inscripciones: [
+      { evento: 'Campeonato Departamental de Fútbol 2025', deporte: 'Fútbol', prueba: 'Fútbol 11', fecha: '2025-04-05', estado: 'finalizado' },
+      { evento: 'Festival Deportivo SUID 2026', deporte: 'Fútbol', prueba: 'Fútbol 11', fecha: '2026-05-15', estado: 'activo' }
+    ],
+    resultados: [
+      { evento: 'Campeonato Departamental de Fútbol 2025', deporte: 'Fútbol', prueba: 'Fútbol 11', ranking: 3, fecha: '2025-04-05' }
+    ],
+    medalleria: [
+      { evento: 'Campeonato Departamental de Fútbol 2025', deporte: 'Fútbol', prueba: 'Fútbol 11', medalla: 'Bronce', fecha: '2025-04-05' }
+    ]
+  },
+  {
+    id: 'd3', nombre: 'Sofía Castro', doc: 'CC 1.040.112.882',
+    avatar: 'SC', deporte: '🤸 Atletismo',
+    club: 'Club Atletismo Valle', liga: 'Liga Atletismo Antioquia', federacion: 'Fedeatletas',
+    inscripciones: [
+      { evento: 'Copa Nacional de Atletismo Indoor 2025', deporte: 'Atletismo', prueba: '100m planos', fecha: '2025-08-22', estado: 'finalizado' },
+      { evento: 'Copa Nacional de Atletismo Indoor 2025', deporte: 'Atletismo', prueba: '200m planos', fecha: '2025-08-22', estado: 'finalizado' }
+    ],
+    resultados: [
+      { evento: 'Copa Nacional de Atletismo Indoor 2025', deporte: 'Atletismo', prueba: '100m planos', ranking: 1, fecha: '2025-08-22' },
+      { evento: 'Copa Nacional de Atletismo Indoor 2025', deporte: 'Atletismo', prueba: '200m planos', ranking: 4, fecha: '2025-08-22' }
+    ],
+    medalleria: [
+      { evento: 'Copa Nacional de Atletismo Indoor 2025', deporte: 'Atletismo', prueba: '100m planos', medalla: 'Oro', fecha: '2025-08-22' }
+    ]
+  },
+  {
+    id: 'd4', nombre: 'Carlos Jiménez', doc: 'CC 94.221.003',
+    avatar: 'CJ', deporte: '🏀 Baloncesto',
+    club: 'Club Baloncesto Bogotá', liga: 'Liga de Baloncesto de Cundinamarca', federacion: 'Fecoba',
+    inscripciones: [
+      { evento: 'Copa Colombia Deportes Acuáticos 2026', deporte: 'Baloncesto', prueba: 'Baloncesto 5×5', fecha: '2026-02-20', estado: 'activo' },
+      { evento: 'Festival Deportivo SUID 2026', deporte: 'Baloncesto', prueba: 'Baloncesto 5×5', fecha: '2026-05-15', estado: 'activo' }
+    ],
+    resultados: [],
+    medalleria: []
+  },
+  {
+    id: 'd5', nombre: 'María Gómez', doc: 'CC 52.112.776',
+    avatar: 'MG', deporte: '🥋 Judo',
+    club: 'Dojo Pacífico', liga: 'Liga Colombiana de Judo', federacion: 'Fedjudo',
+    inscripciones: [
+      { evento: 'Juegos Regionales Valle 2025', deporte: 'Judo', prueba: 'Judo −57kg (F)', fecha: '2025-07-10', estado: 'finalizado' }
+    ],
+    resultados: [
+      { evento: 'Juegos Regionales Valle 2025', deporte: 'Judo', prueba: 'Judo −57kg (F)', ranking: 1, fecha: '2025-07-10' }
+    ],
+    medalleria: [
+      { evento: 'Juegos Regionales Valle 2025', deporte: 'Judo', prueba: 'Judo −57kg (F)', medalla: 'Oro', fecha: '2025-07-10' }
+    ]
+  },
+  {
+    id: 'd6', nombre: 'Pedro Suárez', doc: 'CC 79.003.445',
+    avatar: 'PS', deporte: '🏊 Natación',
+    club: 'Club Aqua Valle', liga: 'Liga de Natación del Valle', federacion: 'Fedecua',
+    inscripciones: [
+      { evento: 'Copa Nacional de Natación 2025', deporte: 'Natación', prueba: '50m Libre', fecha: '2025-03-14', estado: 'finalizado' },
+      { evento: 'Copa Colombia Deportes Acuáticos 2026', deporte: 'Natación', prueba: '100m Libre', fecha: '2026-02-20', estado: 'activo' }
+    ],
+    resultados: [
+      { evento: 'Copa Nacional de Natación 2025', deporte: 'Natación', prueba: '50m Libre', ranking: 5, fecha: '2025-03-14' }
+    ],
+    medalleria: []
+  }
+];
+
+/* ─── Shell ─── */
+const roleCode = getRoleFromQuery();
+const { role } = mountSidebar({
+  rootEl: document.getElementById('sidebarRoot'),
+  roleCode,
+  activeId: 'perfil'
+});
+mountHeader({ headerEl: document.getElementById('topHeader'), role });
+mountBackdrop();
+mountDemoSwitcher({ roleCode });
+document.title = `Perfil del deportista — ${role.label}`;
+
+/* ─── Buscador ─── */
+let deportistaActual = null;
+let filtroAnoVal = '', filtroDeporteVal = '', filtroEventoVal = '';
+
+const input = document.getElementById('deportistaInput');
+const clearBtn = document.getElementById('deportistaClear');
+const searchbox = document.getElementById('deportistaSearchbox');
+const resultsList = document.getElementById('searchResultsList');
+
+input.addEventListener('input', () => {
+  const q = input.value.trim().toLowerCase();
+  clearBtn.style.display = q ? 'flex' : 'none';
+  searchbox.classList.toggle('naowee-searchbox--has-value', !!q);
+  if (!q) { resultsList.classList.remove('is-open'); return; }
+  const matches = DEPORTISTAS.filter(d =>
+    d.nombre.toLowerCase().includes(q) || d.doc.toLowerCase().includes(q)
+  );
+  if (!matches.length) {
+    resultsList.innerHTML = `<div style="padding:16px;text-align:center;font-size:13px;color:var(--text-muted)">Sin resultados para "${input.value}"</div>`;
+  } else {
+    resultsList.innerHTML = matches.map(d => `
+      <div class="search-result-item" data-id="${d.id}" role="option" tabindex="0">
+        <div class="search-result-item__avatar">${d.avatar}</div>
+        <div>
+          <div class="search-result-item__name">${d.nombre}</div>
+          <div class="search-result-item__meta">${d.doc}</div>
+        </div>
+        <span class="search-result-item__sport">${d.deporte.split(' ').slice(1).join(' ')}</span>
+      </div>`).join('');
+    resultsList.querySelectorAll('.search-result-item').forEach(item => {
+      item.addEventListener('click', () => seleccionarDeportista(item.dataset.id));
+      item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') seleccionarDeportista(item.dataset.id); });
+    });
+  }
+  resultsList.classList.add('is-open');
+});
+
+clearBtn.addEventListener('click', () => {
+  input.value = '';
+  clearBtn.style.display = 'none';
+  searchbox.classList.remove('naowee-searchbox--has-value');
+  resultsList.classList.remove('is-open');
+  limpiarPerfil();
+});
+
+document.addEventListener('click', e => {
+  if (!document.getElementById('deportistaSearchbox').contains(e.target))
+    resultsList.classList.remove('is-open');
+});
+
+function limpiarPerfil() {
+  deportistaActual = null;
+  document.getElementById('emptyState').style.display = '';
+  document.getElementById('perfilContent').style.display = 'none';
+}
+
+function seleccionarDeportista(id) {
+  const d = DEPORTISTAS.find(x => x.id === id);
+  if (!d) return;
+  deportistaActual = d;
+  input.value = d.nombre;
+  clearBtn.style.display = 'flex';
+  searchbox.classList.add('naowee-searchbox--has-value');
+  resultsList.classList.remove('is-open');
+  poblarFiltros(d);
+  renderPerfil(d);
+}
+
+/* ─── Filtros ─── */
+function poblarFiltros(d) {
+  const todos = [...d.inscripciones, ...d.resultados, ...d.medalleria];
+  const anos = [...new Set(todos.map(r => r.fecha.slice(0, 4)))].sort().reverse();
+  const deportes = [...new Set(todos.map(r => r.deporte))].sort();
+  const eventos = [...new Set(todos.map(r => r.evento))].sort();
+
+  const fillSelect = (id, opts) => {
+    const sel = document.getElementById(id);
+    const cur = sel.value;
+    sel.innerHTML = `<option value="">${sel.options[0]?.textContent || 'Todos'}</option>` +
+      opts.map(o => `<option value="${o}">${o}</option>`).join('');
+    sel.value = opts.includes(cur) ? cur : '';
+  };
+  fillSelect('filtroAno', anos);
+  fillSelect('filtroDeporte', deportes);
+  fillSelect('filtroEvento', eventos);
+  filtroAnoVal = ''; filtroDeporteVal = ''; filtroEventoVal = '';
+}
+
+['filtroAno', 'filtroDeporte', 'filtroEvento'].forEach(id => {
+  document.getElementById(id).addEventListener('change', () => {
+    filtroAnoVal = document.getElementById('filtroAno').value;
+    filtroDeporteVal = document.getElementById('filtroDeporte').value;
+    filtroEventoVal = document.getElementById('filtroEvento').value;
+    if (deportistaActual) renderPerfil(deportistaActual);
+  });
+});
+
+function matchFiltro(r) {
+  if (filtroAnoVal && !r.fecha.startsWith(filtroAnoVal)) return false;
+  if (filtroDeporteVal && r.deporte !== filtroDeporteVal) return false;
+  if (filtroEventoVal && r.evento !== filtroEventoVal) return false;
+  return true;
+}
+
+/* ─── Render ─── */
+function renderPerfil(d) {
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('perfilContent').style.display = '';
+
+  const ins = d.inscripciones.filter(matchFiltro);
+  const res = d.resultados.filter(matchFiltro);
+  const med = d.medalleria.filter(matchFiltro);
+
+  const oro = med.filter(m => m.medalla === 'Oro').length;
+  const plata = med.filter(m => m.medalla === 'Plata').length;
+  const bronce = med.filter(m => m.medalla === 'Bronce').length;
+
+  /* Header */
+  document.getElementById('perfilHeaderCard').innerHTML = `
+    <div class="perfil-avatar">${d.avatar}</div>
+    <div class="perfil-header__info">
+      <h2 class="perfil-header__name">${d.nombre}</h2>
+      <p class="perfil-header__doc">${d.doc}</p>
+      <div class="perfil-header__badges">
+        <span class="perfil-badge perfil-badge--deporte">${d.deporte}</span>
+        <span class="perfil-badge perfil-badge--club">🏠 ${d.club}</span>
+        <span class="perfil-badge perfil-badge--liga">🏆 ${d.liga}</span>
+        <span class="perfil-badge perfil-badge--federacion">🎖 ${d.federacion}</span>
+      </div>
+    </div>
+    <div class="perfil-stats">
+      <div class="perfil-stat"><div class="perfil-stat__val">${d.inscripciones.length}</div><div class="perfil-stat__lbl">Inscrip.</div></div>
+      <div class="perfil-stat"><div class="perfil-stat__val">${d.resultados.length}</div><div class="perfil-stat__lbl">Resultados</div></div>
+      <div class="perfil-stat" style="padding:10px 12px">
+        <div class="medal-summary">
+          ${oro > 0 ? `<span class="medal-chip medal-chip--oro"><span class="medal-ico">🥇</span>${oro}</span>` : ''}
+          ${plata > 0 ? `<span class="medal-chip medal-chip--plata"><span class="medal-ico">🥈</span>${plata}</span>` : ''}
+          ${bronce > 0 ? `<span class="medal-chip medal-chip--bronce"><span class="medal-ico">🥉</span>${bronce}</span>` : ''}
+          ${(oro + plata + bronce) === 0 ? '<span style="font-size:12px;color:var(--text-muted)">Sin medallas</span>' : ''}
+        </div>
+        <div class="perfil-stat__lbl" style="margin-top:4px">Medallería</div>
+      </div>
+    </div>`;
+
+  /* Inscripciones */
+  document.getElementById('countInscripciones').textContent = `${ins.length} registro${ins.length !== 1 ? 's' : ''}`;
+  document.getElementById('bodyInscripciones').innerHTML = ins.length
+    ? ins.map(r => `
+        <tr>
+          <td data-label="Evento"><strong style="font-size:13px">${r.evento}</strong></td>
+          <td data-label="Deporte / Prueba">${r.deporte} · <span style="color:var(--text-secondary)">${r.prueba}</span></td>
+          <td data-label="Fecha" style="color:var(--text-muted);font-size:12px">${fmtFecha(r.fecha)}</td>
+          <td data-label="Estado">${estadoBadge(r.estado)}</td>
+        </tr>`).join('')
+    : `<tr><td colspan="4" class="hsec-empty">No hay inscripciones con los filtros seleccionados.</td></tr>`;
+
+  /* Resultados */
+  document.getElementById('countResultados').textContent = `${res.length} registro${res.length !== 1 ? 's' : ''}`;
+  document.getElementById('bodyResultados').innerHTML = res.length
+    ? res.map(r => `
+        <tr>
+          <td data-label="Evento"><strong style="font-size:13px">${r.evento}</strong></td>
+          <td data-label="Deporte / Prueba">${r.deporte} · <span style="color:var(--text-secondary)">${r.prueba}</span></td>
+          <td data-label="Ranking"><span class="rank-val">#${r.ranking}</span></td>
+          <td data-label="Fecha" style="color:var(--text-muted);font-size:12px">${fmtFecha(r.fecha)}</td>
+        </tr>`).join('')
+    : `<tr><td colspan="4" class="hsec-empty">No hay resultados con los filtros seleccionados.</td></tr>`;
+
+  /* Medallería */
+  document.getElementById('countMedalleria').textContent = `${med.length} medalla${med.length !== 1 ? 's' : ''}`;
+  document.getElementById('bodyMedalleria').innerHTML = med.length
+    ? med.map(r => `
+        <tr>
+          <td data-label="Evento"><strong style="font-size:13px">${r.evento}</strong></td>
+          <td data-label="Deporte / Prueba">${r.deporte} · <span style="color:var(--text-secondary)">${r.prueba}</span></td>
+          <td data-label="Medalla"><span class="medal-ico">${medalIco(r.medalla)}</span> <span style="font-weight:700;font-size:13px">${r.medalla}</span></td>
+          <td data-label="Fecha" style="color:var(--text-muted);font-size:12px">${fmtFecha(r.fecha)}</td>
+        </tr>`).join('')
+    : `<tr><td colspan="4" class="hsec-empty">No hay medallas con los filtros seleccionados.</td></tr>`;
+}
+
+function fmtFecha(iso) {
+  const [y, m, d] = iso.split('-');
+  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return `${parseInt(d)} ${meses[parseInt(m)-1]} ${y}`;
+}
+
+function estadoBadge(e) {
+  const map = {
+    activo: ['activo', 'Activo'],
+    finalizado: ['finalizado', 'Finalizado'],
+    inscrito: ['inscrito', 'Inscrito']
+  };
+  const [cls, lbl] = map[e] || ['inscrito', e];
+  return `<span class="badge-estado badge-estado--${cls}">${lbl}</span>`;
+}
+
+function medalIco(m) {
+  return m === 'Oro' ? '🥇' : m === 'Plata' ? '🥈' : '🥉';
+}
+</script>
+</body>
+</html>

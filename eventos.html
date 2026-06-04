@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Naowee Eventos — Eventos</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="shared/tokens.css?v=0.3.0">
+<link rel="stylesheet" href="shared/shell.css?v=0.3.0">
+<link rel="stylesheet" href="shared/list-components.css?v=0.3.0">
+<link rel="stylesheet" href="shared/forms.css?v=0.3.0">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.3.0">
+<script src="shared/naowee-footer.js?v=0.3.0" defer></script>
+
+<style>
+  /* ═══════════════════════════════════════════════════════════════
+     EVENTOS — listado completo (sección "Eventos" del menú · Administrador).
+     Reusa el patrón card/tabla del dashboard (list-components.css).
+     ═══════════════════════════════════════════════════════════════ */
+  .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
+  .page-head__title h2 { font-size: 24px; font-weight: 800; letter-spacing: -.4px; color: var(--text-primary); margin: 0 0 5px; }
+  .page-head__title p { font-size: 13px; color: var(--text-secondary); margin: 0; max-width: 560px; }
+  .page-head__actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+  @media (max-width: 600px) {
+    .page-head { gap: 12px; }
+    .page-head__title h2 { font-size: 20px; }
+    .page-head__actions { width: 100%; }
+    .page-head__actions .naowee-btn { flex: 1; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div id="sidebarRoot"></div>
+  <div class="main">
+    <header class="top-header" id="topHeader"></header>
+    <div class="page">
+      <div class="page-inner" id="eventosPage"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import {
+    mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher,
+    getRoleFromQuery, ROLES
+  } from './shared/sidebar.js';
+  import { allEvents, STATUS_LABEL, pct, gestorIdForRole } from './shared/events-data.js';
+
+  /* ─── Iconos de página (paridad dashboard) ─── */
+  const I = {
+    cal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+    pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+    org: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg>',
+    arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+    search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+    clear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    inbox: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',
+    gridV: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+    listV: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
+    gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'
+  };
+
+  const roleCode = getRoleFromQuery();
+  const role = ROLES[roleCode];
+  /* CTA "Crear evento" solo para Administrador. */
+  const canCreate = roleCode === 'ADMIN';
+  /* Para el GESTOR: su gestorId propio y si está en la vista "Mis eventos". */
+  const isGestor = roleCode === 'GESTOR';
+  const myGestorId = gestorIdForRole(roleCode);
+  /* 'mine' = mis eventos (default para GESTOR) | 'all' = todos */
+  let gestorScope = 'mine';
+
+  /* Pool de eventos — se recarga en cada render para reflejar overrides/drafts. */
+  function getPool() { return allEvents(); }
+
+  function progItem(lbl, fill, o) {
+    const p = pct(o.done, o.total);
+    const empty = o.total === 0;
+    return `
+      <div class="prog-item">
+        <span class="prog-item__lbl">${lbl}</span>
+        <div class="prog-track"><div class="prog-fill ${fill}" style="width:${p}%"></div></div>
+        <span class="prog-item__val ${empty ? 'is-empty' : ''}">${empty ? '—' : p + '%'}</span>
+      </div>`;
+  }
+
+  /* Determina la acción del evento para cada rol/scope.
+     GESTOR + "Mis eventos" → ir a cargues.
+     GESTOR + "Todos los eventos" → solo lectura (Ver detalle).
+     ADMIN → Gestionar.
+     USER → Ver detalle. */
+  function actionForEv(ev) {
+    if (isGestor && gestorScope === 'mine') {
+      return { label: 'Ir a cargues', href: `cargue.html?tipo=inscripciones&id=${encodeURIComponent(ev.id)}&role=${roleCode}` };
+    }
+    if (canCreate) {
+      return { label: 'Gestionar', href: `evento-detalle.html?id=${encodeURIComponent(ev.id)}&role=${roleCode}` };
+    }
+    return { label: 'Ver detalle', href: `evento-detalle.html?id=${encodeURIComponent(ev.id)}&role=${roleCode}` };
+  }
+
+  function eventCard(ev, idx) {
+    const act = actionForEv(ev);
+    return `
+      <article class="event-card" data-id="${ev.id}" tabindex="0" style="animation-delay:${.04 + idx * .05}s" aria-label="${act.label}: ${ev.name}" data-href="${act.href}">
+        <div class="event-card__top">
+          <div style="display:flex;gap:13px;align-items:flex-start;min-width:0">
+            <span class="event-card__icon" aria-hidden="true">${ev.emoji}</span>
+            <div style="min-width:0">
+              <div class="event-card__name">${ev.name}</div>
+              <div class="event-card__sport">${ev.sport}</div>
+            </div>
+          </div>
+          <span class="badge s-${ev.status}">${STATUS_LABEL[ev.status]}</span>
+        </div>
+        <div class="event-card__meta">
+          <div class="meta-row">${I.cal}<span><strong>${ev.start}</strong> — ${ev.end}</span></div>
+          <div class="meta-row">${I.pin}<span>${ev.place}</span></div>
+        </div>
+        <div class="progress">
+          ${progItem('Inscripciones', 'f-insc', ev.insc)}
+          ${progItem('Resultados', 'f-res', ev.res)}
+          ${progItem('Medallería', 'f-med', ev.med)}
+        </div>
+        <div class="event-card__foot">
+          <span class="event-card__org" title="${ev.org}">${I.org}<span class="event-card__org-name">${ev.org}</span></span>
+          <span class="event-card__link">${act.label} ${I.arrow}</span>
+        </div>
+      </article>`;
+  }
+
+  function eventRow(ev) {
+    const p = pct(ev.insc.done, ev.insc.total);
+    const empty = ev.insc.total === 0;
+    const act = actionForEv(ev);
+    return `
+      <tr data-id="${ev.id}" data-href="${act.href}" role="button" tabindex="0" aria-label="${act.label}: ${ev.name}">
+        <td>
+          <div class="ev-row__name">
+            <span class="ev-row__emoji" aria-hidden="true">${ev.emoji}</span>
+            <div style="min-width:0">
+              <div class="ev-row__nm">${ev.name}</div>
+              <div class="ev-row__sport">${ev.sport}</div>
+            </div>
+          </div>
+        </td>
+        <td class="ev-row__dates">
+          <span class="ev-date ev-date--open">${ev.start}</span>
+          <span class="ev-date ev-date--close">${ev.end}</span>
+        </td>
+        <td class="ev-row__place">${ev.place}</td>
+        <td><span class="badge s-${ev.status}">${STATUS_LABEL[ev.status]}</span></td>
+        <td>
+          <div class="ev-row__prog">
+            <div class="prog-track"><div class="prog-fill f-insc" style="width:${p}%"></div></div>
+            <span class="ev-row__pct ${empty ? 'is-empty' : ''}">${empty ? '—' : p + '%'}</span>
+          </div>
+        </td>
+        <td style="text-align:right">
+          <button type="button" class="ev-row__action" data-action data-id="${ev.id}" title="${act.label}"><span class="ev-row__action-lbl">${act.label}</span> ${I.arrow}</button>
+        </td>
+      </tr>`;
+  }
+
+  /* ─── Estado (vista + filtros) ─── */
+  const VIEW_KEY = 'naowee-eventos-events-view';
+  let currentView = localStorage.getItem(VIEW_KEY) === 'table' ? 'table' : 'cards';
+  let activeFilter = 'todos';
+  let query = '';
+
+  function getSource() {
+    const pool = getPool();
+    if (isGestor && gestorScope === 'mine') {
+      return pool.filter((ev) => ev.assignedGestorId === myGestorId);
+    }
+    return pool;
+  }
+
+  function filtered() {
+    return getSource().filter((ev) => {
+      const matchStatus = activeFilter === 'todos' || ev.status === activeFilter;
+      const q = query.trim().toLowerCase();
+      const matchQuery = !q || `${ev.name} ${ev.sport} ${ev.place} ${ev.org}`.toLowerCase().includes(q);
+      return matchStatus && matchQuery;
+    });
+  }
+
+  /* Subtítulo del page-head refleja la vista activa. */
+  function headSubtitle() {
+    if (isGestor) {
+      return gestorScope === 'mine'
+        ? 'Mis eventos asignados · acción directa a cargues'
+        : 'Todos los eventos del Ministerio · solo lectura';
+    }
+    return canCreate
+      ? 'Crea, asocia deportes y asigna un gestor.'
+      : 'Consulta el estado y el detalle de cada evento.';
+  }
+
+  /* Toggle GESTOR: "Mis eventos" | "Todos los eventos" (solo visible para GESTOR). */
+  function gestorToggleHTML() {
+    if (!isGestor) return '';
+    return `
+      <div class="naowee-segment" role="tablist" aria-label="Alcance de eventos" id="gestorScopeSeg" style="margin-bottom:14px">
+        <span class="naowee-segment__pill naowee-segment__pill--no-anim" data-pill></span>
+        <button class="naowee-segment__item${gestorScope === 'mine' ? ' naowee-segment__item--active' : ''}" data-scope="mine" role="tab" aria-selected="${gestorScope === 'mine'}">Mis eventos</button>
+        <button class="naowee-segment__item${gestorScope === 'all' ? ' naowee-segment__item--active' : ''}" data-scope="all" role="tab" aria-selected="${gestorScope === 'all'}">Todos los eventos</button>
+      </div>`;
+  }
+
+  function render() {
+    const pool = getPool();
+    document.getElementById('eventosPage').innerHTML = `
+      <div class="page-head">
+        <div class="page-head__title">
+          <h2>Eventos</h2>
+          <p id="evSubtitle">${headSubtitle()}</p>
+        </div>
+        <div class="page-head__actions">
+          ${canCreate ? `<a class="naowee-btn naowee-btn--loud" href="evento-crear.html?role=${roleCode}">${I.plus} Crear evento</a>` : ''}
+        </div>
+      </div>
+
+      ${gestorToggleHTML()}
+
+      <div class="naowee-table-card" id="evCard">
+        <div class="tc-toolbar">
+          <div class="naowee-searchbox" id="evSearchbox">
+            <div class="naowee-searchbox__input-wrap">
+              <div class="naowee-searchbox__icon">${I.search}</div>
+              <input type="text" class="naowee-searchbox__input" id="evSearch" placeholder="Buscar evento, deporte, lugar u organismo…" aria-label="Buscar eventos">
+              <button type="button" class="naowee-searchbox__clear" id="evSearchClear" aria-label="Limpiar búsqueda">${I.clear}</button>
+            </div>
+          </div>
+          <div class="naowee-segment" role="tablist" aria-label="Filtrar por estado" data-segmented>
+            <span class="naowee-segment__pill naowee-segment__pill--no-anim" data-pill></span>
+            <button class="naowee-segment__item naowee-segment__item--active" data-filter="todos" role="tab" aria-selected="true">Todos</button>
+            <button class="naowee-segment__item" data-filter="activo" role="tab" aria-selected="false">Activos</button>
+            <button class="naowee-segment__item" data-filter="borrador" role="tab" aria-selected="false">En preparación</button>
+            <button class="naowee-segment__item" data-filter="finalizado" role="tab" aria-selected="false">Finalizados</button>
+          </div>
+          <div class="view-toggle" role="group" aria-label="Cambiar vista">
+            <button type="button" class="view-toggle__btn ${currentView === 'cards' ? 'is-active' : ''}" data-view="cards" aria-pressed="${currentView === 'cards'}" aria-label="Vista de tarjetas">${I.gridV}</button>
+            <button type="button" class="view-toggle__btn ${currentView === 'table' ? 'is-active' : ''}" data-view="table" aria-pressed="${currentView === 'table'}" aria-label="Vista de tabla">${I.listV}</button>
+          </div>
+          <span class="toolbar__count" id="evCount"></span>
+        </div>
+
+        <div id="evSlot"></div>
+
+        <div class="empty" id="evEmpty">
+          <div class="empty__icon">${I.inbox}</div>
+          <h3>No hay eventos que coincidan</h3>
+          <p>Ajusta la búsqueda o el filtro de estado para ver más resultados.</p>
+        </div>
+      </div>
+    `;
+    bindGestorToggle();
+    bindToolbar();
+    renderList();
+  }
+
+  function renderList() {
+    const slot = document.getElementById('evSlot');
+    const empty = document.getElementById('evEmpty');
+    const count = document.getElementById('evCount');
+    const source = getSource();
+    const rows = filtered();
+    count.textContent = `${rows.length} de ${source.length} eventos`;
+    if (rows.length === 0) { slot.innerHTML = ''; empty.classList.add('is-shown'); return; }
+    empty.classList.remove('is-shown');
+
+    if (currentView === 'cards') {
+      slot.innerHTML = `<div class="events-grid">${rows.map((ev, i) => eventCard(ev, i)).join('')}</div>`;
+      slot.querySelectorAll('.event-card').forEach((card) => {
+        const open = () => window.location.href = card.dataset.href;
+        card.addEventListener('click', open);
+        card.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(); });
+      });
+    } else {
+      slot.innerHTML = `
+        <div class="naowee-table-card__table-wrap">
+          <table class="naowee-table--in-card">
+            <colgroup>
+              <col class="col-evento"><col class="col-fechas"><col class="col-lugar">
+              <col class="col-estado"><col class="col-prog"><col class="col-accion">
+            </colgroup>
+            <thead><tr>
+              <th>Evento</th><th>Fechas</th><th>Lugar</th><th>Estado</th><th>Progreso inscr.</th><th style="text-align:right">Acción</th>
+            </tr></thead>
+            <tbody>${rows.map((ev) => eventRow(ev)).join('')}</tbody>
+          </table>
+        </div>`;
+      slot.querySelectorAll('[data-action]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const row = btn.closest('tr');
+          if (row && row.dataset.href) window.location.href = row.dataset.href;
+        });
+      });
+      slot.querySelectorAll('tr[data-href]').forEach((row) => {
+        row.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); window.location.href = row.dataset.href; }
+        });
+      });
+    }
+    requestAnimationFrame(() => slot.querySelectorAll('.prog-fill').forEach((f) => f.classList.add('is-filled')));
+  }
+
+  function positionSegmentPill(segEl, animate) {
+    if (!segEl) return;
+    const pill = segEl.querySelector('[data-pill]');
+    const active = segEl.querySelector('.naowee-segment__item--active');
+    if (!pill || !active) return;
+    if (!animate) pill.classList.add('naowee-segment__pill--no-anim');
+    pill.style.width = active.offsetWidth + 'px';
+    pill.style.setProperty('--seg-x', active.offsetLeft + 'px');
+    if (!animate) requestAnimationFrame(() => requestAnimationFrame(() => pill.classList.remove('naowee-segment__pill--no-anim')));
+  }
+
+  /* Bind del toggle GESTOR (Mis eventos / Todos los eventos). */
+  function bindGestorToggle() {
+    const seg = document.getElementById('gestorScopeSeg');
+    if (!seg) return;
+    positionSegmentPill(seg, false);
+    seg.querySelectorAll('.naowee-segment__item').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        seg.querySelectorAll('.naowee-segment__item').forEach((b) => {
+          b.classList.remove('naowee-segment__item--active'); b.setAttribute('aria-selected', 'false');
+        });
+        btn.classList.add('naowee-segment__item--active'); btn.setAttribute('aria-selected', 'true');
+        gestorScope = btn.dataset.scope;
+        positionSegmentPill(seg, true);
+        /* Actualiza subtítulo */
+        const sub = document.getElementById('evSubtitle');
+        if (sub) sub.textContent = headSubtitle();
+        /* Resetea filtro de estado y re-renderiza */
+        activeFilter = 'todos';
+        const statusSeg = document.querySelector('.naowee-segment[data-segmented]');
+        if (statusSeg) {
+          statusSeg.querySelectorAll('.naowee-segment__item').forEach((b) => {
+            const on = b.dataset.filter === 'todos';
+            b.classList.toggle('naowee-segment__item--active', on); b.setAttribute('aria-selected', String(on));
+          });
+          positionSegmentPill(statusSeg, false);
+        }
+        renderList();
+      });
+    });
+    window.addEventListener('resize', () => positionSegmentPill(seg, false));
+  }
+
+  function bindToolbar() {
+    const sbox = document.getElementById('evSearchbox');
+    const search = document.getElementById('evSearch');
+    const sclear = document.getElementById('evSearchClear');
+    const syncHasValue = () => sbox.classList.toggle('naowee-searchbox--has-value', search.value.length > 0);
+    search.addEventListener('input', (e) => { query = e.target.value; syncHasValue(); renderList(); });
+    sclear.addEventListener('click', () => { search.value = ''; query = ''; syncHasValue(); renderList(); search.focus(); });
+    syncHasValue();
+
+    const statusSeg = document.querySelector('.naowee-segment[data-segmented]');
+    if (statusSeg) {
+      statusSeg.querySelectorAll('.naowee-segment__item').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          statusSeg.querySelectorAll('.naowee-segment__item').forEach((b) => { b.classList.remove('naowee-segment__item--active'); b.setAttribute('aria-selected', 'false'); });
+          btn.classList.add('naowee-segment__item--active'); btn.setAttribute('aria-selected', 'true');
+          activeFilter = btn.dataset.filter;
+          positionSegmentPill(statusSeg, true);
+          renderList();
+        });
+      });
+      positionSegmentPill(statusSeg, false);
+      window.addEventListener('resize', () => positionSegmentPill(statusSeg, false));
+    }
+
+    document.querySelectorAll('.view-toggle__btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (btn.dataset.view === currentView) return;
+        currentView = btn.dataset.view;
+        localStorage.setItem(VIEW_KEY, currentView);
+        document.querySelectorAll('.view-toggle__btn').forEach((b) => {
+          const on = b.dataset.view === currentView;
+          b.classList.toggle('is-active', on); b.setAttribute('aria-pressed', String(on));
+        });
+        renderList();
+      });
+    });
+  }
+
+  /* ─── Bootstrap ─── */
+  mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: 'eventos' });
+  mountHeader({ headerEl: document.getElementById('topHeader'), role, title: 'Eventos', subtitle: 'Listado · Ministerio del Deporte' });
+  mountBackdrop();
+  mountDemoSwitcher({ roleCode });
+  render();
+
+  /* Si llegamos con ?created=1 (volviendo de crear), confirma con toast. */
+  if (new URLSearchParams(location.search).get('created') === '1') {
+    setTimeout(() => {
+      let toast = document.getElementById('evToast');
+      if (!toast) { toast = document.createElement('div'); toast.id = 'evToast'; toast.setAttribute('role', 'status'); document.body.appendChild(toast); }
+      toast.textContent = 'Evento creado en estado Borrador.';
+      toast.classList.add('is-visible');
+      setTimeout(() => toast.classList.remove('is-visible'), 3000);
+    }, 200);
+  }
+
+  document.title = `Naowee Eventos — Eventos (${role.label})`;
+</script>
+
+</body>
+</html>

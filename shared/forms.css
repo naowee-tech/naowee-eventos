@@ -1,0 +1,480 @@
+/* ═══════════════════════════════════════════════════════════════
+   NAOWEE EVENTOS — Componentes de formulario (port local del DS)
+   Port de los componentes del Design System (.naowee-textfield,
+   .naowee-dropdown, .naowee-datepicker, .naowee-checkbox, chips, .naowee-btn)
+   mapeados a los TOKENS LOCALES del módulo (tokens.css) — mismo criterio
+   que el dashboard usa para searchbox/segment/badge: el módulo no carga el
+   DS por CDN, porta lo que usa. Mobile-first: datepicker = bottom-sheet.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────── Botones ───────────────────────────
+   CSS CANÓNICO del Design System (naowee-design-system/dist/design-system.css
+   §Button, líneas 583-830). Copiado 1:1 y mapeado a los tokens locales —
+   los valores coinciden con el DS (--accent #d74009, --accent-bg #fff3e6).
+   Loud = glow naranja (sombras --naowee-shadow-loud-*, elevación en hover).
+   Ghost/link = label accent + hover naranja claro. NO re-portar perdiendo estados. */
+
+/* Glow naranja canónico del loud (DS líneas 583-587). */
+:root {
+  --naowee-shadow-loud-xs: 0 2px 6px rgba(215, 64, 9, .14);
+  --naowee-shadow-loud-sm: 0 4px 12px rgba(215, 64, 9, .18);
+  --naowee-shadow-loud-md: 0 6px 16px rgba(215, 64, 9, .22);
+  --naowee-shadow-loud-lg: 0 10px 28px rgba(215, 64, 9, .32);
+  --naowee-shadow-loud-xl: 0 16px 40px rgba(215, 64, 9, .38);
+  /* Bordes canónicos de inputs (DS interactive-border): idle lavanda · hover gris · error negativo. */
+  --field-border-idle: #8788ab;   /* --naowee-color-gray-600 / interactive-border-idle */
+  --field-border-hover: #646587;  /* --naowee-color-gray-700 / interactive-border-hover */
+  --field-border-error: #ed314a;  /* --naowee-color-feedback-border-negative-loud */
+  --field-h: 48px;                /* --naowee-size-height-inputs-large (Figma default) */
+}
+
+.naowee-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  position: relative;
+  height: 44px; padding: 0 20px; border-radius: var(--radius-md);
+  font-family: inherit; font-size: 13px; font-weight: 700; letter-spacing: .2px;
+  border: 1px solid transparent; cursor: pointer; white-space: nowrap;
+  transition: opacity var(--duration-fast) var(--easing-smoothout),
+              transform var(--duration-fast) var(--easing-smoothout),
+              box-shadow var(--duration-fast) var(--easing-smoothout),
+              background var(--duration-fast), border-color var(--duration-fast);
+  font-feature-settings: 'case' 1;
+}
+.naowee-btn svg { width: 17px; height: 17px; flex-shrink: 0; }
+.naowee-btn:active { transform: scale(.97); }
+
+/* ── Loud (primario) — bg se mantiene + elevación naranja en hover (DS 655-686) ── */
+.naowee-btn--loud { background: var(--accent); color: #fff; box-shadow: var(--naowee-shadow-loud-sm); }
+.naowee-btn--loud:hover,
+.naowee-btn--loud:focus-visible {
+  background: var(--accent); box-shadow: var(--naowee-shadow-loud-lg); outline: none; transform: translateY(-1px);
+}
+.naowee-btn--loud:active { background: var(--accent); box-shadow: var(--naowee-shadow-loud-xs); }
+.naowee-btn--loud.naowee-btn--sm:hover,
+.naowee-btn--loud.naowee-btn--sm:focus-visible { box-shadow: var(--naowee-shadow-loud-sm); }
+.naowee-btn--loud:disabled, .naowee-btn--loud.naowee-btn--disabled {
+  background: var(--border-dark); color: var(--text-muted); cursor: not-allowed;
+  pointer-events: none; box-shadow: none;
+}
+
+/* ── Quiet/Mute (ghost canónico) — label accent, hover naranja claro (DS 689-723) ── */
+.naowee-btn--mute, .naowee-btn--ghost { background: transparent; color: var(--accent); }
+.naowee-btn--mute:hover, .naowee-btn--ghost:hover { background: var(--accent-bg); }
+.naowee-btn--mute:active, .naowee-btn--ghost:active { background: var(--accent-bg-warm); }
+.naowee-btn--mute svg, .naowee-btn--ghost svg { color: var(--accent); }
+.naowee-btn--mute:focus-visible, .naowee-btn--ghost:focus-visible {
+  outline: none; box-shadow: 0 0 0 3px rgba(215, 64, 9, .15);
+}
+
+/* ── Link/Cancelar (ghost canónico, fondo quiet, DS 816-830) ── */
+.naowee-btn--link { background: transparent; color: var(--accent); }
+.naowee-btn--link:hover { background: var(--accent-bg); color: var(--accent); }
+.naowee-btn--link:active { background: var(--accent-bg-warm); }
+.naowee-btn--link svg { color: var(--accent); }
+.naowee-btn--link:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215, 64, 9, .15); }
+
+.naowee-btn--sm { height: 36px; padding: 0 14px; font-size: 12px; }
+.naowee-btn:disabled, .naowee-btn--disabled { opacity: .5; pointer-events: none; cursor: not-allowed; }
+
+/* ── Shake / wiggle canónico (DS §Utility SHAKE, líneas 3853-3864) ──
+   Aplicar al wrapper del campo cuando la validación bloquea el avance.
+   Pattern: remove → reflow → add. Honra prefers-reduced-motion. */
+.naowee-shake { animation: naoweeShake .45s cubic-bezier(.36, .07, .19, .97); }
+@keyframes naoweeShake {
+  0%, 100% { transform: translateX(0); }
+  15%      { transform: translateX(-6px); }
+  30%      { transform: translateX(5px); }
+  45%      { transform: translateX(-4px); }
+  60%      { transform: translateX(3px); }
+  75%      { transform: translateX(-2px); }
+  90%      { transform: translateX(1px); }
+}
+
+/* ───────────────────────── Textfield ─────────────────────────── */
+.naowee-textfield { display: flex; flex-direction: column; width: 100%; font-feature-settings: 'case' 1; }
+.naowee-textfield__label {
+  font-size: 13px; font-weight: 600; line-height: 18px; color: var(--text-primary);
+  padding-bottom: 7px; display: inline-flex; align-items: center; gap: 4px;
+}
+.naowee-textfield__label--required::after { content: '*'; color: var(--accent); font-weight: 700; }
+.naowee-textfield__hint-ico { color: var(--text-muted); display: inline-flex; }
+.naowee-textfield__hint-ico svg { width: 14px; height: 14px; }
+
+.naowee-textfield__input-wrap {
+  display: flex; align-items: center; gap: 8px;
+  height: var(--field-h); padding: 0 12px;
+  background: var(--surface); border: 1px solid var(--field-border-idle);
+  border-radius: var(--radius-md);
+  transition: border-color var(--duration-normal) var(--easing-smoothout),
+              border-width var(--duration-fast) var(--easing-smoothout);
+}
+.naowee-textfield__input-wrap:hover { border-color: var(--field-border-hover); }
+/* Focus/active = borde acento 2px (canónico DS: sin halo; compensa padding p/ no saltar). */
+.naowee-textfield__input-wrap:focus-within,
+.naowee-textfield--active .naowee-textfield__input-wrap {
+  border-width: 2px; border-color: var(--accent); padding: 0 11px;
+}
+.naowee-textfield__input {
+  flex: 1; min-width: 0; height: 100%; border: none; background: transparent; outline: none;
+  font-family: inherit; font-size: 14px; font-weight: 400; color: var(--text-primary); padding: 0;
+}
+.naowee-textfield__input::placeholder { color: var(--text-secondary); }
+.naowee-textfield__prefix-ico { color: var(--text-muted); display: inline-flex; flex-shrink: 0; }
+.naowee-textfield__prefix-ico svg { width: 18px; height: 18px; }
+
+/* Textarea */
+.naowee-textfield--textarea .naowee-textfield__input-wrap { align-items: flex-start; padding: 10px 12px; }
+.naowee-textfield--textarea .naowee-textfield__input {
+  height: auto; min-height: 84px; resize: vertical; line-height: 1.5; padding: 0; width: 100%;
+}
+
+/* Error */
+.naowee-textfield--error .naowee-textfield__input-wrap { border-color: var(--field-border-error); }
+.naowee-textfield--error .naowee-textfield__input-wrap:focus-within {
+  border-width: 2px; border-color: var(--field-border-error); padding: 0 11px;
+}
+.naowee-textfield__msg {
+  display: none; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 500; color: var(--red); margin-top: 6px;
+}
+.naowee-textfield__msg svg { width: 14px; height: 14px; flex-shrink: 0; }
+.naowee-textfield--error .naowee-textfield__msg { display: inline-flex; }
+
+/* Helper (neutral) */
+.naowee-field-help { font-size: 12px; color: var(--text-secondary); margin-top: 6px; line-height: 1.45; }
+
+/* ───────────────────────── Dropdown ──────────────────────────
+   Trigger 44px con borde; menú flotante en desktop, bottom-sheet en móvil. */
+.naowee-dropdown { position: relative; width: 100%; font-feature-settings: 'case' 1; }
+.naowee-dropdown__trigger {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  min-height: var(--field-h); padding: 0 12px;
+  background: var(--surface); border: 1px solid var(--field-border-idle);
+  border-radius: var(--radius-md); cursor: pointer; text-align: left;
+  font-family: inherit; font-size: 14px; color: var(--text-primary);
+  transition: border-color var(--duration-normal) var(--easing-smoothout),
+              border-width var(--duration-fast) var(--easing-smoothout);
+}
+.naowee-dropdown__trigger:hover { border-color: var(--field-border-hover); }
+.naowee-dropdown__trigger:focus-visible,
+.naowee-dropdown.is-open .naowee-dropdown__trigger {
+  outline: none; border-width: 2px; border-color: var(--accent); padding: 0 11px;
+}
+/* Chevron en naranja al hover + abierto (paridad IVC). */
+.naowee-dropdown__trigger:hover .naowee-dropdown__chevron,
+.naowee-dropdown.is-open .naowee-dropdown__chevron { color: var(--accent); }
+.naowee-dropdown__value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.naowee-dropdown__value.is-placeholder { color: var(--text-secondary); }
+.naowee-dropdown__chevron {
+  width: 18px; height: 18px; flex-shrink: 0; color: var(--text-secondary);
+  transition: transform var(--duration-normal) var(--easing-smoothout), color var(--duration-fast);
+}
+.naowee-dropdown.is-open .naowee-dropdown__chevron { transform: rotate(180deg); }
+.naowee-dropdown--disabled .naowee-dropdown__trigger { opacity: .55; pointer-events: none; background: var(--bg-soft); }
+.naowee-dropdown--error .naowee-dropdown__trigger { border-color: var(--red); }
+.naowee-dropdown--error.is-open .naowee-dropdown__trigger { box-shadow: 0 0 0 3px rgba(192, 57, 43, .15); }
+
+/* Menú (desktop flotante) — z-index canónico del DS (999) para flotar por
+   encima del card de sección sin recortarse (DS .naowee-dropdown__menu). */
+.naowee-dropdown__menu {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 999;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-card);
+  max-height: 0; overflow: hidden; opacity: 0; pointer-events: none;
+  transition: max-height var(--duration-slow) var(--easing-smoothout),
+              opacity var(--duration-normal) var(--easing-smoothout);
+}
+.naowee-dropdown.is-open .naowee-dropdown__menu {
+  max-height: 280px; overflow-y: auto; opacity: 1; pointer-events: auto;
+  scrollbar-width: thin;
+}
+/* Drop-up: abre hacia arriba cuando no hay espacio abajo (auto-flip vía .is-up) */
+.naowee-dropdown.is-up .naowee-dropdown__menu { top: auto; bottom: calc(100% + 6px); }
+.naowee-dropdown__sheet-head { display: none; }
+.naowee-dropdown__opt {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 10px 14px; border: none; background: transparent; cursor: pointer;
+  font-family: inherit; font-size: 13.5px; color: var(--text-primary); text-align: left;
+  transition: background var(--duration-fast);
+}
+.naowee-dropdown__opt:hover { background: var(--bg-soft); }
+.naowee-dropdown__opt.is-selected { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
+.naowee-dropdown__opt-check { width: 16px; height: 16px; flex-shrink: 0; margin-left: auto; color: var(--accent); opacity: 0; }
+.naowee-dropdown__opt.is-selected .naowee-dropdown__opt-check { opacity: 1; }
+.naowee-dropdown__opt-emoji { font-size: 16px; flex-shrink: 0; }
+.naowee-dropdown__empty { padding: 14px; font-size: 12.5px; color: var(--text-muted); text-align: center; }
+
+/* ── Helper canónico (DS .naowee-helper) — error de campo: variante negative loud ── */
+.naowee-helper { display: flex; align-items: flex-start; gap: 6px; width: 100%; padding-top: 4px; font-family: inherit; }
+.naowee-helper__text { flex: 1; min-width: 0; display: flex; align-items: flex-start; gap: 5px; font-size: 12px; font-weight: 400; line-height: 16px; color: var(--text-secondary); }
+.naowee-helper__badge { width: 16px; height: 16px; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; background: #ed314a; color: #fff; }
+.naowee-helper__badge svg { width: 12px; height: 12px; }
+.naowee-helper--negative .naowee-helper__badge { background: #ed314a; }
+.naowee-helper--negative .naowee-helper__text { font-weight: 600; color: #c4031d; }
+
+/* ───────────────────── Checkbox (svg canónico) ───────────────── */
+.naowee-checkbox { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+.naowee-checkbox input { position: absolute; opacity: 0; width: 0; height: 0; }
+.naowee-checkbox__box {
+  width: 20px; height: 20px; flex-shrink: 0; border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-dark); background: var(--surface);
+  display: flex; align-items: center; justify-content: center;
+  transition: background var(--duration-fast), border-color var(--duration-fast);
+}
+.naowee-checkbox__box svg { width: 13px; height: 13px; color: #fff; opacity: 0; transform: scale(.6);
+  transition: opacity var(--duration-fast), transform var(--duration-fast) var(--easing-bounce-soft); }
+.naowee-checkbox input:checked + .naowee-checkbox__box { background: var(--accent); border-color: var(--accent); }
+.naowee-checkbox input:checked + .naowee-checkbox__box svg { opacity: 1; transform: scale(1); }
+.naowee-checkbox input:focus-visible + .naowee-checkbox__box { box-shadow: 0 0 0 3px rgba(215, 64, 9, .2); }
+.naowee-checkbox__label { font-size: 13.5px; color: var(--text-primary); }
+
+/* ───────────────────────── Chips / tags ──────────────────────── */
+.naowee-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 6px 5px 11px; border-radius: var(--radius-full);
+  background: var(--accent-bg); border: 1px solid var(--orange-border);
+  font-size: 12px; font-weight: 600; color: var(--accent); white-space: nowrap;
+}
+.naowee-tag--neutral { background: var(--bg-soft); border-color: var(--border); color: var(--text-secondary); }
+.naowee-tag__x {
+  width: 18px; height: 18px; border-radius: 50%; border: none; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; color: currentColor; flex-shrink: 0;
+  transition: background var(--duration-fast);
+}
+.naowee-tag__x:hover { background: rgba(215, 64, 9, .14); }
+.naowee-tag__x svg { width: 12px; height: 12px; }
+
+/* ─────────────────── Datepicker (bottom-sheet móvil) ──────────── */
+.naowee-datepicker { position: relative; width: 100%; }
+.naowee-datepicker__trigger {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  min-height: var(--field-h); padding: 0 12px;
+  background: var(--surface); border: 1px solid var(--field-border-idle);
+  border-radius: var(--radius-md); cursor: pointer; text-align: left;
+  font-family: inherit; font-size: 14px; color: var(--text-primary);
+  transition: border-color var(--duration-normal) var(--easing-smoothout),
+              border-width var(--duration-fast) var(--easing-smoothout);
+}
+.naowee-datepicker__trigger:hover { border-color: var(--field-border-hover); }
+.naowee-datepicker__trigger:focus-visible,
+.naowee-datepicker.is-open .naowee-datepicker__trigger {
+  outline: none; border-width: 2px; border-color: var(--accent); padding: 0 11px;
+}
+.naowee-datepicker--error .naowee-datepicker__trigger { border-color: var(--field-border-error); }
+.naowee-datepicker__ico { width: 18px; height: 18px; color: var(--text-secondary); flex-shrink: 0; transition: color var(--duration-fast); }
+/* Ícono de calendario en naranja al hover + abierto (paridad IVC). */
+.naowee-datepicker__trigger:hover .naowee-datepicker__ico,
+.naowee-datepicker.is-open .naowee-datepicker__ico { color: var(--accent); }
+.naowee-datepicker__val { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.naowee-datepicker__val.is-placeholder { color: var(--text-secondary); }
+
+/* Backdrop compartido (datepicker móvil) */
+.naowee-sheet-backdrop {
+  position: fixed; inset: 0; z-index: 200; background: rgba(40, 40, 52, .42);
+  opacity: 0; pointer-events: none; transition: opacity var(--duration-normal) var(--easing-smoothout);
+}
+.naowee-sheet-backdrop.is-open { opacity: 1; pointer-events: auto; }
+
+/* ── Popover de calendario — estructura CANÓNICA del DS (.naowee-datepicker__calendar).
+   Desktop = flotante anclado al trigger; móvil = bottom-sheet. El shell .naowee-cal reusa
+   el contenedor canónico (width 412 · padding 16 · flex column gap 16). Tokens mapeados
+   a los locales (valores idénticos al DS). NO re-portar perdiendo el selector mes/año. */
+.naowee-cal {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 201;
+  width: 412px; max-width: calc(100vw - 24px);
+  display: flex; flex-direction: column; gap: 16px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-card); padding: 16px;
+  opacity: 0; transform: translateY(-6px); pointer-events: none;
+  transition: opacity var(--duration-normal) var(--easing-smoothout),
+              transform var(--duration-normal) var(--easing-smoothout);
+}
+.naowee-datepicker.is-open .naowee-cal { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.naowee-cal.is-right { left: auto; right: 0; }              /* auto-shift si se sale por la derecha (campo Fecha de fin) */
+.naowee-cal.is-up { top: auto; bottom: calc(100% + 6px); }  /* auto-flip si no hay espacio abajo */
+
+/* Calendario canónico */
+.naowee-datepicker__calendar { display: flex; flex-direction: column; gap: 4px; overflow: clip; }
+.naowee-datepicker__header { display: flex; align-items: center; justify-content: space-between; }
+.naowee-datepicker__month-selector {
+  display: flex; align-items: center; gap: 4px; height: 40px; cursor: pointer;
+  border: none; background: transparent; padding: 0 6px 0 4px; border-radius: var(--radius-md);
+  font-family: inherit; transition: background var(--duration-fast);
+}
+.naowee-datepicker__month-selector:hover { background: var(--bg-soft); }
+.naowee-datepicker__month { font-size: 18px; font-weight: 600; line-height: 22px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.naowee-datepicker__month-chevron { width: 20px; height: 20px; flex-shrink: 0; color: var(--accent); display: inline-flex; align-items: center; }
+.naowee-datepicker__month-chevron svg { width: 20px; height: 20px; }
+.naowee-datepicker__controls { display: flex; gap: 4px; }
+.naowee-datepicker__nav {
+  width: 40px; height: 40px; border-radius: var(--radius-lg); border: none;
+  background: var(--accent-bg); color: var(--accent); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background var(--duration-fast); flex-shrink: 0;
+}
+.naowee-datepicker__nav:hover { background: var(--accent-bg-warm); }
+.naowee-datepicker__nav svg { width: 20px; height: 20px; }
+.naowee-datepicker__content { display: flex; flex-direction: column; gap: 4px; padding: 0 4px; }
+.naowee-datepicker__week { display: flex; justify-content: space-between; }
+.naowee-datepicker__weekday { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--text-secondary); line-height: 16px; }
+.naowee-datepicker__day {
+  width: 40px; height: 40px; border-radius: var(--radius-lg); border: none; background: transparent;
+  font-family: inherit; font-size: 16px; line-height: 24px; color: var(--text-primary); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; padding: 2px; flex-shrink: 0;
+  transition: background var(--duration-fast);
+}
+.naowee-datepicker__day:hover { background: var(--bg-soft); }
+.naowee-datepicker__day--selected { background: var(--accent); color: #fff; }
+.naowee-datepicker__day--selected:hover { background: #c0390a; }
+.naowee-datepicker__day--today { font-weight: 700; }
+.naowee-datepicker__day--disabled,
+.naowee-datepicker__day--other-month { color: var(--text-muted); pointer-events: none; }
+/* Vista selector de meses / años (grid 2 columnas) */
+.naowee-datepicker__month-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 8px 0; }
+.naowee-datepicker__month-item {
+  display: flex; align-items: center; justify-content: center; height: 40px; border: none; background: transparent;
+  font-family: inherit; font-size: 14px; color: var(--text-primary); cursor: pointer;
+  border-radius: var(--radius-lg); transition: background var(--duration-fast);
+}
+.naowee-datepicker__month-item:hover { background: var(--bg-soft); }
+.naowee-datepicker__month-item--selected { border: 1.5px solid var(--accent); box-shadow: 0 0 0 3px rgba(215, 64, 9, .15); font-weight: 600; }
+.naowee-cal__sheet-head { display: none; }
+
+/* Móvil: el calendario sube como bottom-sheet anclado abajo (no flotante lejos del tap). */
+@media (max-width: 760px) {
+  .naowee-cal {
+    position: fixed; top: auto; left: 0; right: 0; bottom: 0; width: auto;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    box-shadow: var(--shadow-sheet); padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+    transform: translateY(100%);
+  }
+  .naowee-datepicker.is-open .naowee-cal { transform: translateY(0); }
+  .naowee-cal__sheet-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: -2px 0 12px;
+  }
+  .naowee-cal__sheet-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+  .naowee-cal__sheet-close {
+    width: 32px; height: 32px; border-radius: var(--radius-sm); border: none; background: var(--bg-soft);
+    color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .naowee-cal__sheet-close svg { width: 18px; height: 18px; }
+  .naowee-cal { gap: 12px; }
+  .naowee-datepicker__day { font-size: 16px; }
+
+  /* Dropdown también sube como bottom-sheet en móvil (popover = bottom-sheet). */
+  .naowee-dropdown.is-open .naowee-dropdown__menu {
+    position: fixed; top: auto; left: 0; right: 0; bottom: 0; z-index: 201;
+    max-height: 70vh; border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    box-shadow: var(--shadow-sheet); padding-bottom: env(safe-area-inset-bottom);
+  }
+  .naowee-dropdown__sheet-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px 10px; position: sticky; top: 0; background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .naowee-dropdown__sheet-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+  .naowee-dropdown__sheet-close {
+    width: 32px; height: 32px; border-radius: var(--radius-sm); border: none; background: var(--bg-soft);
+    color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .naowee-dropdown__sheet-close svg { width: 18px; height: 18px; }
+  .naowee-dropdown__opt { padding: 13px 16px; font-size: 14.5px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .naowee-btn, .naowee-dropdown__menu, .naowee-dropdown__chevron, .naowee-cal,
+  .naowee-checkbox__box, .naowee-checkbox__box svg, .naowee-sheet-backdrop,
+  .naowee-textfield__input-wrap, .naowee-dropdown__trigger, .naowee-datepicker__trigger {
+    transition: none !important;
+  }
+  .naowee-shake { animation: none !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FILE UPLOADER — port canónico del DS (.naowee-file-uploader)
+   Mapeado a tokens locales (mismo criterio que el resto de forms.css).
+   Dos zonas: input-wrap (fila, igual que textfield) + drop-zone (área drag&drop).
+   ═══════════════════════════════════════════════════════════════ */
+
+.naowee-file-uploader { display: flex; flex-direction: column; width: 100%; font-feature-settings: 'case' 1; }
+.naowee-file-uploader__label {
+  font-size: 13px; font-weight: 600; line-height: 18px; color: var(--text-primary);
+  padding-bottom: 7px; display: inline-flex; align-items: center; gap: 4px;
+}
+.naowee-file-uploader__label--required::after { content: '*'; color: var(--accent); font-weight: 700; }
+
+/* Fila input (botón browse + nombre de archivo) */
+.naowee-file-uploader__input-wrap {
+  display: flex; align-items: center; gap: 8px;
+  height: var(--field-h); padding: 0 12px 0 6px;
+  background: var(--surface); border: 1px solid var(--field-border-idle);
+  border-radius: var(--radius-md);
+  transition: border-color var(--duration-normal) var(--easing-smoothout);
+}
+.naowee-file-uploader__input-wrap:hover { border-color: var(--field-border-hover); }
+.naowee-file-uploader__input-wrap:focus-within { border-width: 2px; border-color: var(--accent); padding: 0 11px 0 5px; }
+.naowee-file-uploader__btn {
+  display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+  height: 32px; padding: 0 12px; border-radius: var(--radius-sm);
+  background: var(--accent-bg); border: 1.5px solid var(--orange-border);
+  color: var(--accent); font-family: inherit; font-size: 12px; font-weight: 700;
+  cursor: pointer; white-space: nowrap;
+  transition: background var(--duration-fast), border-color var(--duration-fast);
+}
+.naowee-file-uploader__btn:hover { background: var(--accent-bg-warm); border-color: var(--accent); }
+.naowee-file-uploader__btn svg { width: 15px; height: 15px; }
+.naowee-file-uploader__placeholder {
+  flex: 1; font-size: 14px; color: var(--text-secondary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.naowee-file-uploader__placeholder.has-file { color: var(--text-primary); font-weight: 500; }
+.naowee-file-uploader__dismiss {
+  display: none; width: 26px; height: 26px; border-radius: var(--radius-sm);
+  border: none; background: transparent; cursor: pointer; color: var(--text-muted);
+  align-items: center; justify-content: center; flex-shrink: 0;
+  transition: background var(--duration-fast), color var(--duration-fast);
+}
+.naowee-file-uploader__dismiss:hover { background: var(--bg-soft); color: var(--accent); }
+.naowee-file-uploader__dismiss svg { width: 16px; height: 16px; }
+.naowee-file-uploader.has-file .naowee-file-uploader__dismiss { display: inline-flex; }
+.naowee-file-uploader input[type="file"] { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+
+/* Drop zone (drag&drop área grande, visible debajo del input-wrap) */
+.naowee-file-uploader__drop-zone {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; margin-top: 8px; padding: 28px 20px; border-radius: var(--radius-lg);
+  border: 2px dashed var(--border-dark); background: var(--bg-soft);
+  text-align: center; cursor: pointer;
+  transition: border-color var(--duration-fast), background var(--duration-fast);
+  min-height: 110px;
+}
+.naowee-file-uploader__drop-zone:hover,
+.naowee-file-uploader__drop-zone.is-drag-over {
+  border-color: var(--accent); background: var(--accent-bg);
+}
+.naowee-file-uploader__drop-zone input[type="file"] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+.naowee-file-uploader__drop-icon { color: var(--text-secondary); transition: color var(--duration-fast); }
+.naowee-file-uploader__drop-zone:hover .naowee-file-uploader__drop-icon,
+.naowee-file-uploader__drop-zone.is-drag-over .naowee-file-uploader__drop-icon { color: var(--accent); }
+.naowee-file-uploader__drop-icon svg { width: 28px; height: 28px; }
+.naowee-file-uploader__drop-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.naowee-file-uploader__drop-hint { font-size: 11.5px; color: var(--text-secondary); line-height: 1.4; }
+.naowee-file-uploader__drop-filename { font-size: 12.5px; font-weight: 600; color: #15803d; margin-top: 2px; }
+
+/* Estado: archivo seleccionado */
+.naowee-file-uploader.has-file .naowee-file-uploader__drop-zone {
+  border-color: #b7dfb9; background: #e6f4e7;
+}
+.naowee-file-uploader.has-file .naowee-file-uploader__drop-icon { color: #15803d; }
+
+/* Error */
+.naowee-file-uploader--error .naowee-file-uploader__input-wrap { border-color: var(--field-border-error); }
+.naowee-file-uploader--error .naowee-file-uploader__drop-zone { border-color: var(--field-border-error); }
+
+@media (max-width: 600px) {
+  .naowee-file-uploader__drop-zone { padding: 22px 14px; }
+}
