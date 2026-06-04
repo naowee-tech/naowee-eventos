@@ -3,24 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Naowee Eventos — Gestión de usuarios</title>
+<title>Naowee Eventos — Gestión de usuarios v1.1.0</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="shared/tokens.css?v=0.3.0">
-<link rel="stylesheet" href="shared/shell.css?v=0.3.0">
-<link rel="stylesheet" href="shared/list-components.css?v=0.3.0">
-<link rel="stylesheet" href="shared/forms.css?v=0.3.0">
-<link rel="stylesheet" href="shared/naowee-footer.css?v=0.3.0">
-<script src="shared/naowee-footer.js?v=0.3.0" defer></script>
+<link rel="stylesheet" href="shared/tokens.css?v=0.3.1">
+<link rel="stylesheet" href="shared/shell.css?v=0.3.1">
+<link rel="stylesheet" href="shared/list-components.css?v=0.3.1">
+<link rel="stylesheet" href="shared/forms.css?v=0.3.1">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.3.1">
+<script src="shared/naowee-footer.js?v=0.3.1" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
      USUARIOS — Gestión de usuarios del módulo Eventos (solo ADMIN)
      Patrón: equipo.html (naowee-ivc) adaptado a Eventos.
-     v1.0.0
+     v1.1.0
      ═══════════════════════════════════════════════════════════════ */
 
   /* ─── Page head ─── */
@@ -34,34 +34,90 @@
   @media (max-width: 900px) { .stat-grid { grid-template-columns: 1fr; } }
   @media (min-width: 601px) and (max-width: 900px) { .stat-grid { grid-template-columns: repeat(3, 1fr); } }
 
-  .stat-card {
+  /* ─── naowee-stat-card (portado de IVC equipo.html / components.css v1.13.57) ─── */
+  .naowee-stat-card {
     background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-xl);
-    padding: 20px 22px;
+    border: 0;
+    border-radius: var(--radius-lg, 12px);
+    box-shadow: var(--shadow-card, 0 0 2px rgba(145,158,171,.2),0 12px 24px -4px rgba(145,158,171,.12));
+    padding: 18px 20px;
     display: flex; flex-direction: column; gap: 4px;
+    position: relative; overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
     animation: fadeInUp .38s cubic-bezier(.4,0,.2,1) both;
   }
-  .stat-card:nth-child(1) { animation-delay: .04s; }
-  .stat-card:nth-child(2) { animation-delay: .08s; }
-  .stat-card:nth-child(3) { animation-delay: .12s; }
-  .stat-card__value {
-    font-size: 32px; font-weight: 800; letter-spacing: -.5px;
-    color: var(--text-primary); line-height: 1;
+  .stat-grid .naowee-stat-card:nth-child(1) { animation-delay: .04s; }
+  .stat-grid .naowee-stat-card:nth-child(2) { animation-delay: .08s; }
+  .stat-grid .naowee-stat-card:nth-child(3) { animation-delay: .12s; }
+  .naowee-stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(145,158,171,.18); }
+  .naowee-stat-card__label {
+    font-size: 12px; font-weight: 600; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: .5px;
   }
-  .stat-card__value--accent  { color: var(--accent); }
-  .stat-card__value--caution { color: #e67e00; }
-  .stat-card__value--info    { color: var(--blue-info); }
-  .stat-card__label { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 4px; }
-  .stat-card__hint  { font-size: 12px; color: var(--text-secondary); }
+  .naowee-stat-card__value {
+    font-size: 32px; font-weight: 800; color: var(--text-primary);
+    letter-spacing: -.5px; line-height: 1.1;
+  }
+  .naowee-stat-card__hint { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+  /* Accent strip — 4px borde izquierdo */
+  .naowee-stat-card--accent::before,
+  .naowee-stat-card--success::before,
+  .naowee-stat-card--info::before,
+  .naowee-stat-card--caution::before {
+    content: ''; position: absolute; inset: 0 auto 0 0; width: 4px;
+  }
+  .naowee-stat-card--accent::before  { background: var(--accent, #d74009); }
+  .naowee-stat-card--success::before { background: var(--green, #1f8923); }
+  .naowee-stat-card--info::before    { background: var(--blue-info, #1f78d1); }
+  .naowee-stat-card--caution::before { background: var(--naranja, #FF7500); }
 
-  /* ─── Toolbar ─── */
+  /* ─── naowee-table-card canónica — patrón perfil.html / convocatorias ─── */
+  .naowee-table-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-xl); padding: 20px;
+    display: flex; flex-direction: column; gap: 16px;
+    animation: fadeInUp .4s cubic-bezier(.4,0,.2,1) both;
+  }
+  .tc-head { display: flex; flex-direction: column; gap: 3px; }
+  .tc-head__row { display: flex; align-items: center; gap: 10px; }
+  .tc-head__title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0; }
+  .tc-head__count {
+    margin-left: auto; font-size: 12px; font-weight: 600;
+    color: var(--text-muted, var(--text-secondary));
+  }
+  .naowee-table-card__table-wrap {
+    overflow-x: auto; overflow-y: visible;
+    scrollbar-width: none; -ms-overflow-style: none;
+  }
+  .naowee-table-card__table-wrap::-webkit-scrollbar { display: none; }
+
+  /* Tabla canónica dentro de card — thead franja gris flotante redondeada */
+  .naowee-table.naowee-table--in-card { width: 100%; border-collapse: separate; border-spacing: 0; }
+  .naowee-table.naowee-table--in-card thead tr th {
+    background: var(--bg-soft, #f5f6fa);
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .5px; color: var(--text-secondary);
+    padding: 10px 14px; border: none; white-space: nowrap;
+  }
+  .naowee-table.naowee-table--in-card thead tr th:first-child { border-radius: var(--radius-md, 8px) 0 0 var(--radius-md, 8px); }
+  .naowee-table.naowee-table--in-card thead tr th:last-child  { border-radius: 0 var(--radius-md, 8px) var(--radius-md, 8px) 0; }
+  .naowee-table.naowee-table--in-card tbody tr td {
+    padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle;
+  }
+  .naowee-table.naowee-table--in-card tbody tr:last-child td { border-bottom: none; }
+  .naowee-table.naowee-table--in-card tbody tr:hover td { background: var(--bg-soft, #f5f6fa); }
+
+  /* ─── Toolbar — searchbox 48px borde lavanda, alineado al mismo nivel que dropdowns ─── */
   .usuarios-toolbar {
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-    margin-bottom: 14px;
   }
   .usuarios-toolbar__search { flex: 0 1 300px; min-width: 220px; }
-  .usuarios-toolbar__filters { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
+  /* Searchbox: fuerza 48px de altura y borde lavanda (paridad perfil.html) */
+  .usuarios-toolbar .naowee-searchbox__input-wrap {
+    height: 48px;
+    border-color: var(--field-border-idle, #8788ab);
+  }
+  .usuarios-toolbar__filters { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; align-items: center; }
   .usuarios-toolbar__spacer  { flex: 1 1 auto; }
   .usuarios-toolbar .naowee-dropdown { width: 164px !important; }
   @media (max-width: 700px) {
@@ -98,22 +154,20 @@
   .row-acceso     { font-size: 12px; color: var(--text-secondary); font-family: 'Inter', sans-serif; white-space: nowrap; }
   .row-acceso--never { font-style: italic; color: var(--text-secondary); opacity: .7; }
 
-  /* ─── Row actions (paridad equipo.html v1.13.38) ─── */
+  /* ─── Row actions ─── */
   .row-actions {
     display: inline-flex; align-items: center; gap: 4px; justify-content: center;
   }
   .naowee-table-card,
-  .naowee-table-card__body,
+  .naowee-table-card__table-wrap,
   .row-actions,
   .row-actions .naowee-tooltip { overflow: visible !important; }
-  .naowee-table-card > div[style*="overflow-x"] {
-    overflow-x: auto !important; overflow-y: visible !important;
-  }
+  .naowee-table-card__table-wrap { overflow-x: auto !important; }
   .naowee-tooltip__content { z-index: 9999 !important; }
   .naowee-tooltip:hover .naowee-tooltip__content,
   .naowee-tooltip:focus-within .naowee-tooltip__content { opacity: 1; pointer-events: auto; transform: translateY(-6px); }
 
-  /* ── Focus-visible canónico (custom de la página) ── */
+  /* ── Focus-visible canónico ── */
   .naowee-modal__dismiss:focus-visible,
   [data-action]:focus-visible,
   .naowee-dropdown__trigger:focus-visible {
@@ -123,48 +177,32 @@
 
   /* ─── Mobile: ocultar col email y último acceso ≤700px ─── */
   @media (max-width: 700px) {
-    .naowee-table-card .naowee-table tbody td:nth-of-type(3),
-    .naowee-table-card .naowee-table tbody td:nth-of-type(5) { display: none; }
-    .naowee-table-card .naowee-table thead th:nth-of-type(3),
-    .naowee-table-card .naowee-table thead th:nth-of-type(5) { display: none; }
-    .naowee-table-card > div[style*="overflow-x"] { overflow-x: visible !important; }
+    .naowee-table.naowee-table--in-card tbody td:nth-of-type(3),
+    .naowee-table.naowee-table--in-card tbody td:nth-of-type(5) { display: none; }
+    .naowee-table.naowee-table--in-card thead th:nth-of-type(3),
+    .naowee-table.naowee-table--in-card thead th:nth-of-type(5) { display: none; }
     .naowee-badge { white-space: nowrap; }
   }
 
   /* ── Responsive ≤640px: tabla usuarios → stacked cards ── */
   @media (max-width: 640px) {
-    .naowee-table-card > div[style*="overflow-x"] { overflow-x: visible !important; }
-    .naowee-table thead { display: none; }
-    .naowee-table tbody tr {
-      display: block;
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
+    .naowee-table.naowee-table--in-card thead { display: none; }
+    .naowee-table.naowee-table--in-card tbody tr {
+      display: block; padding: 12px 16px; border-bottom: 1px solid var(--border);
     }
-    .naowee-table tbody tr:last-child { border-bottom: none; }
-    .naowee-table tbody td {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 4px 0;
-      border: none;
-      font-size: 13px;
+    .naowee-table.naowee-table--in-card tbody tr:last-child { border-bottom: none; }
+    .naowee-table.naowee-table--in-card tbody td {
+      display: flex; align-items: center; gap: 8px;
+      padding: 4px 0; border: none; font-size: 13px;
     }
-    .naowee-table tbody td::before {
+    .naowee-table.naowee-table--in-card tbody td::before {
       content: attr(data-label);
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .4px;
-      color: var(--text-muted);
-      white-space: nowrap;
-      min-width: 72px;
-      flex-shrink: 0;
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .4px; color: var(--text-muted, var(--text-secondary));
+      white-space: nowrap; min-width: 72px; flex-shrink: 0;
     }
-    /* Acción centrada sin label */
-    .naowee-table tbody td[data-label=""] {
-      justify-content: flex-end;
-    }
-    .naowee-table tbody td[data-label=""]::before { display: none; }
+    .naowee-table.naowee-table--in-card tbody td[data-label=""] { justify-content: flex-end; }
+    .naowee-table.naowee-table--in-card tbody td[data-label=""]::before { display: none; }
     .naowee-badge { white-space: nowrap; }
     .persona-cell__email { display: none; }
   }
@@ -174,7 +212,7 @@
   .form-grid__field--full { grid-column: 1 / -1; }
   @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
 
-  /* ─── Modal canónico (overlay + panel) — base que faltaba (el demo no carga el DS) ─── */
+  /* ─── Modal canónico (overlay + panel) ─── */
   .naowee-modal-overlay {
     position: fixed; inset: 0; z-index: 1000;
     display: flex; align-items: center; justify-content: center; padding: 20px;
@@ -234,7 +272,9 @@
     to   { opacity: 1; transform: scale(1); }
   }
   @media (prefers-reduced-motion: reduce) {
-    .stat-card { animation: none !important; }
+    .naowee-stat-card,
+    .naowee-table-card { animation: none !important; }
+    .naowee-stat-card { transition: none !important; }
     .naowee-modal-overlay, .naowee-modal { transition: none !important; }
   }
 
@@ -347,8 +387,8 @@
   import {
     mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher,
     getRoleFromQuery, ROLES
-  } from './shared/sidebar.js?v=0.3.0';
-  import { getUsers, addUser, updateUser, toggleUserStatus } from './shared/users-data.js?v=1.0.0';
+  } from './shared/sidebar.js?v=0.3.1';
+  import { getUsers, addUser, updateUser, toggleUserStatus } from './shared/users-data.js?v=1.0.1';
 
   /* ─── Guard de rol: solo ADMIN puede acceder ─── */
   const roleCode = getRoleFromQuery();
@@ -402,6 +442,12 @@
       '</div>' +
       buildStatGrid(stats) +
       '<section class="naowee-table-card">' +
+        '<div class="tc-head">' +
+          '<div class="tc-head__row">' +
+            '<p class="tc-head__title">Usuarios del módulo</p>' +
+            '<span class="tc-head__count" id="usuariosCount">' + escHtml(String(filtered.length)) + ' usuario' + (filtered.length !== 1 ? 's' : '') + '</span>' +
+          '</div>' +
+        '</div>' +
         buildToolbar() +
         buildTable(filtered) +
       '</section>'
@@ -425,10 +471,10 @@
   }
 
   function statCard(label, value, hint, variant) {
-    return '<div class="stat-card">' +
-      '<span class="stat-card__value stat-card__value--' + variant + '">' + value + '</span>' +
-      '<span class="stat-card__label">' + escHtml(label) + '</span>' +
-      '<span class="stat-card__hint">' + escHtml(hint) + '</span>' +
+    return '<div class="naowee-stat-card naowee-stat-card--' + variant + '">' +
+      '<span class="naowee-stat-card__label">' + escHtml(label) + '</span>' +
+      '<span class="naowee-stat-card__value">' + value + '</span>' +
+      '<span class="naowee-stat-card__hint">' + escHtml(hint) + '</span>' +
     '</div>';
   }
 
@@ -451,16 +497,8 @@
         '</div>' +
       '</div>' +
       '<div class="usuarios-toolbar__filters">' +
-        buildFilterDropdown('filtro-rol', 'Rol', [
-          { value: 'ADMIN', label: 'Administrador' },
-          { value: 'GESTOR', label: 'Gestor' },
-          { value: 'USER', label: 'Usuario' }
-        ], state.filtros.rol) +
-        buildFilterDropdown('filtro-estado', 'Estado', [
-          { value: 'activo', label: 'Activo' },
-          { value: 'pendiente', label: 'Pendiente' },
-          { value: 'inactivo', label: 'Inactivo' }
-        ], state.filtros.estado) +
+        buildDDMarkup('dd-filtro-rol',    'Todos los roles', 'Rol') +
+        buildDDMarkup('dd-filtro-estado', 'Todos',           'Estado') +
       '</div>' +
       (hasFilters
         ? '<button type="button" class="naowee-btn naowee-btn--link naowee-btn--sm btn-clear-filtros" id="btnClearFiltros">Limpiar filtros</button>'
@@ -468,23 +506,14 @@
     '</div>';
   }
 
-  function buildFilterDropdown(id, placeholder, options, current) {
-    var label = current
-      ? options.find(function (o) { return o.value === current; })?.label || placeholder
-      : placeholder;
-    return '<div class="naowee-dropdown" id="' + id + '" data-mod="1">' +
-      '<button type="button" class="naowee-dropdown__trigger" id="' + id + 'Trigger"' + (current ? ' style="border-color:var(--accent);color:var(--accent);"' : '') + '>' +
-        '<span class="naowee-dropdown__value">' + escHtml(label) + '</span>' +
-        '<span class="naowee-dropdown__chevron">' +
-          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
-        '</span>' +
+  /* Markup canónico para setupDropdown: data-dd + trigger + empty menu */
+  function buildDDMarkup(name, placeholder, sheetTitle) {
+    return '<div class="naowee-dropdown" data-dd="' + name + '" data-sheet-title="' + escHtml(sheetTitle) + '">' +
+      '<button type="button" class="naowee-dropdown__trigger" aria-expanded="false" aria-haspopup="listbox">' +
+        '<span data-dd-val class="is-placeholder">' + escHtml(placeholder) + '</span>' +
+        '<span class="naowee-dropdown__chevron"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>' +
       '</button>' +
-      '<div class="naowee-dropdown__menu" id="' + id + 'Menu" role="listbox">' +
-        '<div class="naowee-dropdown__option' + (!current ? ' naowee-dropdown__option--selected' : '') + '" role="option" data-val="">Todos</div>' +
-        options.map(function (o) {
-          return '<div class="naowee-dropdown__option' + (o.value === current ? ' naowee-dropdown__option--selected' : '') + '" role="option" data-val="' + escHtml(o.value) + '">' + escHtml(o.label) + '</div>';
-        }).join('') +
-      '</div>' +
+      '<div class="naowee-dropdown__menu" role="listbox"></div>' +
     '</div>';
   }
 
@@ -498,8 +527,16 @@
         '<p style="font-size:13px;color:var(--text-secondary);margin:0;">Ningún usuario coincide con los filtros. Ajusta la búsqueda o invita un nuevo usuario.</p>' +
       '</div>';
     }
-    return '<div style="overflow-x:auto;">' +
-      '<table class="naowee-table">' +
+    return '<div class="naowee-table-card__table-wrap">' +
+      '<table class="naowee-table naowee-table--in-card">' +
+        '<colgroup>' +
+          '<col style="width:28%">' +
+          '<col style="width:20%">' +
+          '<col style="width:22%">' +
+          '<col style="width:14%">' +
+          '<col style="width:10%">' +
+          '<col style="width:6%">' +
+        '</colgroup>' +
         '<thead><tr>' +
           '<th>Usuario</th>' +
           '<th>Rol</th>' +
@@ -598,6 +635,97 @@
     });
   }
 
+  /* ════════════════ Dropdown genérico canónico (flotante/bottom-sheet)
+     Portado de evento-crear.html — idéntico a perfil.html / eventos.html ════════ */
+  const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  const ICON_X     = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+
+  let _sheetBackdrop = null;
+  function ensureBackdrop() {
+    if (_sheetBackdrop) return _sheetBackdrop;
+    _sheetBackdrop = document.createElement('div');
+    _sheetBackdrop.className = 'naowee-sheet-backdrop';
+    document.body.appendChild(_sheetBackdrop);
+    _sheetBackdrop.addEventListener('click', closeAllPopovers);
+    return _sheetBackdrop;
+  }
+  function isMobile() { return window.matchMedia('(max-width: 760px)').matches; }
+  function closeAllPopovers() {
+    document.querySelectorAll('.naowee-dropdown.is-open').forEach((el) => el.classList.remove('is-open'));
+    if (_sheetBackdrop) _sheetBackdrop.classList.remove('is-open');
+  }
+
+  /* setupDropdown — canonical floating/bottom-sheet dropdown
+     opts = [{value, label}]
+     onSelect(chosen) called with chosen option object
+     getSelected() returns current value string */
+  function setupDropdown(name, opts, onSelect, getSelected) {
+    const dd = document.querySelector(`[data-dd="${name}"]`);
+    if (!dd) return null;
+    const menu = dd.querySelector('.naowee-dropdown__menu');
+    const valEl = dd.querySelector('[data-dd-val]');
+    const trigger = dd.querySelector('.naowee-dropdown__trigger');
+    const sheetTitle = dd.getAttribute('data-sheet-title') || 'Selecciona';
+
+    function paint() {
+      const sel = getSelected ? getSelected() : null;
+      const sheetHead = `<div class="naowee-dropdown__sheet-head"><span class="naowee-dropdown__sheet-title">${sheetTitle}</span><button type="button" class="naowee-dropdown__sheet-close" data-close aria-label="Cerrar">${ICON_X}</button></div>`;
+      const body = opts.length
+        ? opts.map((o) => `
+            <button type="button" class="naowee-dropdown__opt ${o.value === sel ? 'is-selected' : ''}" data-val="${o.value}">
+              <span>${o.label}</span>
+              <span class="naowee-dropdown__opt-check">${ICON_CHECK}</span>
+            </button>`).join('')
+        : `<div class="naowee-dropdown__empty">Sin opciones disponibles</div>`;
+      menu.innerHTML = sheetHead + body;
+      menu.querySelectorAll('.naowee-dropdown__opt').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const chosen = opts.find((o) => o.value === btn.dataset.val);
+          onSelect(chosen);
+          close();
+        });
+      });
+      menu.querySelector('[data-close]')?.addEventListener('click', (e) => { e.stopPropagation(); close(); });
+    }
+    function open() {
+      if (dd.classList.contains('naowee-dropdown--disabled')) return;
+      closeAllPopovers();
+      paint();
+      dd.classList.remove('is-up');
+      if (!isMobile()) {
+        const r = trigger.getBoundingClientRect();
+        const espacioAbajo = window.innerHeight - r.bottom;
+        if (espacioAbajo < 300 && r.top > espacioAbajo) dd.classList.add('is-up');
+      }
+      dd.classList.add('is-open');
+      trigger.setAttribute('aria-expanded', 'true');
+      if (isMobile()) ensureBackdrop().classList.add('is-open');
+    }
+    function close() {
+      dd.classList.remove('is-open');
+      trigger.setAttribute('aria-expanded', 'false');
+      if (_sheetBackdrop && !document.querySelector('.naowee-dropdown.is-open')) _sheetBackdrop.classList.remove('is-open');
+    }
+
+    trigger.addEventListener('click', (e) => { e.stopPropagation(); dd.classList.contains('is-open') ? close() : open(); });
+    return {
+      el: dd, valEl,
+      setLabel(label, isPlaceholder) { valEl.textContent = label; valEl.classList.toggle('is-placeholder', !!isPlaceholder); },
+      setOpts(next) { opts = next; },
+      close
+    };
+  }
+
+  /* Click fuera cierra todos los dropdowns */
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.naowee-dropdown')) closeAllPopovers();
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllPopovers(); });
+
+  /* Refs a los dropdowns de filtro (se recrean en cada render) */
+  let _ddRol = null, _ddEstado = null;
+
   /* ─── Wire events ─── */
   function wireEvents() {
     /* Invitar CTA */
@@ -612,7 +740,7 @@
         state.filtros.q = searchEl.value;
         if (clearEl) clearEl.style.display = searchEl.value ? '' : 'none';
         if (wrapEl) wrapEl.classList.toggle('naowee-searchbox--has-value', !!searchEl.value);
-        render();
+        renderTable();
       });
     }
     if (clearEl) {
@@ -628,9 +756,37 @@
       render();
     });
 
-    /* Filter dropdowns */
-    wireFilterDropdown('filtro-rol',    function (v) { state.filtros.rol    = v; });
-    wireFilterDropdown('filtro-estado', function (v) { state.filtros.estado = v; });
+    /* ── Dropdowns de filtro con setupDropdown canónico ── */
+    const ROL_OPTS = [
+      { value: '', label: 'Todos los roles' },
+      { value: 'ADMIN',  label: 'Administrador' },
+      { value: 'GESTOR', label: 'Gestor' },
+      { value: 'USER',   label: 'Usuario' }
+    ];
+    const ESTADO_OPTS = [
+      { value: '',         label: 'Todos' },
+      { value: 'activo',   label: 'Activo' },
+      { value: 'pendiente',label: 'Pendiente' },
+      { value: 'inactivo', label: 'Inactivo' }
+    ];
+
+    _ddRol = setupDropdown('dd-filtro-rol', ROL_OPTS,
+      (o) => { state.filtros.rol = o ? o.value : ''; render(); },
+      () => state.filtros.rol
+    );
+    if (_ddRol) {
+      var rolLabel = ROL_OPTS.find((o) => o.value === state.filtros.rol);
+      _ddRol.setLabel(rolLabel ? rolLabel.label : 'Todos los roles', !state.filtros.rol);
+    }
+
+    _ddEstado = setupDropdown('dd-filtro-estado', ESTADO_OPTS,
+      (o) => { state.filtros.estado = o ? o.value : ''; render(); },
+      () => state.filtros.estado
+    );
+    if (_ddEstado) {
+      var estLabel = ESTADO_OPTS.find((o) => o.value === state.filtros.estado);
+      _ddEstado.setLabel(estLabel ? estLabel.label : 'Todos', !state.filtros.estado);
+    }
 
     /* Row actions */
     document.querySelectorAll('[data-action]').forEach(function (btn) {
@@ -647,32 +803,38 @@
     });
   }
 
-  function wireFilterDropdown(id, onChange) {
-    var trigger = document.getElementById(id + 'Trigger');
-    var menu    = document.getElementById(id + 'Menu');
-    if (!trigger || !menu) return;
-
-    trigger.addEventListener('click', function (e) {
-      e.stopPropagation();
-      var dd = document.getElementById(id);
-      var isOpen = dd.classList.contains('naowee-dropdown--open');
-      document.querySelectorAll('.naowee-dropdown--open').forEach(function (d) { d.classList.remove('naowee-dropdown--open'); });
-      if (!isOpen) dd.classList.add('naowee-dropdown--open');
-    });
-
-    menu.querySelectorAll('.naowee-dropdown__option').forEach(function (opt) {
-      opt.addEventListener('click', function (e) {
-        e.stopPropagation();
-        var val = opt.getAttribute('data-val');
-        onChange(val);
-        document.getElementById(id).classList.remove('naowee-dropdown--open');
-        render();
-      });
-    });
-
-    document.addEventListener('click', function () {
-      document.getElementById(id)?.classList.remove('naowee-dropdown--open');
-    }, { once: false, capture: false });
+  /* Re-render only the table section (keep search focus) */
+  function renderTable() {
+    var users = getUsers();
+    var filtered = applyFilters(users);
+    var wrap = document.querySelector('.naowee-table-card__table-wrap');
+    if (!wrap) { render(); return; }
+    /* Update count label */
+    var countEl = document.getElementById('usuariosCount');
+    if (countEl) countEl.textContent = filtered.length + ' usuario' + (filtered.length !== 1 ? 's' : '');
+    /* Replace only table content */
+    if (filtered.length === 0) {
+      wrap.innerHTML = '<div class="naowee-empty-state" style="padding:48px 24px;text-align:center;">' +
+        '<p style="font-size:14px;font-weight:600;color:var(--text-primary);margin:0 0 6px;">Sin resultados</p>' +
+        '<p style="font-size:13px;color:var(--text-secondary);margin:0;">Ningún usuario coincide con los filtros.</p>' +
+        '</div>';
+    } else {
+      var tbody = wrap.querySelector('tbody');
+      if (tbody) {
+        tbody.innerHTML = filtered.map(buildRow).join('');
+        /* Re-wire row action buttons */
+        tbody.querySelectorAll('[data-action]').forEach(function (btn) {
+          btn.addEventListener('click', function (ev) {
+            ev.preventDefault();
+            var action = btn.getAttribute('data-action');
+            var id     = btn.getAttribute('data-id');
+            if (action === 'editar')     openEditar(id);
+            if (action === 'desactivar') openToggleStatus(id, false);
+            if (action === 'activar')    openToggleStatus(id, true);
+          });
+        });
+      } else { render(); }
+    }
   }
 
   /* ─── Modal: Invitar / Editar ─── */

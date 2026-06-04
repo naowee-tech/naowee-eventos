@@ -19,7 +19,7 @@
 <style>
   /* ═══════════════════════════════════════════════════════════════
      PERFIL DEL DEPORTISTA — Solo lectura. Todos los roles.
-     v1.1.0
+     v1.2.0
      ═══════════════════════════════════════════════════════════════ */
 
   /* ── Page head ── */
@@ -48,6 +48,8 @@
   }
   /* Dropdowns de filtro: ancho fijo compacto */
   .perfil-toolbar .naowee-dropdown { width: 148px; }
+  /* Alinea el searchbox con los dropdowns en la toolbar: misma altura (48px) + borde lavanda canónico. */
+  .perfil-toolbar .naowee-searchbox__input-wrap { height: 48px; border-color: var(--field-border-idle, #8788ab); }
 
   /* Resultados del search dropdown */
   .search-results {
@@ -100,9 +102,13 @@
   .perfil-header {
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius-xl); padding: 24px 28px;
-    margin-bottom: 16px; animation: fadeInUp .35s var(--easing-smoothout) both;
+    margin-bottom: 22px; animation: fadeInUp .35s var(--easing-smoothout) both;
     display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap;
   }
+
+  /* ── Separación entre table-cards del perfil ── */
+  #perfilContent .naowee-table-card { margin-bottom: 20px; }
+  #perfilContent .naowee-table-card:last-child { margin-bottom: 0; }
   /* Avatar redondo grande con glow naranja — replicado de incentivos */
   .perfil-avatar {
     width: 84px; height: 84px; border-radius: 50%;
@@ -120,27 +126,50 @@
   .perfil-header__doc { font-size: 13px; color: var(--text-secondary); margin: 0 0 10px; }
   .perfil-header__badges { display: flex; flex-wrap: wrap; gap: 8px; }
   .perfil-badge {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 4px 10px; border-radius: var(--radius-full);
-    font-size: 11px; font-weight: 700; letter-spacing: .3px;
-    border: 1.5px solid; background: transparent;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: var(--radius-full);
+    font-size: 11.5px; font-weight: 700; letter-spacing: .25px;
+    border: 1.5px solid; line-height: 1;
+    box-shadow: 0 1px 3px rgba(40,40,52,.07);
+    transition: box-shadow var(--duration-fast);
   }
-  .perfil-badge--deporte { border-color: var(--border-dark); color: var(--text-secondary); }
+  .perfil-badge--deporte {
+    border-color: #d0d4e6; color: var(--text-secondary);
+    background: #f5f6fa;
+  }
   .perfil-badge--club {
-    border-color: color-mix(in srgb, var(--blue-info) 35%, transparent);
-    color: var(--blue-info);
-    background: color-mix(in srgb, var(--blue-info) 8%, transparent);
+    border-color: #c7defa; color: #1d4ed8;
+    background: #eef5ff;
+    box-shadow: 0 1px 3px rgba(29,78,216,.10);
   }
   .perfil-badge--liga {
-    border-color: color-mix(in srgb, var(--green) 35%, transparent);
-    color: var(--green);
-    background: color-mix(in srgb, var(--green) 8%, transparent);
+    border-color: #b7dfb9; color: #1f8923;
+    background: #e6f4e7;
+    box-shadow: 0 1px 3px rgba(31,137,35,.10);
   }
   .perfil-badge--federacion {
-    border-color: color-mix(in srgb, var(--naranja) 35%, transparent);
-    color: var(--naranja);
-    background: color-mix(in srgb, var(--naranja) 8%, transparent);
+    border-color: #ffd9b3; color: #d74009;
+    background: #fff3e6;
+    box-shadow: 0 1px 3px rgba(215,64,9,.10);
   }
+
+  /* ═════ Tier badge (copiado 1:1 de incentivos) ═════ */
+  .profile-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 9999px;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: .3px; text-transform: uppercase;
+    border: 1px solid transparent; line-height: 1;
+  }
+  .profile-tag svg { width: 12px; height: 12px; flex-shrink: 0; }
+  .profile-tag--amateur { background: #f5f6fa; color: #646587; border-color: #e7e9f3; }
+  .profile-tag--profesional { background: #eef5ff; color: #1d4ed8; border-color: #c7defa; }
+  .profile-tag--olimpico {
+    background: linear-gradient(135deg,#fff8d6,#ffe082);
+    color: #8a5a00; border-color: #ffd166;
+    box-shadow: 0 2px 6px rgba(255,179,0,.18);
+  }
+  .profile-tag--juvenil { background: #f3e8ff; color: #7c3aed; border-color: #dcc5ff; }
 
   /* Stack derecho: counters + medal-strip */
   .perfil-side {
@@ -231,6 +260,20 @@
     box-shadow: 0 0 0 3px rgba(215,64,9,.18);
   }
 
+  /* ── Empty-state dentro de table-card (secciones vacías) ── */
+  .tc-empty-state {
+    padding: 40px 24px 36px; text-align: center;
+  }
+  .tc-empty-state .empty-state__icon {
+    width: 48px; height: 48px; margin: 0 auto 14px;
+    background: var(--bg-soft); border-radius: var(--radius-full);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted);
+  }
+  .tc-empty-state .empty-state__icon svg { width: 24px; height: 24px; }
+  .tc-empty-state .empty-state__title { font-size: 14px; font-weight: 700; color: var(--text-primary); margin: 0 0 6px; }
+  .tc-empty-state .empty-state__desc { font-size: 12.5px; color: var(--text-secondary); margin: 0 auto; max-width: 320px; }
+
   /* ── Stacked cards móvil en .naowee-table--in-card ── */
   @media (max-width: 640px) {
     .naowee-table--in-card thead { display: none; }
@@ -313,7 +356,7 @@
           <div class="perfil-toolbar">
             <!-- Searchbox deportista -->
             <div class="perfil-toolbar__search">
-              <div class="naowee-searchbox naowee-searchbox--medium" id="deportistaSearchbox">
+              <div class="naowee-searchbox" id="deportistaSearchbox">
                 <div class="naowee-searchbox__input-wrap">
                   <span class="naowee-searchbox__icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -476,10 +519,18 @@ import {
 } from './shared/sidebar.js';
 
 /* ─── Datos mock ─── */
+/* ─── Tiers de deportistas ─── */
+const TIERS = {
+  olimpico:    { cls:'profile-tag--olimpico',    label:'Olímpico',    ico:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="9" r="3.5"/><circle cx="12" cy="9" r="3.5"/><circle cx="18" cy="9" r="3.5"/><circle cx="9" cy="15" r="3.5"/><circle cx="15" cy="15" r="3.5"/></svg>' },
+  profesional: { cls:'profile-tag--profesional', label:'Profesional', ico:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' },
+  juvenil:     { cls:'profile-tag--juvenil',     label:'Juvenil',    ico:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>' },
+  amateur:     { cls:'profile-tag--amateur',     label:'Amateur',    ico:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>' },
+};
+
 const DEPORTISTAS = [
   {
     id: 'd1', nombre: 'Valentina Ríos', doc: 'CC 1.032.987.456',
-    avatar: 'VR', deporte: '🏊 Natación',
+    avatar: 'VR', deporte: '🏊 Natación', tier: 'olimpico',
     club: 'Club Aqua Valle', liga: 'Liga de Natación del Valle', federacion: 'Fedecua',
     inscripciones: [
       { evento: 'Copa Nacional de Natación 2025', deporte: 'Natación', prueba: '100m Libre', fecha: '2025-03-14', estado: 'finalizado' },
@@ -497,7 +548,7 @@ const DEPORTISTAS = [
   },
   {
     id: 'd2', nombre: 'Andrés Mora', doc: 'CC 79.654.231',
-    avatar: 'AM', deporte: '⚽ Fútbol',
+    avatar: 'AM', deporte: '⚽ Fútbol', tier: 'profesional',
     club: 'Deportivo Cali Amateur', liga: 'Liga de Fútbol del Valle', federacion: 'Difútbol',
     inscripciones: [
       { evento: 'Campeonato Departamental de Fútbol 2025', deporte: 'Fútbol', prueba: 'Fútbol 11', fecha: '2025-04-05', estado: 'finalizado' },
@@ -512,7 +563,7 @@ const DEPORTISTAS = [
   },
   {
     id: 'd3', nombre: 'Sofía Castro', doc: 'CC 1.040.112.882',
-    avatar: 'SC', deporte: '🤸 Atletismo',
+    avatar: 'SC', deporte: '🤸 Atletismo', tier: 'olimpico',
     club: 'Club Atletismo Valle', liga: 'Liga Atletismo Antioquia', federacion: 'Fedeatletas',
     inscripciones: [
       { evento: 'Copa Nacional de Atletismo Indoor 2025', deporte: 'Atletismo', prueba: '100m planos', fecha: '2025-08-22', estado: 'finalizado' },
@@ -528,7 +579,7 @@ const DEPORTISTAS = [
   },
   {
     id: 'd4', nombre: 'Carlos Jiménez', doc: 'CC 94.221.003',
-    avatar: 'CJ', deporte: '🏀 Baloncesto',
+    avatar: 'CJ', deporte: '🏀 Baloncesto', tier: 'juvenil',
     club: 'Club Baloncesto Bogotá', liga: 'Liga de Baloncesto de Cundinamarca', federacion: 'Fecoba',
     inscripciones: [
       { evento: 'Copa Colombia Deportes Acuáticos 2026', deporte: 'Baloncesto', prueba: 'Baloncesto 5×5', fecha: '2026-02-20', estado: 'activo' },
@@ -539,7 +590,7 @@ const DEPORTISTAS = [
   },
   {
     id: 'd5', nombre: 'María Gómez', doc: 'CC 52.112.776',
-    avatar: 'MG', deporte: '🥋 Judo',
+    avatar: 'MG', deporte: '🥋 Judo', tier: 'profesional',
     club: 'Dojo Pacífico', liga: 'Liga Colombiana de Judo', federacion: 'Fedjudo',
     inscripciones: [
       { evento: 'Juegos Regionales Valle 2025', deporte: 'Judo', prueba: 'Judo −57kg (F)', fecha: '2025-07-10', estado: 'finalizado' }
@@ -553,7 +604,7 @@ const DEPORTISTAS = [
   },
   {
     id: 'd6', nombre: 'Pedro Suárez', doc: 'CC 79.003.445',
-    avatar: 'PS', deporte: '🏊 Natación',
+    avatar: 'PS', deporte: '🏊 Natación', tier: 'amateur',
     club: 'Club Aqua Valle', liga: 'Liga de Natación del Valle', federacion: 'Fedecua',
     inscripciones: [
       { evento: 'Copa Nacional de Natación 2025', deporte: 'Natación', prueba: '50m Libre', fecha: '2025-03-14', estado: 'finalizado' },
@@ -841,9 +892,14 @@ function renderPerfil(d) {
   const bronce = med.filter(m => m.medalla === 'Bronce').length;
 
   /* Header */
+  const tier = d.tier ? TIERS[d.tier] : null;
+  const tierBadge = tier
+    ? `<div style="margin-bottom:6px"><span class="profile-tag ${tier.cls}">${tier.ico} ${tier.label}</span></div>`
+    : '';
   document.getElementById('perfilHeaderCard').innerHTML = `
     <div class="perfil-avatar">${d.avatar}</div>
     <div class="perfil-header__info">
+      ${tierBadge}
       <h2 class="perfil-header__name">${d.nombre}</h2>
       <p class="perfil-header__doc">${d.doc}</p>
       <div class="perfil-header__badges">
@@ -861,41 +917,65 @@ function renderPerfil(d) {
       ${renderMedalStrip(d.medalleria)}
     </div>`;
 
+  /* ─── helpers de empty-state ─── */
+  function showTableOrEmpty(wrapId, tableId, emptyId, hasRows) {
+    const tableWrap = document.getElementById(tableId).closest('.naowee-table-card__table-wrap');
+    let emptyEl = document.getElementById(emptyId);
+    if (hasRows) {
+      if (tableWrap) tableWrap.style.display = '';
+      if (emptyEl) emptyEl.remove();
+    } else {
+      if (tableWrap) tableWrap.style.display = 'none';
+      if (!emptyEl) {
+        const card = document.getElementById(wrapId);
+        const snippets = {
+          secInscripciones: `<div class="tc-empty-state" id="${emptyId}"><div class="empty-state__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 0 0 4v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4a2 2 0 0 0 0-4z"/><line x1="12" y1="3" x2="12" y2="21" stroke-dasharray="2 2"/></svg></div><p class="empty-state__title">Sin inscripciones registradas</p><p class="empty-state__desc">No hay inscripciones que coincidan con los filtros seleccionados.</p></div>`,
+          secResultados:    `<div class="tc-empty-state" id="${emptyId}"><div class="empty-state__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="4" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="20" y1="20" x2="20" y2="14"/></svg></div><p class="empty-state__title">Sin resultados registrados</p><p class="empty-state__desc">No hay resultados que coincidan con los filtros seleccionados.</p></div>`,
+          secMedalleria:    `<div class="tc-empty-state" id="${emptyId}"><div class="empty-state__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="15" r="6"/><path d="M12 12v3l2 1"/><path d="M8.5 9.5L6 3M15.5 9.5L18 3"/></svg></div><p class="empty-state__title">Sin medallas registradas</p><p class="empty-state__desc">No hay medallas que coincidan con los filtros seleccionados.</p></div>`,
+        };
+        card.insertAdjacentHTML('beforeend', snippets[wrapId] || '');
+      }
+    }
+  }
+
   /* Inscripciones */
   document.getElementById('countInscripciones').textContent = `${ins.length} registro${ins.length !== 1 ? 's' : ''}`;
-  document.getElementById('bodyInscripciones').innerHTML = ins.length
-    ? ins.map(r => `
+  if (ins.length) {
+    document.getElementById('bodyInscripciones').innerHTML = ins.map(r => `
         <tr>
           <td data-label="Evento"><strong style="font-size:13px">${r.evento}</strong></td>
           <td data-label="Deporte / Prueba">${r.deporte} · <span style="color:var(--text-secondary)">${r.prueba}</span></td>
           <td data-label="Fecha" style="color:var(--text-muted);font-size:12px">${fmtFecha(r.fecha)}</td>
           <td data-label="Estado">${estadoBadge(r.estado)}</td>
-        </tr>`).join('')
-    : `<tr><td colspan="4" style="padding:32px 18px;text-align:center;font-size:13px;color:var(--text-muted);font-style:italic">No hay inscripciones con los filtros seleccionados.</td></tr>`;
+        </tr>`).join('');
+  }
+  showTableOrEmpty('secInscripciones', 'tablaInscripciones', 'emptyInscripciones', ins.length > 0);
 
   /* Resultados */
   document.getElementById('countResultados').textContent = `${res.length} registro${res.length !== 1 ? 's' : ''}`;
-  document.getElementById('bodyResultados').innerHTML = res.length
-    ? res.map(r => `
+  if (res.length) {
+    document.getElementById('bodyResultados').innerHTML = res.map(r => `
         <tr>
           <td data-label="Evento"><strong style="font-size:13px">${r.evento}</strong></td>
           <td data-label="Deporte / Prueba">${r.deporte} · <span style="color:var(--text-secondary)">${r.prueba}</span></td>
           <td data-label="Ranking"><span class="rank-val">#${r.ranking}</span></td>
           <td data-label="Fecha" style="color:var(--text-muted);font-size:12px">${fmtFecha(r.fecha)}</td>
-        </tr>`).join('')
-    : `<tr><td colspan="4" style="padding:32px 18px;text-align:center;font-size:13px;color:var(--text-muted);font-style:italic">No hay resultados con los filtros seleccionados.</td></tr>`;
+        </tr>`).join('');
+  }
+  showTableOrEmpty('secResultados', 'tablaResultados', 'emptyResultados', res.length > 0);
 
   /* Medallería */
   document.getElementById('countMedalleria').textContent = `${med.length} medalla${med.length !== 1 ? 's' : ''}`;
-  document.getElementById('bodyMedalleria').innerHTML = med.length
-    ? med.map(r => `
+  if (med.length) {
+    document.getElementById('bodyMedalleria').innerHTML = med.map(r => `
         <tr>
           <td data-label="Evento"><strong style="font-size:13px">${r.evento}</strong></td>
           <td data-label="Deporte / Prueba">${r.deporte} · <span style="color:var(--text-secondary)">${r.prueba}</span></td>
           <td data-label="Medalla"><span class="medal-ico">${medalIco(r.medalla)}</span> <span style="font-weight:700;font-size:13px">${r.medalla}</span></td>
           <td data-label="Fecha" style="color:var(--text-muted);font-size:12px">${fmtFecha(r.fecha)}</td>
-        </tr>`).join('')
-    : `<tr><td colspan="4" style="padding:32px 18px;text-align:center;font-size:13px;color:var(--text-muted);font-style:italic">No hay medallas con los filtros seleccionados.</td></tr>`;
+        </tr>`).join('');
+  }
+  showTableOrEmpty('secMedalleria', 'tablaMedalleria', 'emptyMedalleria', med.length > 0);
 }
 
 function fmtFecha(iso) {
