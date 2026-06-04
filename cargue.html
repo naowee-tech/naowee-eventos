@@ -52,13 +52,11 @@
   .carg-tabs-card__head svg { width: 18px; height: 18px; color: var(--text-secondary); flex-shrink: 0; }
   .carg-tabs-card__head h3 { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0; }
 
-  /* Tab bar (3 tabs) — reusa .naowee-segment, full-width y con íconos */
-  .carg-tabs.naowee-segment { width: 100%; height: 46px; margin-bottom: 20px; }
-  .carg-tabs .naowee-segment__item { flex: 1; gap: 7px; font-size: 13.5px; padding: 0 12px; }
-  .carg-tabs .naowee-segment__item svg { width: 16px; height: 16px; flex-shrink: 0; }
+  /* Tab bar (3 tabs) — .naowee-tabs canónico (proporcional, underline ::after) */
+  .carg-tabs { margin-bottom: 20px; }
 
-  /* ── Sub-segmento Masivo/Manual ── */
-  .carg-mode-bar { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+  /* ── Sub-segmento Masivo/Manual — CENTRADO bajo los tabs ── */
+  .carg-mode-bar { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
 
   /* ── Gate por estado (borrador / finalizado) ── */
   .carg-gate {
@@ -115,14 +113,9 @@
   .carg-results__stat--err   .carg-results__stat-val { color: var(--red); }
   .carg-results__body { padding: 16px 18px; }
   .carg-results__section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--text-secondary); margin-bottom: 10px; }
-  .carg-err-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
-  .carg-err-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 13px; background: var(--red-bg); border: 1px solid var(--red-border); border-radius: var(--radius-md); font-size: 12.5px; }
-  .carg-err-row__ico { flex-shrink: 0; margin-top: 1px; display: flex; }
-  .carg-err-row__ico svg { width: 15px; height: 15px; color: var(--red); }
-  .carg-err-row__fila { font-weight: 700; color: var(--red); white-space: nowrap; }
-  .carg-err-row__msg { color: var(--text-primary); }
-  .carg-ok-badge { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; background: var(--green-bg); border: 1px solid var(--green-border); border-radius: var(--radius-full); font-size: 12px; font-weight: 700; color: var(--green); }
-  .carg-ok-badge svg { width: 14px; height: 14px; }
+  /* Filas con error → cada una es un .naowee-message--negative canónico */
+  .carg-err-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .carg-err-list .naowee-message__body strong { color: var(--red); font-weight: 700; white-space: nowrap; }
   .carg-results__actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-top: 1px solid var(--border); flex-wrap: wrap; }
   .carg-results__actions-note { font-size: 12px; color: var(--text-secondary); flex: 1; min-width: 160px; }
 
@@ -182,19 +175,12 @@
   .carg-file__body { display: none; border-top: 1px solid var(--border); padding: 14px 16px 16px; background: var(--bg-soft); }
   .carg-file.is-open .carg-file__body { display: block; animation: fadeIn .25s ease both; }
 
-  /* Tabla de la data cargada (columnas de la planilla) — scroll horizontal */
-  .carg-file__table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); -webkit-overflow-scrolling: touch; }
-  table.carg-data-table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 640px; }
-  table.carg-data-table thead th {
-    background: #f4f5f9; color: var(--text-secondary); font-weight: 700; font-size: 11px;
-    text-transform: uppercase; letter-spacing: .3px; text-align: left; padding: 9px 12px;
-    white-space: nowrap; border-bottom: 1px solid var(--border); position: sticky; top: 0;
-  }
-  table.carg-data-table tbody td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text-primary); white-space: nowrap; }
-  table.carg-data-table tbody tr:last-child td { border-bottom: 0; }
-  table.carg-data-table tbody tr:nth-child(even) td { background: var(--bg-soft); }
-  table.carg-data-table .num { text-align: center; font-feature-settings: 'tnum'; font-weight: 600; }
-  .carg-file__table-foot { font-size: 11.5px; color: var(--text-muted); margin-top: 8px; }
+  /* Tabla de la data cargada → card-table canónica (.naowee-table--in-card) con scroll horizontal */
+  .carg-data-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: var(--radius-lg); }
+  .carg-data-scroll .naowee-table--in-card { table-layout: auto; min-width: 760px; }
+  .carg-data-scroll .naowee-table--in-card tbody td { white-space: nowrap; }
+  .carg-data-scroll .naowee-table--in-card .num { text-align: center; font-feature-settings: 'tnum'; }
+  .carg-file__table-foot { font-size: 11.5px; color: var(--text-muted); margin-top: 10px; }
 
   /* ── Toast (inyectado) ── */
 
@@ -211,7 +197,6 @@
   #submitBtn:focus-visible,
   #manualSaveBtn:focus-visible,
   .inscribir-btn:focus-visible,
-  .carg-tabs .naowee-segment__item:focus-visible,
   .naowee-dropdown__trigger:focus-visible,
   #evPickerCta:focus-visible {
     outline: none; box-shadow: 0 0 0 3px rgba(215,64,9,.18);
@@ -223,10 +208,11 @@
     .carg-results__summary { flex-direction: column; }
     .carg-results__stat { border-right: 0; border-bottom: 1px solid var(--border); }
     .carg-results__stat:last-child { border-bottom: 0; }
-    .carg-tabs .naowee-segment__item { font-size: 12px; gap: 5px; padding: 0 8px; }
+    .carg-tabs .naowee-tab { font-size: 12.5px; gap: 5px; padding: 0 8px; }
+    .carg-tabs .naowee-tab svg { width: 15px; height: 15px; }
   }
   @media (max-width: 640px) {
-    .carg-tabs .naowee-segment__item .carg-tab-lbl { font-size: 11.5px; }
+    .carg-tabs .naowee-tab { font-size: 11.5px; padding: 0 6px; }
     .carg-manual-grid__header.g-ranking,
     .carg-manual-row.g-ranking { grid-template-columns: 1fr 90px 90px; }
     .carg-manual-grid__header.g-ranking *:nth-child(4),
@@ -330,7 +316,9 @@
     search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
     inbox: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',
     info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
-    lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
+    lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+    checkCircle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+    bang: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
   };
 
   /* ─── Config por tipo (label, plantilla, columnas de la planilla) ─── */
@@ -616,22 +604,29 @@
       ${detailHTML()}
       <section class="carg-tabs-card" aria-label="Cargues del evento">
         <div class="carg-tabs-card__head">${I.upload}<h3>Cargues del evento</h3></div>
-        <div class="naowee-segment carg-tabs" data-segmented id="tipoTabs" role="tablist" aria-label="Tipo de cargue">
-          <span class="naowee-segment__pill" aria-hidden="true"></span>
+        <div class="naowee-tabs naowee-tabs--proportional carg-tabs" id="tipoTabs" role="tablist" aria-label="Tipo de cargue">
           ${TIPOS.map((t) => `
-            <button class="naowee-segment__item${t === activeTipo ? ' naowee-segment__item--active' : ''}" data-val="${t}" type="button" role="tab" aria-selected="${t === activeTipo}">
+            <button class="naowee-tab${t === activeTipo ? ' naowee-tab--selected' : ''}" data-tab="${t}" type="button" role="tab" aria-selected="${t === activeTipo}">
               ${getIcon(TIPO_CFG[t].icon)}<span class="carg-tab-lbl">${TIPO_CFG[t].tabLabel}</span>
             </button>`).join('')}
         </div>
         <div id="tabPanel"></div>
       </section>
     `;
-    bindSegment(document.getElementById('tipoTabs'), () => activeTipo, (val) => {
-      if (val === activeTipo) return;
-      activeTipo = val;
-      activeMode = 'masivo';
-      selectedFile = null; parseResults = null;
-      renderTabPanel();
+    document.querySelectorAll('#tipoTabs .naowee-tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const val = tab.dataset.tab;
+        if (val === activeTipo) return;
+        activeTipo = val;
+        activeMode = 'masivo';
+        selectedFile = null; parseResults = null;
+        document.querySelectorAll('#tipoTabs .naowee-tab').forEach((t) => {
+          const on = t.dataset.tab === val;
+          t.classList.toggle('naowee-tab--selected', on);
+          t.setAttribute('aria-selected', String(on));
+        });
+        renderTabPanel();
+      });
     });
     renderTabPanel();
   }
@@ -712,18 +707,9 @@
 
         <div class="naowee-file-uploader" id="fileUploader">
           <span class="naowee-file-uploader__label naowee-file-uploader__label--required">Archivo de cargue</span>
-          <div class="naowee-file-uploader__input-wrap">
-            <button class="naowee-file-uploader__btn" type="button" id="browseBtn">${I.upload} Seleccionar archivo</button>
-            <span class="naowee-file-uploader__placeholder" id="filePlaceholder">Ningún archivo seleccionado</span>
-            <button class="naowee-file-uploader__dismiss" type="button" id="fileDismiss" title="Quitar archivo">${I.x}</button>
-          </div>
           <input type="file" id="fileInput" accept=".xlsx,.xls" tabindex="-1">
-          <div class="naowee-file-uploader__drop-zone" id="dropZone">
-            <input type="file" id="fileInputDrop" accept=".xlsx,.xls">
-            <span class="naowee-file-uploader__drop-icon">${I.upload}</span>
-            <span class="naowee-file-uploader__drop-title">Arrastra aquí tu archivo .xlsx</span>
-            <span class="naowee-file-uploader__drop-hint">Solo .xlsx · peso máximo 50 MB · sin límite de registros</span>
-          </div>
+          <div id="uploaderBody"></div>
+          <div id="uploaderHelper"></div>
           <div class="carg-upload-hint">${I.info}<span>${esc(cfg.hint)}</span></div>
         </div>
 
@@ -737,47 +723,88 @@
     bindMasivo(cfg);
   }
 
+  /* Uploader con estados canónicos:
+       idle    → botón "Seleccionar archivo" + dropzone
+       success → tag con check verde + nombre + extensión + dismiss (oculta dropzone)
+       error   → dropzone con borde error + helper--negative debajo */
   function bindMasivo(cfg) {
     const uploader = document.getElementById('fileUploader');
     const fileInput = document.getElementById('fileInput');
-    const fileInputDrop = document.getElementById('fileInputDrop');
-    const browseBtn = document.getElementById('browseBtn');
-    const dismiss = document.getElementById('fileDismiss');
-    const placeholder = document.getElementById('filePlaceholder');
-    const dropZone = document.getElementById('dropZone');
+    const body = document.getElementById('uploaderBody');
+    const helperSlot = document.getElementById('uploaderHelper');
     const analyzeBtn = document.getElementById('analyzeBtn');
 
-    function setFile(f) {
-      if (!f) {
-        selectedFile = null;
-        uploader.classList.remove('has-file');
-        placeholder.textContent = 'Ningún archivo seleccionado';
-        placeholder.classList.remove('has-file');
-        analyzeBtn.disabled = true;
-        document.getElementById('resultsPanel').classList.remove('is-visible');
-        document.getElementById('resultsPanel').innerHTML = '';
-        parseResults = null;
-        return;
-      }
-      if (!f.name.toLowerCase().endsWith('.xlsx') && !f.name.toLowerCase().endsWith('.xls')) { flash('Solo se aceptan archivos .xlsx o .xls.', 'error'); return; }
-      if (f.size > 50 * 1024 * 1024) { flash('El archivo supera el límite de 50 MB.', 'error'); return; }
-      selectedFile = f;
-      uploader.classList.add('has-file');
-      placeholder.textContent = `${f.name} · ${(f.size / 1024).toFixed(0)} KB`;
-      placeholder.classList.add('has-file');
-      analyzeBtn.disabled = false;
-      document.getElementById('resultsPanel').classList.remove('is-visible');
-      document.getElementById('resultsPanel').innerHTML = '';
-      parseResults = null;
+    function clearResults() {
+      const rp = document.getElementById('resultsPanel');
+      rp.classList.remove('is-visible'); rp.innerHTML = ''; parseResults = null;
     }
 
-    browseBtn.addEventListener('click', () => fileInput.click());
-    dismiss.addEventListener('click', () => setFile(null));
+    function bindBrowse() {
+      document.getElementById('browseBtn')?.addEventListener('click', () => fileInput.click());
+    }
+    function bindDrop() {
+      const dropZone = document.getElementById('dropZone');
+      const fileInputDrop = document.getElementById('fileInputDrop');
+      if (!dropZone) return;
+      fileInputDrop.addEventListener('change', () => setFile(fileInputDrop.files[0] || null));
+      dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('is-drag-over'); });
+      dropZone.addEventListener('dragleave', () => dropZone.classList.remove('is-drag-over'));
+      dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('is-drag-over'); const f = e.dataTransfer.files[0]; if (f) setFile(f); });
+    }
+
+    function paintIdle() {
+      uploader.classList.remove('naowee-file-uploader--error');
+      helperSlot.innerHTML = '';
+      body.innerHTML = `
+        <div class="naowee-file-uploader__input-wrap">
+          <button class="naowee-file-uploader__btn" type="button" id="browseBtn">${I.upload} Seleccionar archivo</button>
+          <span class="naowee-file-uploader__placeholder" id="filePlaceholder">Ningún archivo seleccionado</span>
+        </div>
+        <div class="naowee-file-uploader__drop-zone" id="dropZone">
+          <input type="file" id="fileInputDrop" accept=".xlsx,.xls">
+          <span class="naowee-file-uploader__drop-icon">${I.upload}</span>
+          <span class="naowee-file-uploader__drop-title">Arrastra aquí tu archivo .xlsx</span>
+          <span class="naowee-file-uploader__drop-hint">Solo .xlsx · peso máximo 50 MB · sin límite de registros</span>
+        </div>`;
+      bindBrowse(); bindDrop();
+      analyzeBtn.disabled = true;
+    }
+
+    function paintError(msg) {
+      paintIdle();
+      uploader.classList.add('naowee-file-uploader--error');
+      helperSlot.innerHTML = `<div class="naowee-helper naowee-helper--negative"><span class="naowee-helper__badge">${I.bang}</span><span class="naowee-helper__text">${esc(msg)}</span></div>`;
+    }
+
+    function paintSuccess(f) {
+      uploader.classList.remove('naowee-file-uploader--error');
+      helperSlot.innerHTML = '';
+      const dot = f.name.lastIndexOf('.');
+      const base = dot > 0 ? f.name.slice(0, dot) : f.name;
+      const ext = dot > 0 ? f.name.slice(dot) : '';
+      body.innerHTML = `
+        <div class="naowee-file-uploader__input-wrap">
+          <span class="naowee-file-uploader__file-tag naowee-file-uploader__file-tag--uploaded">
+            ${I.checkCircle}
+            <span class="naowee-file-uploader__file-name">${esc(base)}</span><span class="naowee-file-uploader__file-ext">${esc(ext)}</span>
+            <button class="naowee-file-uploader__file-dismiss" type="button" id="fileDismiss" aria-label="Quitar archivo">${I.x}</button>
+          </span>
+          <span style="flex:1"></span>
+          <span class="naowee-file-uploader__file-size">${(f.size / 1024).toFixed(0)} KB</span>
+        </div>`;
+      document.getElementById('fileDismiss').addEventListener('click', () => { selectedFile = null; clearResults(); paintIdle(); });
+      analyzeBtn.disabled = false;
+    }
+
+    function setFile(f) {
+      if (!f) { selectedFile = null; clearResults(); paintIdle(); return; }
+      const nm = f.name.toLowerCase();
+      if (!nm.endsWith('.xlsx') && !nm.endsWith('.xls')) { selectedFile = null; clearResults(); paintError('Formato no válido. Solo se aceptan archivos .xlsx o .xls.'); return; }
+      if (f.size > 50 * 1024 * 1024) { selectedFile = null; clearResults(); paintError('El archivo supera el límite de 50 MB. Reduce el tamaño e intenta de nuevo.'); return; }
+      selectedFile = f; clearResults(); paintSuccess(f);
+    }
+
     fileInput.addEventListener('change', () => setFile(fileInput.files[0] || null));
-    fileInputDrop.addEventListener('change', () => setFile(fileInputDrop.files[0] || null));
-    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('is-drag-over'); });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('is-drag-over'));
-    dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('is-drag-over'); const f = e.dataTransfer.files[0]; if (f) setFile(f); });
 
     analyzeBtn.addEventListener('click', () => {
       if (!selectedFile) return;
@@ -791,6 +818,8 @@
         analyzeBtn.disabled = false;
       }, 900);
     });
+
+    paintIdle();
   }
 
   /* ─── Panel de resultados del análisis ─── */
@@ -799,9 +828,11 @@
     if (!panel) return;
     const nOk = r.valid.length, nErr = r.errors.length;
     const errRows = r.errors.map((e) => `
-      <div class="carg-err-row">
-        <span class="carg-err-row__ico">${I.warn}</span>
-        <span><span class="carg-err-row__fila">Fila ${e.fila}</span> &nbsp;·&nbsp; <span class="carg-err-row__msg">${esc(e.msg)}</span></span>
+      <div class="naowee-message naowee-message--negative">
+        <div class="naowee-message__header">
+          <span class="naowee-message__icon">${I.bang}</span>
+          <span class="naowee-message__body"><strong>Fila ${e.fila}</strong> · ${esc(e.msg)}</span>
+        </div>
       </div>`).join('');
 
     panel.innerHTML = `
@@ -813,7 +844,7 @@
       <div class="carg-results__body">
         ${nErr > 0 ? `<div class="carg-results__section-label">Filas con error (${nErr}) — corrige y re-sube</div><div class="carg-err-list">${errRows}</div>` : ''}
         ${nOk > 0
-          ? `<div class="carg-results__section-label">Filas válidas</div><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span class="carg-ok-badge">${I.check} ${nOk} filas listas para cargar</span></div>`
+          ? `<div class="carg-results__section-label">Filas válidas</div><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span class="naowee-badge naowee-badge--positive naowee-badge--large">${I.check} ${nOk} filas listas para cargar</span></div>`
           : `<p style="color:var(--text-muted);font-size:13px;margin:8px 0 0">Sin filas válidas en este archivo.</p>`}
       </div>
       ${nOk > 0 ? `
@@ -1042,8 +1073,8 @@
       <tr>${cols.map((c) => `<td class="${c.num ? 'num' : ''}">${esc(row[c.k] ?? '—')}</td>`).join('')}</tr>
     `).join('');
     return `
-      <div class="carg-file__table-wrap">
-        <table class="carg-data-table">
+      <div class="carg-data-scroll">
+        <table class="naowee-table--in-card">
           <thead><tr>${thead}</tr></thead>
           <tbody>${tbody}</tbody>
         </table>

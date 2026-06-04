@@ -212,6 +212,24 @@
 .naowee-helper--negative .naowee-helper__badge { background: #ed314a; }
 .naowee-helper--negative .naowee-helper__text { font-weight: 600; color: #c4031d; }
 
+/* ── Message canónico (DS .naowee-message) — alert con icon-circle + texto.
+      Port a tokens locales. Variantes: negative · positive · informative · caution. ── */
+.naowee-message { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px 14px; border-radius: var(--radius-lg); font-family: inherit; font-feature-settings: 'case' 1; position: relative; color: var(--text-primary); }
+.naowee-message__header { display: flex; align-items: flex-start; gap: 10px; width: 100%; }
+.naowee-message__icon { width: 20px; height: 20px; flex-shrink: 0; border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: #fff; padding: 2px; }
+.naowee-message__icon svg { width: 14px; height: 14px; }
+.naowee-message__title { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; line-height: 18px; }
+.naowee-message__body { flex: 1; min-width: 0; font-size: 13px; font-weight: 400; line-height: 18px; }
+.naowee-message__text { font-size: 13px; font-weight: 400; line-height: 18px; width: 100%; }
+.naowee-message--negative { background: var(--red-bg); }
+.naowee-message--negative .naowee-message__icon { background: var(--red); }
+.naowee-message--positive { background: var(--green-bg); }
+.naowee-message--positive .naowee-message__icon { background: var(--green); }
+.naowee-message--informative { background: var(--blue-bg); }
+.naowee-message--informative .naowee-message__icon { background: var(--blue-info); }
+.naowee-message--caution { background: var(--orange-bg); }
+.naowee-message--caution .naowee-message__icon { background: var(--naranja); }
+
 /* ───────────────────── Checkbox (svg canónico) ───────────────── */
 .naowee-checkbox { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
 .naowee-checkbox input { position: absolute; opacity: 0; width: 0; height: 0; }
@@ -474,6 +492,28 @@
 /* Error */
 .naowee-file-uploader--error .naowee-file-uploader__input-wrap { border-color: var(--field-border-error); }
 .naowee-file-uploader--error .naowee-file-uploader__drop-zone { border-color: var(--field-border-error); }
+
+/* ── File tag (archivo dentro del input-wrap) — port canónico DS.
+      Estado --uploaded: borde verde 2px + halo positivo (highlight). ── */
+.naowee-file-uploader__file-tag {
+  display: inline-flex; align-items: center; gap: 7px; min-width: 0; max-width: 100%;
+  height: 34px; padding: 2px 6px 2px 10px; background: var(--surface);
+  border: 2px solid var(--field-border-idle); border-radius: var(--radius-sm);
+  font-size: 12.5px; font-weight: 600; color: var(--text-primary); overflow: hidden;
+}
+.naowee-file-uploader__file-tag svg { width: 18px; height: 18px; flex-shrink: 0; color: var(--text-secondary); }
+.naowee-file-uploader__file-tag--uploaded { border-color: var(--green); box-shadow: 0 0 0 2px var(--green-bg); }
+.naowee-file-uploader__file-tag--uploaded svg { color: var(--green); }
+.naowee-file-uploader__file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.naowee-file-uploader__file-ext { color: var(--text-muted); font-weight: 700; flex-shrink: 0; }
+.naowee-file-uploader__file-dismiss {
+  display: inline-flex; width: 22px; height: 22px; flex-shrink: 0; border: none; background: transparent;
+  cursor: pointer; color: var(--accent); align-items: center; justify-content: center;
+  border-radius: var(--radius-sm); transition: background var(--duration-fast);
+}
+.naowee-file-uploader__file-dismiss:hover { background: var(--accent-bg); }
+.naowee-file-uploader__file-dismiss svg { width: 14px; height: 14px; color: var(--accent); }
+.naowee-file-uploader__file-size { font-size: 12px; color: var(--text-muted); font-weight: 500; flex-shrink: 0; margin-left: 4px; }
 
 @media (max-width: 600px) {
   .naowee-file-uploader__drop-zone { padding: 22px 14px; }
