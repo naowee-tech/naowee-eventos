@@ -52,8 +52,9 @@
   .carg-tabs-card__head svg { width: 18px; height: 18px; color: var(--text-secondary); flex-shrink: 0; }
   .carg-tabs-card__head h3 { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0; }
 
-  /* Tab bar (3 tabs) — .naowee-tabs canónico (proporcional, underline ::after) */
-  .carg-tabs { margin-bottom: 20px; }
+  /* Tab bar (3 tabs) — .naowee-tabs canónico (proporcional, underline ::after).
+     Bleed horizontal (-20px = padding del card) → el divider va de borde a borde. */
+  .carg-tabs { margin: 0 -20px 20px; }
 
   /* ── Sub-segmento Masivo/Manual — CENTRADO bajo los tabs ── */
   .carg-mode-bar { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
@@ -137,10 +138,10 @@
 
   /* ── Modo Manual Ranking / Medallería (grid) ── */
   .carg-manual-grid { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: var(--radius-xl); overflow: hidden; }
-  .carg-manual-grid__header { display: grid; padding: 10px 16px; background: #f4f5f9; font-size: 11px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase; color: var(--text-secondary); border-bottom: 1px solid var(--border); }
+  .carg-manual-grid__header { display: grid; column-gap: 12px; padding: 10px 16px; background: #f4f5f9; font-size: 11px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase; color: var(--text-secondary); border-bottom: 1px solid var(--border); }
   .carg-manual-grid__header.g-ranking { grid-template-columns: 1fr 120px 120px 110px; }
   .carg-manual-grid__header.g-medalleria { grid-template-columns: 1fr 80px 80px 80px 90px; }
-  .carg-manual-row { display: grid; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface); align-items: center; }
+  .carg-manual-row { display: grid; column-gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface); align-items: center; }
   .carg-manual-row:last-child { border-bottom: 0; }
   .carg-manual-row.g-ranking { grid-template-columns: 1fr 120px 120px 110px; }
   .carg-manual-row.g-medalleria { grid-template-columns: 1fr 80px 80px 80px 90px; }
@@ -172,7 +173,7 @@
   .carg-file__chev { flex-shrink: 0; color: var(--text-muted); display: flex; transition: transform var(--duration-normal) var(--easing-smoothout); }
   .carg-file__chev svg { width: 18px; height: 18px; }
   .carg-file.is-open .carg-file__chev { transform: rotate(180deg); }
-  .carg-file__body { display: none; border-top: 1px solid var(--border); padding: 14px 16px 16px; background: var(--bg-soft); }
+  .carg-file__body { display: none; border-top: 1px solid var(--border); padding: 14px 16px 16px; background: var(--surface); }
   .carg-file.is-open .carg-file__body { display: block; animation: fadeIn .25s ease both; }
 
   /* Tabla de la data cargada → card-table canónica (.naowee-table--in-card) con scroll horizontal */
@@ -472,26 +473,32 @@
   function bindSegment(segEl, getActive, onSelect) {
     const pill = segEl.querySelector('.naowee-segment__pill');
     const items = Array.from(segEl.querySelectorAll('.naowee-segment__item'));
-    function setActive(idx) {
+    function place(idx, instant) {
       items.forEach((it, i) => {
         it.classList.toggle('naowee-segment__item--active', i === idx);
         it.setAttribute('aria-selected', String(i === idx));
       });
       const rect = items[idx].getBoundingClientRect();
       const segRect = segEl.getBoundingClientRect();
-      pill.style.setProperty('--seg-x', `${rect.left - segRect.left - 4}px`);
-      pill.style.width = `${rect.width}px`;
-      pill.classList.remove('naowee-segment__pill--no-anim');
+      const x = rect.left - segRect.left - 4;
+      if (instant) {
+        /* init / cambio de tab / reflow → posiciona SIN animación */
+        pill.classList.add('naowee-segment__pill--no-anim');
+        pill.style.setProperty('--seg-x', `${x}px`);
+        pill.style.width = `${rect.width}px`;
+        void pill.offsetWidth;                                    // commit instantáneo
+        pill.classList.remove('naowee-segment__pill--no-anim');   // re-habilita transición para clicks
+      } else {
+        /* click directo Masivo↔Manual → anima */
+        pill.style.setProperty('--seg-x', `${x}px`);
+        pill.style.width = `${rect.width}px`;
+      }
     }
-    const initVal = getActive();
-    const init = items.findIndex((it) => it.dataset.val === initVal);
-    pill.classList.add('naowee-segment__pill--no-anim');
-    setActive(init >= 0 ? init : 0);
-    items.forEach((it, i) => {
-      it.addEventListener('click', () => { setActive(i); onSelect(it.dataset.val); });
-    });
-    /* Reposiciona el pill tras reflow (fonts/responsive). */
-    requestAnimationFrame(() => { const k = items.findIndex((x) => x.dataset.val === getActive()); if (k >= 0) setActive(k); });
+    const init = items.findIndex((it) => it.dataset.val === getActive());
+    place(init >= 0 ? init : 0, true);
+    items.forEach((it, i) => it.addEventListener('click', () => { place(i, false); onSelect(it.dataset.val); }));
+    /* Reposiciona el pill tras reflow (fonts/responsive) sin animar. */
+    requestAnimationFrame(() => { const k = items.findIndex((x) => x.dataset.val === getActive()); if (k >= 0) place(k, true); });
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -757,8 +764,8 @@
       helperSlot.innerHTML = '';
       body.innerHTML = `
         <div class="naowee-file-uploader__input-wrap">
-          <button class="naowee-file-uploader__btn" type="button" id="browseBtn">${I.upload} Seleccionar archivo</button>
           <span class="naowee-file-uploader__placeholder" id="filePlaceholder">Ningún archivo seleccionado</span>
+          <button class="naowee-file-uploader__action" type="button" id="browseBtn">${I.upload} Seleccionar archivo</button>
         </div>
         <div class="naowee-file-uploader__drop-zone" id="dropZone">
           <input type="file" id="fileInputDrop" accept=".xlsx,.xls">
@@ -1001,7 +1008,7 @@
           ${rowsHTML}
         </div>
         <div style="display:flex;justify-content:flex-end;margin-top:18px">
-          <button class="naowee-btn naowee-btn--loud" id="manualSaveBtn">${I.check} Guardar ${esc(cfg.labelShort.toLowerCase())}</button>
+          <button class="naowee-btn naowee-btn--loud" id="manualSaveBtn" disabled>${I.check} Guardar ${esc(cfg.labelShort.toLowerCase())}</button>
         </div>
       </div>
     `;
@@ -1016,7 +1023,14 @@
       });
     }
 
-    document.getElementById('manualSaveBtn').addEventListener('click', () => {
+    /* CTA "Guardar" deshabilitado hasta que se ingrese al menos un dato. */
+    const manualInputs = container.querySelectorAll('.carg-manual-input:not([readonly])');
+    const saveBtn = document.getElementById('manualSaveBtn');
+    function syncManualSave() { saveBtn.disabled = !Array.from(manualInputs).some((i) => i.value.trim() !== ''); }
+    manualInputs.forEach((i) => i.addEventListener('input', syncManualSave));
+    syncManualSave();
+
+    saveBtn.addEventListener('click', () => {
       const n = isRanking ? rows.length : 3;
       applyUpload(selectedEventId, cfg.storeTipo, n);
       addUploadRecord(selectedEventId, { tipo: cfg.label, n, modeLabel: 'Manual', timestamp: nowStamp() });
