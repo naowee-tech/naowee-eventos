@@ -3,24 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Naowee Eventos — Gestión de usuarios v1.1.0</title>
+<title>Naowee Eventos — Gestión de usuarios v1.2.0</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="shared/tokens.css?v=0.3.1">
-<link rel="stylesheet" href="shared/shell.css?v=0.3.1">
-<link rel="stylesheet" href="shared/list-components.css?v=0.3.1">
-<link rel="stylesheet" href="shared/forms.css?v=0.3.1">
-<link rel="stylesheet" href="shared/naowee-footer.css?v=0.3.1">
-<script src="shared/naowee-footer.js?v=0.3.1" defer></script>
+<link rel="stylesheet" href="shared/tokens.css?v=0.3.2">
+<link rel="stylesheet" href="shared/shell.css?v=0.3.2">
+<link rel="stylesheet" href="shared/list-components.css?v=0.3.2">
+<link rel="stylesheet" href="shared/forms.css?v=0.3.2">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.3.2">
+<script src="shared/naowee-footer.js?v=0.3.2" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
      USUARIOS — Gestión de usuarios del módulo Eventos (solo ADMIN)
      Patrón: equipo.html (naowee-ivc) adaptado a Eventos.
-     v1.1.0
+     v1.2.0
      ═══════════════════════════════════════════════════════════════ */
 
   /* ─── Page head ─── */
@@ -86,13 +86,20 @@
     color: var(--text-muted, var(--text-secondary));
   }
   .naowee-table-card__table-wrap {
-    overflow-x: auto; overflow-y: visible;
-    scrollbar-width: none; -ms-overflow-style: none;
+    overflow-x: hidden; overflow-y: visible;
   }
-  .naowee-table-card__table-wrap::-webkit-scrollbar { display: none; }
 
   /* Tabla canónica dentro de card — thead franja gris flotante redondeada */
-  .naowee-table.naowee-table--in-card { width: 100%; border-collapse: separate; border-spacing: 0; }
+  .naowee-table.naowee-table--in-card { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+  /* Celdas con contenido largo truncan con ellipsis */
+  .naowee-table.naowee-table--in-card tbody td { max-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Correo standalone en td (col 3) */
+  .naowee-table.naowee-table--in-card tbody td span[style*="font-size:12.5px"] { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Rol label trunca */
+  .row-rol-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+  /* Columna Acciones: overflow visible para que tooltip sobresalga */
+  .naowee-table.naowee-table--in-card tbody td.col-acciones,
+  .naowee-table.naowee-table--in-card td:last-child { overflow: visible; }
   .naowee-table.naowee-table--in-card thead tr th {
     background: var(--bg-soft, #f5f6fa);
     font-size: 11px; font-weight: 700; text-transform: uppercase;
@@ -154,18 +161,52 @@
   .row-acceso     { font-size: 12px; color: var(--text-secondary); font-family: 'Inter', sans-serif; white-space: nowrap; }
   .row-acceso--never { font-style: italic; color: var(--text-secondary); opacity: .7; }
 
+  /* ─── naowee-btn--icon: cuadrado icon-only (no definido en forms.css del módulo Eventos) ─── */
+  .naowee-btn.naowee-btn--icon {
+    width: 32px; height: 32px; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .naowee-btn.naowee-btn--small,
+  .naowee-btn.naowee-btn--icon.naowee-btn--small { height: 32px; }
+  .naowee-btn.naowee-btn--icon:focus-visible {
+    outline: none; box-shadow: 0 0 0 3px rgba(215,64,9,.22);
+  }
+
   /* ─── Row actions ─── */
   .row-actions {
     display: inline-flex; align-items: center; gap: 4px; justify-content: center;
   }
+  /* ─── Tooltip canónico DS (inline, sin design-system.css en Eventos shared) ─── */
+  .naowee-tooltip { position: relative; display: inline-flex; }
+  .naowee-tooltip__content {
+    position: absolute; z-index: 9999;
+    background: rgba(28,28,40,.88);
+    color: #fff;
+    border-radius: 5px;
+    padding: 4px 8px;
+    font-size: 11.5px; font-weight: 500; font-family: 'Inter', sans-serif;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .15s ease, transform .15s ease;
+    bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%) translateY(2px);
+  }
+  .naowee-tooltip__content::after {
+    content: ''; position: absolute;
+    border: 5px solid transparent; border-top-color: rgba(28,28,40,.88);
+    top: 100%; left: 50%; transform: translateX(-50%);
+  }
+  .naowee-tooltip:hover .naowee-tooltip__content,
+  .naowee-tooltip:focus-within .naowee-tooltip__content {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  /* overflow visible en contenedores para que el tooltip sobresalga */
   .naowee-table-card,
   .naowee-table-card__table-wrap,
   .row-actions,
   .row-actions .naowee-tooltip { overflow: visible !important; }
-  .naowee-table-card__table-wrap { overflow-x: auto !important; }
-  .naowee-tooltip__content { z-index: 9999 !important; }
-  .naowee-tooltip:hover .naowee-tooltip__content,
-  .naowee-tooltip:focus-within .naowee-tooltip__content { opacity: 1; pointer-events: auto; transform: translateY(-6px); }
 
   /* ── Focus-visible canónico ── */
   .naowee-modal__dismiss:focus-visible,
@@ -340,7 +381,7 @@
             <button type="button" class="naowee-dropdown__trigger" id="ddInvRolTrigger">
               <span class="naowee-dropdown__value" id="ddInvRolValue">Seleccionar rol…</span>
               <span class="naowee-dropdown__chevron">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
               </span>
             </button>
             <div class="naowee-dropdown__menu" id="ddInvRolMenu" role="listbox">
@@ -387,7 +428,7 @@
   import {
     mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher,
     getRoleFromQuery, ROLES
-  } from './shared/sidebar.js?v=0.3.1';
+  } from './shared/sidebar.js?v=0.3.2';
   import { getUsers, addUser, updateUser, toggleUserStatus } from './shared/users-data.js?v=1.0.1';
 
   /* ─── Guard de rol: solo ADMIN puede acceder ─── */
@@ -511,7 +552,7 @@
     return '<div class="naowee-dropdown" data-dd="' + name + '" data-sheet-title="' + escHtml(sheetTitle) + '">' +
       '<button type="button" class="naowee-dropdown__trigger" aria-expanded="false" aria-haspopup="listbox">' +
         '<span data-dd-val class="is-placeholder">' + escHtml(placeholder) + '</span>' +
-        '<span class="naowee-dropdown__chevron"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>' +
+        '<span class="naowee-dropdown__chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>' +
       '</button>' +
       '<div class="naowee-dropdown__menu" role="listbox"></div>' +
     '</div>';
@@ -530,12 +571,12 @@
     return '<div class="naowee-table-card__table-wrap">' +
       '<table class="naowee-table naowee-table--in-card">' +
         '<colgroup>' +
-          '<col style="width:28%">' +
+          '<col style="width:26%">' +
+          '<col style="width:18%">' +
           '<col style="width:20%">' +
-          '<col style="width:22%">' +
-          '<col style="width:14%">' +
           '<col style="width:10%">' +
-          '<col style="width:6%">' +
+          '<col style="width:14%">' +
+          '<col style="width:12%">' +
         '</colgroup>' +
         '<thead><tr>' +
           '<th>Usuario</th>' +
