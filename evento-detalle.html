@@ -9,12 +9,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="shared/tokens.css?v=0.3.0">
-<link rel="stylesheet" href="shared/shell.css?v=0.3.0">
-<link rel="stylesheet" href="shared/list-components.css?v=0.3.0">
-<link rel="stylesheet" href="shared/forms.css?v=0.3.0">
-<link rel="stylesheet" href="shared/naowee-footer.css?v=0.3.0">
-<script src="shared/naowee-footer.js?v=0.3.0" defer></script>
+<link rel="stylesheet" href="shared/tokens.css?v=0.3.1">
+<link rel="stylesheet" href="shared/shell.css?v=0.3.1">
+<link rel="stylesheet" href="shared/list-components.css?v=0.3.1">
+<link rel="stylesheet" href="shared/forms.css?v=0.3.1">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.3.1">
+<script src="shared/naowee-footer.js?v=0.3.1" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -99,6 +99,12 @@
   .track-grid .prog-item { grid-template-columns: 120px 1fr auto; }
   .track-grid .prog-item__lbl { font-size: 12px; }
   .track-empty { font-size: 12.5px; color: var(--text-muted); margin: 2px 0 0; }
+  /* Empty-state canónico (seguimiento + reutilizable) */
+  .empty-state { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 28px 16px 20px; text-align: center; }
+  .empty-state__icon { width: 48px; height: 48px; border-radius: 50%; background: var(--bg-soft); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .empty-state__icon svg { width: 22px; height: 22px; color: var(--text-muted); }
+  .empty-state__title { font-size: 14px; font-weight: 700; color: var(--text-primary); margin: 0; }
+  .empty-state__desc { font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; margin: 0; max-width: 46ch; }
 
   /* ── Responsive: secciones apiladas ── */
   @media (max-width: 720px) {
@@ -145,7 +151,7 @@
   .ev-modal {
     background: var(--surface); border-radius: var(--radius-xl);
     width: 95vw; max-width: 860px; max-height: 90vh;
-    display: flex; flex-direction: column; overflow: hidden;
+    display: flex; flex-direction: column; overflow: visible;
     box-shadow: var(--shadow-card);
     transform: translateY(24px) scale(.97); opacity: 0;
     transition: transform .28s cubic-bezier(.4,0,.2,1), opacity .22s ease;
@@ -172,8 +178,8 @@
   .ev-modal__close:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215,64,9,.18); }
   .ev-modal__close svg { width: 18px; height: 18px; }
 
-  /* Body scrolleable */
-  .ev-modal__body { flex: 1; overflow-y: auto; padding: 22px 24px; }
+  /* Body scrolleable — overflow:visible para que datepicker/dropdown escapen */
+  .ev-modal__body { flex: 1; overflow: visible; padding: 22px 24px; }
 
   /* Note readonly / locked */
   .ev-modal__note {
@@ -184,7 +190,17 @@
   }
   .ev-modal__note svg { width: 15px; height: 15px; color: var(--accent); flex-shrink: 0; margin-top: 1px; }
   .ev-modal__note--final { background: #fff3e6; border-color: var(--accent); }
-  .ev-modal__note--lock  { background: var(--bg-soft); }
+  /* Banner caution: fondo ámbar, strip naranja izquierdo */
+  .ev-modal__note--lock {
+    background: #fff7ec; border-color: #ffd99c; color: #7a3d04;
+    padding-left: 16px; position: relative;
+  }
+  .ev-modal__note--lock::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 4px; background: var(--naranja, #FF7500);
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+  }
+  .ev-modal__note--lock svg { color: #d97706; }
 
   /* Campos deshabilitados (solo lectura) dentro del modal */
   .ev-modal__body .naowee-textfield--readonly .naowee-textfield__input-wrap,
@@ -265,12 +281,12 @@
   import {
     mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher,
     getRoleFromQuery, ROLES
-  } from './shared/sidebar.js?v=0.3.0';
-  import { allEvents, STATUS_LABEL, getUploadHistory, updateEvent } from './shared/events-data.js?v=0.3.0';
+  } from './shared/sidebar.js?v=0.3.1';
+  import { allEvents, STATUS_LABEL, getUploadHistory, updateEvent } from './shared/events-data.js?v=0.3.1';
   /* Módulo LIGHT: el detalle NO carga catálogo deportivo (deportes/pruebas
      viven solo como columnas de los archivos de cargue — Fase 4). Solo se
      usa el catálogo de gestores para mostrar el responsable asignado. */
-  import { GESTORES, DEPARTAMENTOS, municipiosDeDepto } from './shared/catalogo.js?v=0.3.0';
+  import { GESTORES, DEPARTAMENTOS, municipiosDeDepto } from './shared/catalogo.js?v=0.3.1';
 
   /* ─── Iconos (stroke currentColor, paridad módulo). Solo los usados en
      el container consolidado + Seguimiento + acciones del header. ─── */
@@ -388,7 +404,13 @@
   function trackHTML() {
     const noData = ev.insc.total === 0 && ev.res.total === 0 && ev.med.total === 0;
     const body = noData
-      ? `<p class="track-empty">Aún no hay cargues registrados. El seguimiento se llenará a medida que el gestor cargue inscripciones, resultados y medallería.</p>`
+      ? `<div class="empty-state">
+            <div class="empty-state__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <p class="empty-state__title">Sin cargues registrados</p>
+            <p class="empty-state__desc">El seguimiento se llenará a medida que el gestor cargue inscripciones, resultados y medallería.</p>
+          </div>`
       : `<div class="track-grid">
           ${trackItem('Inscripciones', 'f-insc', ev.insc)}
           ${trackItem('Resultados', 'f-res', ev.res)}
@@ -867,8 +889,7 @@
 
     foot.innerHTML = isLockedAll
       ? `<button type="button" class="naowee-btn naowee-btn--ghost" id="mBtnClose">Cerrar</button>`
-      : `<button type="button" class="naowee-btn naowee-btn--link" id="mBtnCancel">Cancelar</button>
-         <button type="button" class="naowee-btn naowee-btn--loud" id="mBtnSave">
+      : `<button type="button" class="naowee-btn naowee-btn--loud" id="mBtnSave">
            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
            Guardar cambios
          </button>`;
@@ -987,7 +1008,6 @@
     }
 
     /* Botones del footer */
-    document.getElementById('mBtnCancel')?.addEventListener('click', closeEditModal);
     document.getElementById('mBtnSave')?.addEventListener('click', () => {
       closeAllMPopovers();
       if (mValidate()) { doSaveEdit(); return; }
