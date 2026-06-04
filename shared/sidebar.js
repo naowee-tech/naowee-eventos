@@ -104,9 +104,11 @@ const MENU_BY_ROLE = {
   ],
   GESTOR: [
     /* Operativo: NO ve el Dashboard analítico ni Reportería (eso es consumo de
-       ADMIN/Usuario). Su home es "Eventos asignados" → Cargues. */
+       ADMIN/Usuario). Su home y única entrada es "Eventos asignados": al entrar
+       a un evento ve el detalle + los 3 cargues (inscripciones · ranking ·
+       medallería) como tabs dentro del evento. Ya no hay 3 páginas sueltas de
+       cargue en el sidebar (decisión UX Doug 2026-06: un solo punto de entrada). */
     { section: 'EVENTOS',      items: [ITEMS.eventos] },
-    { section: 'CARGUE',       items: [ITEMS.inscripciones, ITEMS.ranking, ITEMS.medalleria] },
     { section: 'CONSULTA',     items: [ITEMS.perfil] }
   ],
   ORGANISMO: [

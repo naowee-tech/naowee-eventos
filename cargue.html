@@ -3,53 +3,34 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Naowee Eventos — Cargue</title>
+<title>Naowee Eventos — Cargues del evento</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="shared/tokens.css?v=0.3.0">
-<link rel="stylesheet" href="shared/shell.css?v=0.3.0">
-<link rel="stylesheet" href="shared/list-components.css?v=0.3.0">
-<link rel="stylesheet" href="shared/forms.css?v=0.3.0">
-<link rel="stylesheet" href="shared/naowee-footer.css?v=0.3.0">
-<script src="shared/naowee-footer.js?v=0.3.0" defer></script>
+<link rel="stylesheet" href="shared/tokens.css?v=0.4.0">
+<link rel="stylesheet" href="shared/shell.css?v=0.4.0">
+<link rel="stylesheet" href="shared/list-components.css?v=0.4.0">
+<link rel="stylesheet" href="shared/event-detail.css?v=0.4.0">
+<link rel="stylesheet" href="shared/forms.css?v=0.4.0">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
+<script src="shared/naowee-footer.js?v=0.4.0" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
-     CARGUE — Fase 4 (Gestor)
-     Pantalla de cargue reutilizable: inscripciones · ranking · medallería.
-     Parametrizada por ?tipo=inscripciones|ranking|medalleria&id=EV-XXXX&role=GESTOR.
-     Shell canónico: sidebar + top-header (sin título de página).
-     Dos modos via .naowee-segment: Manual | Masivo.
+     CARGUES DEL EVENTO — Gestor (workspace por evento)
+     Una sola entrada: el Gestor abre un evento desde su lista y aquí ve
+       (1) el DETALLE del evento (patrón canónico .det-card — shared) y
+       (2) un container con 3 TABS canónicos: Inscripciones · Ranking/
+           Resultados · Medallería. En cada tab: sub-segmento Masivo|Manual,
+           descargar plantilla, analizar archivo y la tabla VERSIONADA de los
+           archivos cargados (data con las columnas de la planilla).
+     Parámetros: ?id=EV-XXXX&role=GESTOR  (compat: ?tipo= abre ese tab).
+     ADMIN entra por ?tipo=…&role=ADMIN → vista oversight (solo lectura).
      ═══════════════════════════════════════════════════════════════ */
 
-  /* ── Encabezado de contexto del evento ── */
-  .carg-hero {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-xl); padding: 20px 24px 18px;
-    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-    margin-bottom: 20px; animation: fadeInUp .38s var(--easing-smoothout) both;
-  }
-  .carg-hero__back {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 38px; height: 38px; flex-shrink: 0; border-radius: var(--radius-md);
-    color: var(--accent); background: transparent; border: none; cursor: pointer;
-    transition: background var(--duration-normal);
-  }
-  .carg-hero__back:hover { background: var(--accent-bg); }
-  .carg-hero__back:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215,64,9,.18); }
-  .carg-hero__back svg { width: 22px; height: 22px; }
-  .carg-hero__info { flex: 1; min-width: 0; }
-  .carg-hero__name { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .carg-hero__meta { font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .carg-hero__tipo { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: var(--radius-full); font-size: 11px; font-weight: 700; letter-spacing: .2px; white-space: nowrap; }
-  .carg-hero__tipo.t-inscripciones { background: var(--blue-bg); color: var(--blue-info); }
-  .carg-hero__tipo.t-ranking { background: var(--orange-bg); color: #b45c00; }
-  .carg-hero__tipo.t-medalleria { background: var(--green-bg); color: var(--green); }
-
-  /* ── Selector de evento (si no hay ?id) ── */
+  /* ── Selector de evento (fallback sin ?id) ── */
   .carg-picker {
     background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl);
     padding: 36px 32px; display: flex; flex-direction: column; align-items: center; gap: 20px;
@@ -62,18 +43,44 @@
   .carg-picker__sub { font-size: 13.5px; color: var(--text-secondary); margin: 0; line-height: 1.5; }
   .carg-picker__form { width: 100%; display: flex; flex-direction: column; gap: 14px; }
 
-  /* ── Cuerpo de cargue ── */
-  .carg-body { animation: fadeInUp .38s var(--easing-smoothout) both; }
-  .carg-mode-bar { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
-  .carg-mode-bar__left { display: flex; align-items: center; gap: 12px; }
-
-  /* ── Sección card genérica (SIN sombra — solo borde 1px) ── */
-  .carg-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-xl); padding: 24px 28px; margin-bottom: 18px;
+  /* ── Container "Cargues del evento" (tabs + panel) ── */
+  .carg-tabs-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl);
+    padding: 18px 20px 22px; animation: fadeInUp .4s var(--easing-smoothout) both; animation-delay: .08s;
   }
+  .carg-tabs-card__head { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
+  .carg-tabs-card__head svg { width: 18px; height: 18px; color: var(--text-secondary); flex-shrink: 0; }
+  .carg-tabs-card__head h3 { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0; }
+
+  /* Tab bar (3 tabs) — reusa .naowee-segment, full-width y con íconos */
+  .carg-tabs.naowee-segment { width: 100%; height: 46px; margin-bottom: 20px; }
+  .carg-tabs .naowee-segment__item { flex: 1; gap: 7px; font-size: 13.5px; padding: 0 12px; }
+  .carg-tabs .naowee-segment__item svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  /* ── Sub-segmento Masivo/Manual ── */
+  .carg-mode-bar { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+
+  /* ── Gate por estado (borrador / finalizado) ── */
+  .carg-gate {
+    display: flex; align-items: flex-start; gap: 12px; padding: 16px 18px;
+    border-radius: var(--radius-lg); font-size: 13px; line-height: 1.5; margin-bottom: 18px;
+    position: relative; overflow: hidden;
+  }
+  .carg-gate::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+  .carg-gate__ico { flex-shrink: 0; margin-top: 1px; }
+  .carg-gate__ico svg { width: 18px; height: 18px; }
+  .carg-gate strong { font-weight: 700; }
+  .carg-gate--borrador { background: var(--orange-bg); color: #7a3d04; }
+  .carg-gate--borrador::before { background: var(--naranja); }
+  .carg-gate--borrador .carg-gate__ico { color: #d97706; }
+  .carg-gate--final { background: var(--blue-bg); color: #134a86; }
+  .carg-gate--final::before { background: var(--blue-info); }
+  .carg-gate--final .carg-gate__ico { color: var(--blue-info); }
+
+  /* ── Card de cargue (sin sombra, borde 1px) ── */
+  .carg-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px 22px; }
   .carg-card__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
-  .carg-card__title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0; }
+  .carg-card__title { font-size: 14.5px; font-weight: 700; color: var(--text-primary); margin: 0; }
   .carg-card__sub { font-size: 12.5px; color: var(--text-secondary); margin: 4px 0 0; line-height: 1.4; }
 
   /* ── Plantilla CTA strip ── */
@@ -83,7 +90,7 @@
     background: var(--bg-soft); margin-bottom: 22px; flex-wrap: wrap;
   }
   .carg-template-strip__info { display: flex; align-items: center; gap: 12px; min-width: 0; }
-  .carg-template-strip__ico { color: var(--green); flex-shrink: 0; }
+  .carg-template-strip__ico { color: var(--green); flex-shrink: 0; display: flex; }
   .carg-template-strip__ico svg { width: 22px; height: 22px; }
   .carg-template-strip__text { font-size: 13px; color: var(--text-primary); font-weight: 500; min-width: 0; }
   .carg-template-strip__hint { font-size: 11.5px; color: var(--text-secondary); margin-top: 1px; }
@@ -92,150 +99,134 @@
   .carg-upload-hint { font-size: 11.5px; color: var(--text-muted); margin-top: 8px; display: flex; align-items: flex-start; gap: 6px; }
   .carg-upload-hint svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px; }
 
-  /* ── Botón de analizar (centrado) ── */
+  /* ── Botón de analizar ── */
   .carg-analyze-row { display: flex; justify-content: flex-end; margin-top: 20px; }
 
   /* ── Panel de resultados ── */
-  .carg-results {
-    border: 1px solid var(--border); border-radius: var(--radius-lg);
-    overflow: hidden; margin-top: 22px; display: none;
-  }
+  .carg-results { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-top: 22px; display: none; }
   .carg-results.is-visible { display: block; animation: fadeInUp .3s var(--easing-smoothout) both; }
-  .carg-results__summary {
-    display: flex; align-items: stretch; gap: 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .carg-results__stat {
-    flex: 1; padding: 16px 18px; display: flex; flex-direction: column; gap: 3px;
-    border-right: 1px solid var(--border);
-  }
+  .carg-results__summary { display: flex; align-items: stretch; gap: 0; border-bottom: 1px solid var(--border); }
+  .carg-results__stat { flex: 1; padding: 16px 18px; display: flex; flex-direction: column; gap: 3px; border-right: 1px solid var(--border); }
   .carg-results__stat:last-child { border-right: 0; }
   .carg-results__stat-val { font-size: 24px; font-weight: 800; line-height: 1; font-feature-settings: 'tnum'; }
   .carg-results__stat-lbl { font-size: 11.5px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .3px; }
   .carg-results__stat--total .carg-results__stat-val { color: var(--text-primary); }
   .carg-results__stat--ok    .carg-results__stat-val { color: var(--green); }
   .carg-results__stat--err   .carg-results__stat-val { color: var(--red); }
-
   .carg-results__body { padding: 16px 18px; }
-  .carg-results__section-label {
-    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
-    color: var(--text-secondary); margin-bottom: 10px;
-  }
-
-  /* Lista de filas inválidas */
+  .carg-results__section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--text-secondary); margin-bottom: 10px; }
   .carg-err-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
-  .carg-err-row {
-    display: flex; align-items: flex-start; gap: 10px; padding: 9px 13px;
-    background: var(--red-bg); border: 1px solid var(--red-border); border-radius: var(--radius-md);
-    font-size: 12.5px;
-  }
-  .carg-err-row__ico { flex-shrink: 0; margin-top: 1px; }
+  .carg-err-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 13px; background: var(--red-bg); border: 1px solid var(--red-border); border-radius: var(--radius-md); font-size: 12.5px; }
+  .carg-err-row__ico { flex-shrink: 0; margin-top: 1px; display: flex; }
   .carg-err-row__ico svg { width: 15px; height: 15px; color: var(--red); }
   .carg-err-row__fila { font-weight: 700; color: var(--red); white-space: nowrap; }
   .carg-err-row__msg { color: var(--text-primary); }
-
-  /* Lista de filas válidas (muestra solo las primeras N) */
-  .carg-ok-badge {
-    display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px;
-    background: var(--green-bg); border: 1px solid var(--green-border); border-radius: var(--radius-full);
-    font-size: 12px; font-weight: 700; color: var(--green);
-  }
+  .carg-ok-badge { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; background: var(--green-bg); border: 1px solid var(--green-border); border-radius: var(--radius-full); font-size: 12px; font-weight: 700; color: var(--green); }
   .carg-ok-badge svg { width: 14px; height: 14px; }
-
-  /* Acción de carga parcial */
-  .carg-results__actions {
-    display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    padding: 14px 18px; border-top: 1px solid var(--border); flex-wrap: wrap;
-  }
+  .carg-results__actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-top: 1px solid var(--border); flex-wrap: wrap; }
   .carg-results__actions-note { font-size: 12px; color: var(--text-secondary); flex: 1; min-width: 160px; }
 
   /* ── Modo Manual: búsqueda deportista ── */
   .carg-manual-search { display: flex; flex-direction: column; gap: 14px; }
   .carg-search-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .carg-search-row .naowee-searchbox { flex: 1 1 260px; max-width: 480px; }
-
-  /* Resultados de búsqueda (lista mock) */
   .carg-athlete-list { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-top: 4px; }
-  .carg-athlete-row {
-    display: flex; align-items: center; gap: 14px; padding: 12px 16px;
-    border-bottom: 1px solid var(--border); background: var(--surface);
-    transition: background var(--duration-fast); cursor: pointer;
-  }
+  .carg-athlete-row { display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface); transition: background var(--duration-fast); }
   .carg-athlete-row:last-child { border-bottom: 0; }
   .carg-athlete-row:hover { background: var(--bg-soft); }
-  .carg-athlete-row__ava {
-    width: 36px; height: 36px; border-radius: var(--radius-full); background: var(--accent-bg);
-    color: var(--accent); display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 800; flex-shrink: 0; letter-spacing: .3px;
-  }
+  .carg-athlete-row__ava { width: 36px; height: 36px; border-radius: var(--radius-full); background: var(--accent-bg); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0; letter-spacing: .3px; }
   .carg-athlete-row__info { flex: 1; min-width: 0; }
   .carg-athlete-row__name { font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
   .carg-athlete-row__doc { font-size: 11.5px; color: var(--text-secondary); margin-top: 1px; }
   .carg-athlete-row__btn { flex-shrink: 0; }
-  .carg-athlete-empty {
-    padding: 24px 18px; text-align: center; font-size: 13px; color: var(--text-muted);
-    border: 1px solid var(--border); border-radius: var(--radius-lg);
-  }
+  .carg-athlete-empty { padding: 24px 18px; text-align: center; font-size: 13px; color: var(--text-muted); border: 1px solid var(--border); border-radius: var(--radius-lg); display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .carg-athlete-empty svg { width: 26px; height: 26px; color: var(--text-muted); }
 
-  /* ── Modo Manual Ranking / Medallería ── */
-  .carg-manual-grid {
-    display: flex; flex-direction: column; gap: 0;
-    border: 1px solid var(--border); border-radius: var(--radius-xl); overflow: hidden;
-  }
-  .carg-manual-grid__header {
-    display: grid; padding: 10px 16px;
-    background: #f4f5f9; font-size: 11px; font-weight: 600;
-    letter-spacing: .3px; text-transform: uppercase; color: var(--text-secondary);
-    border-bottom: 1px solid var(--border);
-  }
+  /* ── Modo Manual Ranking / Medallería (grid) ── */
+  .carg-manual-grid { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: var(--radius-xl); overflow: hidden; }
+  .carg-manual-grid__header { display: grid; padding: 10px 16px; background: #f4f5f9; font-size: 11px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase; color: var(--text-secondary); border-bottom: 1px solid var(--border); }
   .carg-manual-grid__header.g-ranking { grid-template-columns: 1fr 120px 120px 110px; }
   .carg-manual-grid__header.g-medalleria { grid-template-columns: 1fr 80px 80px 80px 90px; }
-  .carg-manual-grid__header:first-child { border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
-  .carg-manual-row {
-    display: grid; padding: 12px 16px;
-    border-bottom: 1px solid var(--border); background: var(--surface);
-    align-items: center;
-  }
+  .carg-manual-row { display: grid; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface); align-items: center; }
   .carg-manual-row:last-child { border-bottom: 0; }
   .carg-manual-row.g-ranking { grid-template-columns: 1fr 120px 120px 110px; }
   .carg-manual-row.g-medalleria { grid-template-columns: 1fr 80px 80px 80px 90px; }
   .carg-manual-row__name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
   .carg-manual-row__doc { font-size: 11px; color: var(--text-secondary); margin-top: 1px; }
-  .carg-manual-input {
-    height: 36px; width: 100%; padding: 0 8px; border: 1px solid var(--field-border-idle);
-    border-radius: var(--radius-md); font-family: inherit; font-size: 13px; font-weight: 500;
-    color: var(--text-primary); background: var(--surface); text-align: center;
-    transition: border-color var(--duration-fast);
-  }
+  .carg-manual-input { height: 36px; width: 100%; padding: 0 8px; border: 1px solid var(--field-border-idle); border-radius: var(--radius-md); font-family: inherit; font-size: 13px; font-weight: 500; color: var(--text-primary); background: var(--surface); text-align: center; transition: border-color var(--duration-fast); }
   .carg-manual-input:focus { outline: none; border-width: 2px; border-color: var(--accent); }
   .carg-manual-input::-webkit-outer-spin-button,
   .carg-manual-input::-webkit-inner-spin-button { -webkit-appearance: none; }
 
-  /* ── Historial de cargues ── */
-  .carg-history { margin-top: 24px; }
-  .carg-history__title { font-size: 13px; font-weight: 700; color: var(--text-secondary); margin: 0 0 10px; text-transform: uppercase; letter-spacing: .3px; }
-  .carg-history__empty { font-size: 12.5px; color: var(--text-muted); padding: 14px 0; }
-  .carg-history__list { display: flex; flex-direction: column; gap: 6px; }
-  .carg-history__item {
-    display: flex; align-items: center; gap: 12px; padding: 9px 14px;
-    background: var(--bg-soft); border-radius: var(--radius-md); font-size: 12.5px;
+  /* ═══ ARCHIVOS CARGADOS — versionado + tabla con columnas de la planilla ═══ */
+  .carg-files { margin-top: 24px; }
+  .carg-files__title { font-size: 12px; font-weight: 700; color: var(--text-secondary); margin: 0 0 12px; text-transform: uppercase; letter-spacing: .3px; display: flex; align-items: center; gap: 7px; }
+  .carg-files__title svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .carg-files__count { color: var(--text-muted); font-weight: 600; }
+  .carg-files__list { display: flex; flex-direction: column; gap: 10px; }
+
+  .carg-file { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--surface); }
+  .carg-file__head { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 16px; background: var(--surface); border: none; font-family: inherit; cursor: pointer; text-align: left; transition: background var(--duration-fast); }
+  .carg-file__head:hover { background: var(--bg-soft); }
+  .carg-file__ico { width: 34px; height: 34px; border-radius: var(--radius-md); background: var(--green-bg); color: var(--green); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .carg-file__ico svg { width: 18px; height: 18px; }
+  .carg-file__meta { flex: 1; min-width: 0; }
+  .carg-file__name { font-size: 13px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .carg-file__name-txt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .carg-file__ver { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: var(--radius-full); background: var(--accent-bg); color: var(--accent); font-size: 10.5px; font-weight: 800; letter-spacing: .3px; flex-shrink: 0; }
+  .carg-file__sub { font-size: 11.5px; color: var(--text-secondary); margin-top: 2px; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .carg-file__n { color: var(--green); font-weight: 700; }
+  .carg-file__chev { flex-shrink: 0; color: var(--text-muted); display: flex; transition: transform var(--duration-normal) var(--easing-smoothout); }
+  .carg-file__chev svg { width: 18px; height: 18px; }
+  .carg-file.is-open .carg-file__chev { transform: rotate(180deg); }
+  .carg-file__body { display: none; border-top: 1px solid var(--border); padding: 14px 16px 16px; background: var(--bg-soft); }
+  .carg-file.is-open .carg-file__body { display: block; animation: fadeIn .25s ease both; }
+
+  /* Tabla de la data cargada (columnas de la planilla) — scroll horizontal */
+  .carg-file__table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); -webkit-overflow-scrolling: touch; }
+  table.carg-data-table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 640px; }
+  table.carg-data-table thead th {
+    background: #f4f5f9; color: var(--text-secondary); font-weight: 700; font-size: 11px;
+    text-transform: uppercase; letter-spacing: .3px; text-align: left; padding: 9px 12px;
+    white-space: nowrap; border-bottom: 1px solid var(--border); position: sticky; top: 0;
   }
-  .carg-history__item-tipo { font-weight: 700; color: var(--text-primary); }
-  .carg-history__item-n { color: var(--green); font-weight: 700; }
-  .carg-history__item-time { color: var(--text-muted); margin-left: auto; }
+  table.carg-data-table tbody td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text-primary); white-space: nowrap; }
+  table.carg-data-table tbody tr:last-child td { border-bottom: 0; }
+  table.carg-data-table tbody tr:nth-child(even) td { background: var(--bg-soft); }
+  table.carg-data-table .num { text-align: center; font-feature-settings: 'tnum'; font-weight: 600; }
+  .carg-file__table-foot { font-size: 11.5px; color: var(--text-muted); margin-top: 8px; }
+
+  /* ── Toast (inyectado) ── */
 
   /* ── Animaciones ── */
   @keyframes fadeInUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes fadeIn   { from { opacity: 0; } to { opacity: 1; } }
 
+  /* ── :focus-visible canónico ── */
+  .carg-file__head:focus-visible,
+  #dlPlantilla:focus-visible,
+  #browseBtn:focus-visible,
+  #fileDismiss:focus-visible,
+  #analyzeBtn:focus-visible,
+  #submitBtn:focus-visible,
+  #manualSaveBtn:focus-visible,
+  .inscribir-btn:focus-visible,
+  .carg-tabs .naowee-segment__item:focus-visible,
+  .naowee-dropdown__trigger:focus-visible,
+  #evPickerCta:focus-visible {
+    outline: none; box-shadow: 0 0 0 3px rgba(215,64,9,.18);
+  }
+
   /* ── Responsive ── */
   @media (max-width: 900px) {
-    .carg-card { padding: 18px 18px; }
+    .carg-card { padding: 18px 16px; }
     .carg-results__summary { flex-direction: column; }
     .carg-results__stat { border-right: 0; border-bottom: 1px solid var(--border); }
     .carg-results__stat:last-child { border-bottom: 0; }
+    .carg-tabs .naowee-segment__item { font-size: 12px; gap: 5px; padding: 0 8px; }
   }
   @media (max-width: 640px) {
+    .carg-tabs .naowee-segment__item .carg-tab-lbl { font-size: 11.5px; }
     .carg-manual-grid__header.g-ranking,
     .carg-manual-row.g-ranking { grid-template-columns: 1fr 90px 90px; }
     .carg-manual-grid__header.g-ranking *:nth-child(4),
@@ -246,22 +237,8 @@
     .carg-manual-row.g-medalleria *:nth-child(5) { display: none; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .carg-hero, .carg-body, .carg-results { animation: none !important; }
-    .prog-fill { transition: none !important; }
-  }
-
-  /* ── :focus-visible canónico (botones de acción locales) ── */
-  #dlPlantilla:focus-visible,
-  #browseBtn:focus-visible,
-  #fileDismiss:focus-visible,
-  #analyzeBtn:focus-visible,
-  #submitBtn:focus-visible,
-  #manualSaveBtn:focus-visible,
-  .inscribir-btn:focus-visible,
-  .naowee-dropdown__trigger:focus-visible,
-  #evPickerCta:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(215,64,9,.18);
+    .carg-tabs-card, .carg-results, .carg-file__body { animation: none !important; }
+    .carg-file__chev { transition: none !important; }
   }
 
   /* ── OVERSIGHT (Admin solo lectura) ── */
@@ -270,8 +247,6 @@
   .oversight-head__title p { font-size: 13px; color: var(--text-secondary); margin: 0; }
   .oversight-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: var(--radius-full); background: var(--blue-bg); color: var(--blue-info); font-size: 11.5px; font-weight: 700; flex-shrink: 0; border: 1px solid #c0d8f8; }
   .oversight-badge svg { width: 14px; height: 14px; }
-
-  /* Tabla oversight reusa .naowee-table-card + .naowee-table--in-card */
   .ov-gestor-chip { display: inline-flex; align-items: center; gap: 7px; }
   .ov-gestor-av { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: 700; flex-shrink: 0; }
   .ov-gestor-name { font-size: 12.5px; font-weight: 600; color: var(--text-primary); }
@@ -293,32 +268,18 @@
   @media (max-width: 720px) {
     .ov-col-gestor, .ov-col-prog, .ov-col-last { display: none; }
   }
-  /* ── Oversight: stacked cards ≤640px (solo .naowee-table-card dentro de oversight) ── */
   @media (max-width: 640px) {
     .naowee-table-card .naowee-table--in-card thead { display: none; }
     .naowee-table-card .naowee-table--in-card,
     .naowee-table-card .naowee-table--in-card tbody,
     .naowee-table-card .naowee-table--in-card tr { display: block; }
-    .naowee-table-card .naowee-table--in-card tbody tr {
-      border-bottom: 1px solid var(--border);
-      padding: 12px 16px; display: flex; flex-direction: column; gap: 6px;
-    }
+    .naowee-table-card .naowee-table--in-card tbody tr { border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
     .naowee-table-card .naowee-table--in-card tbody tr:last-child { border-bottom: none; }
-    .naowee-table-card .naowee-table--in-card td {
-      display: flex; align-items: flex-start; gap: 8px;
-      padding: 2px 0 !important; border: none; font-size: 13px;
-    }
-    .naowee-table-card .naowee-table--in-card td[data-label]::before {
-      content: attr(data-label);
-      font-size: 11px; font-weight: 700; color: var(--text-secondary);
-      text-transform: uppercase; letter-spacing: .3px;
-      min-width: 90px; flex-shrink: 0; padding-top: 1px;
-    }
-    /* Las celdas colapsadas en desktop siguen apareciendo en stacked */
+    .naowee-table-card .naowee-table--in-card td { display: flex; align-items: flex-start; gap: 8px; padding: 2px 0 !important; border: none; font-size: 13px; }
+    .naowee-table-card .naowee-table--in-card td[data-label]::before { content: attr(data-label); font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .3px; min-width: 90px; flex-shrink: 0; padding-top: 1px; }
     .naowee-table-card .naowee-table--in-card td.ov-col-gestor,
     .naowee-table-card .naowee-table--in-card td.ov-col-prog,
     .naowee-table-card .naowee-table--in-card td.ov-col-last { display: flex; }
-    /* history rows — span across full width */
     .naowee-table-card .naowee-table--in-card tr.ov-history-row { padding: 0; }
     .naowee-table-card .naowee-table--in-card td.ov-history-cell { padding: 0 16px 12px !important; }
   }
@@ -337,83 +298,94 @@
 </div>
 
 <script type="module">
-  import { mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher, getRoleFromQuery, ROLES } from './shared/sidebar.js';
-  import { allEvents, STATUS_LABEL, applyUpload, addUploadRecord, getUploadHistory, GESTOR_MAP } from './shared/events-data.js';
+  import { mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher, getRoleFromQuery, getIcon, ROLES } from './shared/sidebar.js';
+  import { allEvents, STATUS_LABEL, applyUpload, addUploadRecord, getFileVersions, addFileVersion, GESTOR_MAP, resolveGestorId, eventsForGestor, gestorIdForRole } from './shared/events-data.js';
   import { GESTORES } from './shared/catalogo.js';
 
   /* ─── Params ─── */
   const params = new URLSearchParams(window.location.search);
   const roleCode = getRoleFromQuery();
   const role = ROLES[roleCode] || ROLES.USER;
-  const tipo = (['inscripciones', 'ranking', 'medalleria'].includes(params.get('tipo')))
-    ? params.get('tipo') : 'inscripciones';
+  const TIPOS = ['inscripciones', 'ranking', 'medalleria'];
+  const tipoParam = params.get('tipo') || params.get('tab');
   const eventId = params.get('id') || null;
 
-  /* ─── Icons ─── */
+  /* ─── Icons (inline, todos dimensionados por CSS) ─── */
   const I = {
-    chevL: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
+    chevL: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
+    cal:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+    pin:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+    org:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg>',
+    user:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+    doc:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>',
+    layers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
     download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
     upload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>',
     file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+    fileSheet: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="10" y1="9" x2="9" y2="9"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
     x:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
     warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    chevD: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
     search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
-    user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
     inbox: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',
-    history: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>',
-    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+    lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
   };
 
-  /* ─── Config por tipo ─── */
+  /* ─── Config por tipo (label, plantilla, columnas de la planilla) ─── */
   const TIPO_CFG = {
     inscripciones: {
-      label: 'Inscripciones', labelShort: 'Inscripción',
-      tipoClass: 't-inscripciones',
-      plantilla: 'plantilla_persona_deportista.xlsx',
+      label: 'Inscripciones', tabLabel: 'Inscripciones', labelShort: 'Inscripción',
+      icon: 'ticket', plantilla: 'plantilla_persona_deportista.xlsx', storeTipo: 'insc', manualMode: 'search',
       hint: 'Columnas: tipo doc · nro doc · primer nombre · segundo nombre · primer apellido · segundo apellido · fecha de nacimiento · edad · sexo · nacionalidad · tipo de deporte · deporte · identidad de género · orientación sexual · discapacidad · pertenencia étnica · priorización · departamento · ciudad · zona · dirección · teléfono · correo electrónico',
-      storeTipo: 'insc',
-      manualMode: 'search'
+      columns: [
+        { k: 'tipoDoc', l: 'Tipo doc' }, { k: 'nroDoc', l: 'Nro documento' },
+        { k: 'nombre', l: 'Nombres y apellidos' }, { k: 'sexo', l: 'Sexo' },
+        { k: 'deporte', l: 'Deporte' }, { k: 'depto', l: 'Departamento' }, { k: 'correo', l: 'Correo' }
+      ]
     },
     ranking: {
-      label: 'Ranking / Resultados', labelShort: 'Resultado',
-      tipoClass: 't-ranking',
-      plantilla: 'plantilla_resultados.xlsx',
+      label: 'Ranking / Resultados', tabLabel: 'Ranking / Resultados', labelShort: 'Resultado',
+      icon: 'ranking', plantilla: 'plantilla_resultados.xlsx', storeTipo: 'res', manualMode: 'grid',
       hint: 'Columnas: deporte · categoría · modalidad · prueba · tipo doc · nro doc · primer nombre · segundo nombre · primer apellido · segundo apellido · sexo · departamento · ciudad · posición · marca/tiempo/puntaje · fase',
-      storeTipo: 'res',
-      manualMode: 'grid'
+      columns: [
+        { k: 'deporte', l: 'Deporte' }, { k: 'prueba', l: 'Prueba' },
+        { k: 'nombre', l: 'Deportista' }, { k: 'nroDoc', l: 'Nro documento' },
+        { k: 'posicion', l: 'Posición', num: true }, { k: 'marca', l: 'Marca / Tiempo', num: true }, { k: 'fase', l: 'Fase' }
+      ]
     },
     medalleria: {
-      label: 'Medallería', labelShort: 'Medallería',
-      tipoClass: 't-medalleria',
-      plantilla: 'plantilla_medalleria.xlsx',
+      label: 'Medallería', tabLabel: 'Medallería', labelShort: 'Medallería',
+      icon: 'medal', plantilla: 'plantilla_medalleria.xlsx', storeTipo: 'med', manualMode: 'grid',
       hint: 'Columnas: departamento · municipio · deporte · categoría · modalidad · prueba · oro · plata · bronce · total',
-      storeTipo: 'med',
-      manualMode: 'grid'
+      columns: [
+        { k: 'depto', l: 'Departamento' }, { k: 'deporte', l: 'Deporte' }, { k: 'prueba', l: 'Prueba' },
+        { k: 'oro', l: '🥇 Oro', num: true }, { k: 'plata', l: '🥈 Plata', num: true },
+        { k: 'bronce', l: '🥉 Bronce', num: true }, { k: 'total', l: 'Total', num: true }
+      ]
     }
   };
 
-  const cfg = TIPO_CFG[tipo];
-
-  /* ─── Mock data por tipo (filas realistas del catálogo) ─── */
+  /* ─── Mock data por tipo (filas válidas con TODAS las columnas + errores) ─── */
   const MOCK_ROWS = {
     inscripciones: {
       valid: [
-        { nombre: 'Laura Valentina Ospina Gómez', doc: 'TI 1052342871' },
-        { nombre: 'Sebastián Andrés Ríos Torres', doc: 'CC 1010203040' },
-        { nombre: 'María Camila Herrera Sánchez', doc: 'TI 1064789321' },
-        { nombre: 'Daniel Esteban Mora Jiménez', doc: 'CC 1075432198' },
-        { nombre: 'Valeria Cristina Pinto Ortega', doc: 'TI 1023876543' },
-        { nombre: 'Andrés Felipe Vargas Núñez', doc: 'CC 1012456789' },
-        { nombre: 'Juliana Sofía Mancera Díaz', doc: 'TI 1031987654' },
-        { nombre: 'Mateo Alejandro Cárdenas Ruiz', doc: 'CC 1098765432' },
-        { nombre: 'Sara Isabel Quintero López', doc: 'TI 1040123456' },
-        { nombre: 'Diego Camilo Salcedo Bejarano', doc: 'CC 1005678901' },
-        { nombre: 'Luisa Fernanda Arango Reyes', doc: 'TI 1057234890' },
-        { nombre: 'Carlos Mauricio Peñaloza Castro', doc: 'CC 1083456712' },
-        { nombre: 'Isabella Cruz Montoya', doc: 'TI 1029087654' },
-        { nombre: 'Nicolás José Parra Estrada', doc: 'CC 1065439870' },
-        { nombre: 'Mariana Paula León Moreno', doc: 'TI 1045678923' }
+        { tipoDoc: 'TI', nroDoc: '1052342871', nombre: 'Laura Valentina Ospina Gómez', sexo: 'F', deporte: 'Atletismo', depto: 'Valle del Cauca', correo: 'laura.ospina@email.com' },
+        { tipoDoc: 'CC', nroDoc: '1010203040', nombre: 'Sebastián Andrés Ríos Torres', sexo: 'M', deporte: 'Natación', depto: 'Antioquia', correo: 'sebastian.rios@email.com' },
+        { tipoDoc: 'TI', nroDoc: '1064789321', nombre: 'María Camila Herrera Sánchez', sexo: 'F', deporte: 'Natación', depto: 'Bogotá D.C.', correo: 'maria.herrera@email.com' },
+        { tipoDoc: 'CC', nroDoc: '1075432198', nombre: 'Daniel Esteban Mora Jiménez', sexo: 'M', deporte: 'Taekwondo', depto: 'Risaralda', correo: 'daniel.mora@email.com' },
+        { tipoDoc: 'TI', nroDoc: '1023876543', nombre: 'Valeria Cristina Pinto Ortega', sexo: 'F', deporte: 'Atletismo', depto: 'Santander', correo: 'valeria.pinto@email.com' },
+        { tipoDoc: 'CC', nroDoc: '1012456789', nombre: 'Andrés Felipe Vargas Núñez', sexo: 'M', deporte: 'Patinaje', depto: 'Antioquia', correo: 'andres.vargas@email.com' },
+        { tipoDoc: 'TI', nroDoc: '1031987654', nombre: 'Juliana Sofía Mancera Díaz', sexo: 'F', deporte: 'Patinaje', depto: 'Cundinamarca', correo: 'juliana.mancera@email.com' },
+        { tipoDoc: 'CC', nroDoc: '1098765432', nombre: 'Mateo Alejandro Cárdenas Ruiz', sexo: 'M', deporte: 'Fútbol Sala', depto: 'Atlántico', correo: 'mateo.cardenas@email.com' },
+        { tipoDoc: 'TI', nroDoc: '1040123456', nombre: 'Sara Isabel Quintero López', sexo: 'F', deporte: 'Natación', depto: 'Valle del Cauca', correo: 'sara.quintero@email.com' },
+        { tipoDoc: 'CC', nroDoc: '1005678901', nombre: 'Diego Camilo Salcedo Bejarano', sexo: 'M', deporte: 'Levantamiento de Pesas', depto: 'Santander', correo: 'diego.salcedo@email.com' },
+        { tipoDoc: 'TI', nroDoc: '1057234890', nombre: 'Luisa Fernanda Arango Reyes', sexo: 'F', deporte: 'Atletismo', depto: 'Antioquia', correo: 'luisa.arango@email.com' },
+        { tipoDoc: 'CC', nroDoc: '1083456712', nombre: 'Carlos Mauricio Peñaloza Castro', sexo: 'M', deporte: 'Taekwondo', depto: 'Bogotá D.C.', correo: 'carlos.penaloza@email.com' },
+        { tipoDoc: 'TI', nroDoc: '1029087654', nombre: 'Isabella Cruz Montoya', sexo: 'F', deporte: 'Patinaje', depto: 'Risaralda', correo: 'isabella.cruz@email.com' },
+        { tipoDoc: 'CC', nroDoc: '1065439870', nombre: 'Nicolás José Parra Estrada', sexo: 'M', deporte: 'Fútbol Sala', depto: 'Atlántico', correo: 'nicolas.parra@email.com' },
+        { tipoDoc: 'TI', nroDoc: '1045678923', nombre: 'Mariana Paula León Moreno', sexo: 'F', deporte: 'Natación', depto: 'Cundinamarca', correo: 'mariana.leon@email.com' }
       ],
       errors: [
         { fila: 4,  msg: 'Número de documento inválido — no corresponde al tipo TI.' },
@@ -425,13 +397,13 @@
     },
     ranking: {
       valid: [
-        { nombre: 'Laura Ospina',   doc: 'TI 1052342871', deporte: 'Atletismo', prueba: '100 MTS PLANOS', posicion: 1 },
-        { nombre: 'Sebastián Ríos', doc: 'CC 1010203040', deporte: 'Atletismo', prueba: '200 MTRS PLANOS', posicion: 2 },
-        { nombre: 'María Herrera',  doc: 'TI 1064789321', deporte: 'Natación',  prueba: '50 MTS LIBRE',    posicion: 1 },
-        { nombre: 'Daniel Mora',    doc: 'CC 1075432198', deporte: 'Natación',  prueba: '100 MTS ESPALDA', posicion: 3 },
-        { nombre: 'Valeria Pinto',  doc: 'TI 1023876543', deporte: 'Atletismo', prueba: 'SALTO LARGO',     posicion: 2 },
-        { nombre: 'Andrés Vargas',  doc: 'CC 1012456789', deporte: 'Taekwondo', prueba: 'COMBATE -63 KG',  posicion: 1 },
-        { nombre: 'Juliana Mancera',doc: 'TI 1031987654', deporte: 'Patinaje',  prueba: '300 MTS META CONTRA META - PISTA', posicion: 4 }
+        { deporte: 'Atletismo', prueba: '100 MTS PLANOS', nombre: 'Laura Ospina', nroDoc: 'TI 1052342871', posicion: '1', marca: '11.84 s', fase: 'Final' },
+        { deporte: 'Atletismo', prueba: '200 MTRS PLANOS', nombre: 'Sebastián Ríos', nroDoc: 'CC 1010203040', posicion: '2', marca: '23.41 s', fase: 'Final' },
+        { deporte: 'Natación', prueba: '50 MTS LIBRE', nombre: 'María Herrera', nroDoc: 'TI 1064789321', posicion: '1', marca: '27.10 s', fase: 'Final' },
+        { deporte: 'Natación', prueba: '100 MTS ESPALDA', nombre: 'Daniel Mora', nroDoc: 'CC 1075432198', posicion: '3', marca: '1:08.22', fase: 'Final' },
+        { deporte: 'Atletismo', prueba: 'SALTO LARGO', nombre: 'Valeria Pinto', nroDoc: 'TI 1023876543', posicion: '2', marca: '5.92 m', fase: 'Final' },
+        { deporte: 'Taekwondo', prueba: 'COMBATE -63 KG', nombre: 'Andrés Vargas', nroDoc: 'CC 1012456789', posicion: '1', marca: '—', fase: 'Final' },
+        { deporte: 'Patinaje', prueba: '300 MTS META CONTRA META', nombre: 'Juliana Mancera', nroDoc: 'TI 1031987654', posicion: '4', marca: '26.88 s', fase: 'Semifinal' }
       ],
       errors: [
         { fila: 3,  msg: 'Prueba "4x400 MTS" no corresponde al deporte Atletismo en la fase indicada.' },
@@ -441,11 +413,11 @@
     },
     medalleria: {
       valid: [
-        { depto: 'Bogotá D.C.', deporte: 'Atletismo', prueba: '100 MTS PLANOS', oro: 1, plata: 1, bronce: 0 },
-        { depto: 'Antioquia',   deporte: 'Natación',  prueba: '50 MTS LIBRE',   oro: 0, plata: 1, bronce: 2 },
-        { depto: 'Valle del Cauca', deporte: 'Taekwondo', prueba: 'COMBATE -58 KG', oro: 1, plata: 0, bronce: 1 },
-        { depto: 'Cundinamarca', deporte: 'Atletismo', prueba: 'SALTO ALTO', oro: 0, plata: 0, bronce: 1 },
-        { depto: 'Santander',   deporte: 'Levantamiento de Pesas', prueba: 'TOTAL OLÍMPICO', oro: 1, plata: 1, bronce: 1 }
+        { depto: 'Bogotá D.C.', deporte: 'Atletismo', prueba: '100 MTS PLANOS', oro: '1', plata: '1', bronce: '0', total: '2' },
+        { depto: 'Antioquia', deporte: 'Natación', prueba: '50 MTS LIBRE', oro: '0', plata: '1', bronce: '2', total: '3' },
+        { depto: 'Valle del Cauca', deporte: 'Taekwondo', prueba: 'COMBATE -58 KG', oro: '1', plata: '0', bronce: '1', total: '2' },
+        { depto: 'Cundinamarca', deporte: 'Atletismo', prueba: 'SALTO ALTO', oro: '0', plata: '0', bronce: '1', total: '1' },
+        { depto: 'Santander', deporte: 'Levantamiento de Pesas', prueba: 'TOTAL OLÍMPICO', oro: '1', plata: '1', bronce: '1', total: '3' }
       ],
       errors: [
         { fila: 6,  msg: 'Deporte "PESAS" no existe — use "Levantamiento de Pesas".' },
@@ -458,21 +430,18 @@
 
   /* ─── Mock deportistas inscritos (para manual Ranking / Medallería) ─── */
   const MOCK_INSCRITOS = [
-    { id: 'D01', nombre: 'Laura Ospina Gómez', doc: 'TI 1052342871', deporte: 'Atletismo', prueba: '100 MTS PLANOS', posicion: null, marca: null, oro: 0, plata: 0, bronce: 0 },
-    { id: 'D02', nombre: 'Sebastián Ríos Torres', doc: 'CC 1010203040', deporte: 'Atletismo', prueba: '200 MTRS PLANOS', posicion: null, marca: null, oro: 0, plata: 0, bronce: 0 },
-    { id: 'D03', nombre: 'María Herrera Sánchez', doc: 'TI 1064789321', deporte: 'Natación', prueba: '50 MTS LIBRE', posicion: null, marca: null, oro: 0, plata: 0, bronce: 0 },
-    { id: 'D04', nombre: 'Daniel Mora Jiménez', doc: 'CC 1075432198', deporte: 'Natación', prueba: '100 MTS ESPALDA', posicion: null, marca: null, oro: 0, plata: 0, bronce: 0 },
-    { id: 'D05', nombre: 'Valeria Pinto Ortega', doc: 'TI 1023876543', deporte: 'Taekwondo', prueba: 'COMBATE -63 KG', posicion: null, marca: null, oro: 0, plata: 0, bronce: 0 }
+    { id: 'D01', nombre: 'Laura Ospina Gómez', doc: 'TI 1052342871', deporte: 'Atletismo', prueba: '100 MTS PLANOS' },
+    { id: 'D02', nombre: 'Sebastián Ríos Torres', doc: 'CC 1010203040', deporte: 'Atletismo', prueba: '200 MTRS PLANOS' },
+    { id: 'D03', nombre: 'María Herrera Sánchez', doc: 'TI 1064789321', deporte: 'Natación', prueba: '50 MTS LIBRE' },
+    { id: 'D04', nombre: 'Daniel Mora Jiménez', doc: 'CC 1075432198', deporte: 'Natación', prueba: '100 MTS ESPALDA' },
+    { id: 'D05', nombre: 'Valeria Pinto Ortega', doc: 'TI 1023876543', deporte: 'Taekwondo', prueba: 'COMBATE -63 KG' }
   ];
 
   /* ─── Toast ─── */
   let _toastT = null;
   function flash(msg, type = 'info') {
     let toast = document.getElementById('evToast');
-    if (!toast) {
-      toast = document.createElement('div'); toast.id = 'evToast';
-      toast.setAttribute('role', 'status'); document.body.appendChild(toast);
-    }
+    if (!toast) { toast = document.createElement('div'); toast.id = 'evToast'; toast.setAttribute('role', 'status'); document.body.appendChild(toast); }
     toast.textContent = msg;
     if (type === 'success') toast.style.background = '#1a6e22';
     else if (type === 'error') toast.style.background = '#b91c1c';
@@ -482,21 +451,37 @@
     _toastT = setTimeout(() => { toast.classList.remove('is-visible'); toast.style.background = ''; }, 3200);
   }
 
-  /* ─── Modo del segment ─── */
-  let activeMode = 'masivo'; // 'manual' | 'masivo'
+  /* ─── Utilidad ─── */
+  function esc(str) {
+    return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function nowStamp() { return new Date().toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }); }
+
+  /* ─── Estado ─── */
+  let activeTipo = TIPOS.includes(tipoParam) ? tipoParam : 'inscripciones';
+  let activeMode = 'masivo';      // 'masivo' | 'manual'
   let selectedFile = null;
-  let parseResults = null;  // { valid: [], errors: [], total: N }
+  let parseResults = null;
 
   /* ─── Evento activo ─── */
   let selectedEventId = eventId;
   let ev = null;
   if (selectedEventId) {
-    const all = allEvents();
-    ev = all.find((e) => e.id === selectedEventId) || null;
+    ev = allEvents().find((e) => e.id === selectedEventId) || null;
+  }
+  const gateOpen = ev ? ev.status === 'activo' : false;
+
+  /* ─── Gestor del evento (para el detalle) ─── */
+  function gestorObj() {
+    if (!ev) return null;
+    const gid = ev.assignedGestorId || resolveGestorId(ev) || GESTOR_MAP[ev.id];
+    return GESTORES.find((g) => g.id === gid) || null;
   }
 
-  /* ─── Segment helpers ─── */
-  function bindSegment(segEl) {
+  /* ═══════════════════════════════════════════════════════════════
+     SEGMENT helper (reusado por el sub-segmento Masivo/Manual y la tab bar)
+     ═══════════════════════════════════════════════════════════════ */
+  function bindSegment(segEl, getActive, onSelect) {
     const pill = segEl.querySelector('.naowee-segment__pill');
     const items = Array.from(segEl.querySelectorAll('.naowee-segment__item'));
     function setActive(idx) {
@@ -510,35 +495,34 @@
       pill.style.width = `${rect.width}px`;
       pill.classList.remove('naowee-segment__pill--no-anim');
     }
-    const init = items.findIndex((it) => it.dataset.mode === activeMode);
+    const initVal = getActive();
+    const init = items.findIndex((it) => it.dataset.val === initVal);
     pill.classList.add('naowee-segment__pill--no-anim');
     setActive(init >= 0 ? init : 0);
     items.forEach((it, i) => {
-      it.addEventListener('click', () => {
-        activeMode = it.dataset.mode;
-        setActive(i);
-        renderModeBody();
-      });
+      it.addEventListener('click', () => { setActive(i); onSelect(it.dataset.val); });
     });
+    /* Reposiciona el pill tras reflow (fonts/responsive). */
+    requestAnimationFrame(() => { const k = items.findIndex((x) => x.dataset.val === getActive()); if (k >= 0) setActive(k); });
   }
 
-  /* ─── Render principal ─── */
+  /* ═══════════════════════════════════════════════════════════════
+     RENDER PRINCIPAL
+     ═══════════════════════════════════════════════════════════════ */
   function render() {
-    if (!selectedEventId || !ev) {
-      renderPicker();
-    } else {
-      renderCargue();
-    }
+    if (!selectedEventId || !ev) renderPicker();
+    else renderWorkspace();
   }
 
-  /* ─── Picker de evento (sin ?id) ─── */
+  /* ─── Picker de evento (fallback sin ?id) ─── */
   function renderPicker() {
-    const all = allEvents().filter((e) => e.status === 'activo');
+    const gid = gestorIdForRole(roleCode);
+    const list = gid ? eventsForGestor(gid) : allEvents().filter((e) => e.status === 'activo');
     document.getElementById('cargueApp').innerHTML = `
       <div class="carg-picker">
-        <div class="carg-picker__icon">${I.file}</div>
-        <h2 class="carg-picker__title">Seleccionar evento</h2>
-        <p class="carg-picker__sub">Elige el evento al que quieres cargar <strong>${cfg.label}</strong>. Solo se muestran los eventos activos asignados a tu usuario.</p>
+        <div class="carg-picker__icon">${I.layers}</div>
+        <h2 class="carg-picker__title">Selecciona un evento</h2>
+        <p class="carg-picker__sub">Elige el evento que vas a gestionar. Dentro encontrarás el detalle del evento y los cargues (inscripciones, ranking/resultados y medallería).</p>
         <div class="carg-picker__form">
           <div class="naowee-dropdown" id="evPickerDd">
             <button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox" id="evPickerTrigger">
@@ -546,23 +530,20 @@
               <svg class="naowee-dropdown__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             <div class="naowee-dropdown__menu" role="listbox" id="evPickerMenu">
-              ${all.length === 0
-                ? `<div class="naowee-dropdown__empty">No hay eventos activos asignados a tu perfil.</div>`
-                : all.map((e) => `
+              ${list.length === 0
+                ? `<div class="naowee-dropdown__empty">No hay eventos asignados a tu perfil.</div>`
+                : list.map((e) => `
                     <button class="naowee-dropdown__opt" role="option" data-ev-id="${e.id}">
                       <span style="font-size:18px;flex-shrink:0">${e.emoji}</span>
-                      <span>${e.name} <span style="color:var(--text-muted);font-size:12px;font-weight:400">· ${e.id}</span></span>
+                      <span>${esc(e.name)} <span style="color:var(--text-muted);font-size:12px;font-weight:400">· ${e.id}</span></span>
                     </button>`).join('')
               }
             </div>
           </div>
-          <button class="naowee-btn naowee-btn--loud" id="evPickerCta" disabled style="width:100%">
-            Continuar →
-          </button>
+          <button class="naowee-btn naowee-btn--loud" id="evPickerCta" disabled style="width:100%">Continuar →</button>
         </div>
       </div>
     `;
-    /* Bind picker dropdown */
     const dd = document.getElementById('evPickerDd');
     const trigger = document.getElementById('evPickerTrigger');
     const menu = document.getElementById('evPickerMenu');
@@ -584,83 +565,147 @@
     });
     cta.addEventListener('click', () => {
       if (!chosen) return;
-      const url = new URL(window.location.href);
-      url.searchParams.set('id', chosen);
-      window.location.href = url.toString();
+      window.location.href = `cargue.html?id=${encodeURIComponent(chosen)}&role=${roleCode}`;
     });
   }
 
-  /* ─── Render de cargue (cuando hay evento) ─── */
-  function renderCargue() {
-    const app = document.getElementById('cargueApp');
-    app.innerHTML = `
-      ${heroHTML()}
-      <div class="carg-body" id="cargBody">
-        <div class="carg-mode-bar">
-          <div class="carg-mode-bar__left">
-            <div class="naowee-segment" data-segmented id="modeSegment" role="tablist" aria-label="Modo de cargue">
-              <span class="naowee-segment__pill" aria-hidden="true"></span>
-              <button class="naowee-segment__item naowee-segment__item--active" data-mode="masivo" type="button" role="tab" aria-selected="true">Masivo</button>
-              <button class="naowee-segment__item" data-mode="manual" type="button" role="tab" aria-selected="false">Manual</button>
-            </div>
-          </div>
-        </div>
-        <div id="modeBody"></div>
-      </div>
-    `;
-    bindSegment(document.getElementById('modeSegment'));
-    renderModeBody();
-    renderHistory();
-  }
-
-  /* ─── Hero ─── */
-  function heroHTML() {
-    const backHref = ev ? `evento-detalle.html?id=${ev.id}&role=${roleCode}` : `eventos.html?role=${roleCode}`;
+  /* ─── DETALLE del evento (patrón canónico .det-card — shared) ─── */
+  function detailHTML() {
+    const g = gestorObj();
+    const gestorBlock = g
+      ? `<div class="gestor-field">
+           <span class="gestor-field__av" style="background:${esc(g.color)}" aria-hidden="true">${esc(g.avatar)}</span>
+           <span class="gestor-field__meta">
+             <span class="gestor-field__nm">${esc(g.name)}</span>
+             <span class="gestor-field__role">${esc(g.area || 'Gestor de eventos')}</span>
+           </span>
+         </div>`
+      : `<span style="font-size:13px;color:var(--text-secondary)">Sin asignar</span>`;
     return `
-      <div class="carg-hero">
-        <a class="carg-hero__back" href="${backHref}" aria-label="Volver">${I.chevL}</a>
-        <div class="carg-hero__info">
-          <h1 class="carg-hero__name">${ev ? `${ev.emoji} ${ev.name}` : 'Cargue'}</h1>
-          <div class="carg-hero__meta">
-            ${ev ? `<span>${ev.id}</span><span>·</span><span class="badge s-${ev.status}">${STATUS_LABEL[ev.status]}</span>` : ''}
-            <span class="carg-hero__tipo ${cfg.tipoClass}">${cfg.label}</span>
+      <section class="det-card" aria-label="Datos del evento">
+        <header class="det-head">
+          <div class="det-head__id">
+            <a class="det-back" href="eventos.html?role=${roleCode}" aria-label="Volver a eventos" title="Volver a eventos">${I.chevL}</a>
+            <h2 class="det-head__name">${esc(ev.name)}</h2>
+            <span class="badge s-${ev.status}">${STATUS_LABEL[ev.status]}</span>
+          </div>
+        </header>
+        <div class="meta-strip" role="group" aria-label="Fechas, lugar y organismo">
+          <div class="meta-strip__col"><span class="meta-strip__lbl">${I.cal} Fecha de inicio</span><span class="meta-strip__val">${esc(ev.start)}</span></div>
+          <div class="meta-strip__col"><span class="meta-strip__lbl">${I.cal} Fecha final</span><span class="meta-strip__val">${esc(ev.end)}</span></div>
+          <div class="meta-strip__col"><span class="meta-strip__lbl">${I.pin} Lugar</span><span class="meta-strip__val">${esc(ev.place)}</span></div>
+          <div class="meta-strip__col"><span class="meta-strip__lbl">${I.org} Organismo</span><span class="meta-strip__val">${esc(ev.org)}</span></div>
+        </div>
+        <div class="det-foot">
+          <div class="det-foot__block">
+            <span class="det-foot__lbl">${I.user} Gestor asignado</span>
+            ${gestorBlock}
+          </div>
+          <div class="det-foot__block">
+            <span class="det-foot__lbl">${I.doc} Descripción</span>
+            <p class="det-foot__desc">${esc(ev.descripcion || 'Evento del calendario oficial gestionado en Naowee Eventos. La operación (inscripciones, resultados y medallería) se realiza por cargue mientras el evento esté activo.')}</p>
           </div>
         </div>
-      </div>
+      </section>
     `;
   }
 
-  /* ─── Cuerpo por modo ─── */
+  /* ─── WORKSPACE del gestor: detalle + container de tabs ─── */
+  function renderWorkspace() {
+    document.getElementById('cargueApp').innerHTML = `
+      ${detailHTML()}
+      <section class="carg-tabs-card" aria-label="Cargues del evento">
+        <div class="carg-tabs-card__head">${I.upload}<h3>Cargues del evento</h3></div>
+        <div class="naowee-segment carg-tabs" data-segmented id="tipoTabs" role="tablist" aria-label="Tipo de cargue">
+          <span class="naowee-segment__pill" aria-hidden="true"></span>
+          ${TIPOS.map((t) => `
+            <button class="naowee-segment__item${t === activeTipo ? ' naowee-segment__item--active' : ''}" data-val="${t}" type="button" role="tab" aria-selected="${t === activeTipo}">
+              ${getIcon(TIPO_CFG[t].icon)}<span class="carg-tab-lbl">${TIPO_CFG[t].tabLabel}</span>
+            </button>`).join('')}
+        </div>
+        <div id="tabPanel"></div>
+      </section>
+    `;
+    bindSegment(document.getElementById('tipoTabs'), () => activeTipo, (val) => {
+      if (val === activeTipo) return;
+      activeTipo = val;
+      activeMode = 'masivo';
+      selectedFile = null; parseResults = null;
+      renderTabPanel();
+    });
+    renderTabPanel();
+  }
+
+  /* ─── PANEL del tab activo ─── */
+  function renderTabPanel() {
+    const cfg = TIPO_CFG[activeTipo];
+    const panel = document.getElementById('tabPanel');
+    if (!panel) return;
+
+    /* Gate por estado: borrador / finalizado → no se carga, pero se ve la data ya cargada. */
+    if (!gateOpen) {
+      const isBorr = ev.status === 'borrador';
+      panel.innerHTML = `
+        <div class="carg-gate ${isBorr ? 'carg-gate--borrador' : 'carg-gate--final'}">
+          <span class="carg-gate__ico">${isBorr ? I.info : I.lock}</span>
+          <span>${isBorr
+            ? `El evento aún no está <strong>activo</strong>. Los cargues de <strong>${esc(cfg.label.toLowerCase())}</strong> se habilitan automáticamente cuando inicie (${esc(ev.start)}).`
+            : `Evento <strong>finalizado</strong> · los cargues están cerrados (solo lectura). Puedes consultar los archivos ya cargados.`}</span>
+        </div>
+        ${filesHTML()}
+      `;
+      bindFiles();
+      return;
+    }
+
+    panel.innerHTML = `
+      <div class="carg-mode-bar">
+        <div class="naowee-segment" data-segmented id="modeSegment" role="tablist" aria-label="Modo de cargue">
+          <span class="naowee-segment__pill" aria-hidden="true"></span>
+          <button class="naowee-segment__item naowee-segment__item--active" data-val="masivo" type="button" role="tab" aria-selected="true">Masivo</button>
+          <button class="naowee-segment__item" data-val="manual" type="button" role="tab" aria-selected="false">Manual</button>
+        </div>
+      </div>
+      <div id="modeBody"></div>
+      <div id="filesMount">${filesHTML()}</div>
+    `;
+    bindSegment(document.getElementById('modeSegment'), () => activeMode, (val) => {
+      if (val === activeMode) return;
+      activeMode = val;
+      renderModeBody();
+    });
+    renderModeBody();
+    bindFiles();
+  }
+
   function renderModeBody() {
+    const cfg = TIPO_CFG[activeTipo];
     const modeBody = document.getElementById('modeBody');
     if (!modeBody) return;
-    if (activeMode === 'masivo') renderMasivo(modeBody);
-    else renderManual(modeBody);
+    if (activeMode === 'masivo') renderMasivo(modeBody, cfg);
+    else renderManual(modeBody, cfg);
   }
 
-  /* ─── MODO MASIVO ─── */
-  function renderMasivo(container) {
+  /* ═══ MODO MASIVO ═══ */
+  function renderMasivo(container, cfg) {
     container.innerHTML = `
       <div class="carg-card" id="uploadCard">
         <div class="carg-card__head">
           <div>
-            <h3 class="carg-card__title">Cargue masivo — ${cfg.label}</h3>
+            <h3 class="carg-card__title">Cargue masivo — ${esc(cfg.label)}</h3>
             <p class="carg-card__sub">Descarga la plantilla oficial, rellena los datos y súbela. El sistema detecta errores por fila y carga las válidas aunque otras fallen.</p>
           </div>
         </div>
 
         <div class="carg-template-strip">
           <div class="carg-template-strip__info">
-            <span class="carg-template-strip__ico">${I.file}</span>
+            <span class="carg-template-strip__ico">${I.fileSheet}</span>
             <div>
-              <div class="carg-template-strip__text">Plantilla oficial: <strong>${cfg.plantilla}</strong></div>
+              <div class="carg-template-strip__text">Plantilla oficial: <strong>${esc(cfg.plantilla)}</strong></div>
               <div class="carg-template-strip__hint">La estructura está bloqueada — solo llena los datos. No modifiques columnas ni formato.</div>
             </div>
           </div>
-          <a class="naowee-btn naowee-btn--ghost naowee-btn--sm"
-             href="../plantillas/${cfg.plantilla}"
-             download="${cfg.plantilla}"
-             id="dlPlantilla">
+          <a class="naowee-btn naowee-btn--ghost naowee-btn--sm" href="../plantillas/${cfg.plantilla}" download="${cfg.plantilla}" id="dlPlantilla">
             ${I.download} Descargar plantilla
           </a>
         </div>
@@ -668,40 +713,31 @@
         <div class="naowee-file-uploader" id="fileUploader">
           <span class="naowee-file-uploader__label naowee-file-uploader__label--required">Archivo de cargue</span>
           <div class="naowee-file-uploader__input-wrap">
-            <button class="naowee-file-uploader__btn" type="button" id="browseBtn">
-              ${I.upload} Seleccionar archivo
-            </button>
+            <button class="naowee-file-uploader__btn" type="button" id="browseBtn">${I.upload} Seleccionar archivo</button>
             <span class="naowee-file-uploader__placeholder" id="filePlaceholder">Ningún archivo seleccionado</span>
             <button class="naowee-file-uploader__dismiss" type="button" id="fileDismiss" title="Quitar archivo">${I.x}</button>
           </div>
           <input type="file" id="fileInput" accept=".xlsx,.xls" tabindex="-1">
-
           <div class="naowee-file-uploader__drop-zone" id="dropZone">
             <input type="file" id="fileInputDrop" accept=".xlsx,.xls">
             <span class="naowee-file-uploader__drop-icon">${I.upload}</span>
             <span class="naowee-file-uploader__drop-title">Arrastra aquí tu archivo .xlsx</span>
             <span class="naowee-file-uploader__drop-hint">Solo .xlsx · peso máximo 50 MB · sin límite de registros</span>
           </div>
-          <div class="carg-upload-hint">
-            ${I.info}
-            <span>${cfg.hint}</span>
-          </div>
+          <div class="carg-upload-hint">${I.info}<span>${esc(cfg.hint)}</span></div>
         </div>
 
         <div class="carg-analyze-row">
-          <button class="naowee-btn naowee-btn--loud" id="analyzeBtn" disabled>
-            ${I.file} Analizar archivo
-          </button>
+          <button class="naowee-btn naowee-btn--loud" id="analyzeBtn" disabled>${I.file} Analizar archivo</button>
         </div>
 
         <div class="carg-results" id="resultsPanel"></div>
       </div>
     `;
-
-    bindMasivo();
+    bindMasivo(cfg);
   }
 
-  function bindMasivo() {
+  function bindMasivo(cfg) {
     const uploader = document.getElementById('fileUploader');
     const fileInput = document.getElementById('fileInput');
     const fileInputDrop = document.getElementById('fileInputDrop');
@@ -723,22 +759,13 @@
         parseResults = null;
         return;
       }
-      /* Validar extensión */
-      if (!f.name.toLowerCase().endsWith('.xlsx') && !f.name.toLowerCase().endsWith('.xls')) {
-        flash('Solo se aceptan archivos .xlsx o .xls.', 'error');
-        return;
-      }
-      /* Validar peso 50 MB */
-      if (f.size > 50 * 1024 * 1024) {
-        flash('El archivo supera el límite de 50 MB.', 'error');
-        return;
-      }
+      if (!f.name.toLowerCase().endsWith('.xlsx') && !f.name.toLowerCase().endsWith('.xls')) { flash('Solo se aceptan archivos .xlsx o .xls.', 'error'); return; }
+      if (f.size > 50 * 1024 * 1024) { flash('El archivo supera el límite de 50 MB.', 'error'); return; }
       selectedFile = f;
       uploader.classList.add('has-file');
       placeholder.textContent = `${f.name} · ${(f.size / 1024).toFixed(0)} KB`;
       placeholder.classList.add('has-file');
       analyzeBtn.disabled = false;
-      /* Reset resultados anteriores */
       document.getElementById('resultsPanel').classList.remove('is-visible');
       document.getElementById('resultsPanel').innerHTML = '';
       parseResults = null;
@@ -748,127 +775,84 @@
     dismiss.addEventListener('click', () => setFile(null));
     fileInput.addEventListener('change', () => setFile(fileInput.files[0] || null));
     fileInputDrop.addEventListener('change', () => setFile(fileInputDrop.files[0] || null));
-
-    /* Drag & drop */
     dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('is-drag-over'); });
     dropZone.addEventListener('dragleave', () => dropZone.classList.remove('is-drag-over'));
-    dropZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropZone.classList.remove('is-drag-over');
-      const f = e.dataTransfer.files[0];
-      if (f) setFile(f);
-    });
+    dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('is-drag-over'); const f = e.dataTransfer.files[0]; if (f) setFile(f); });
 
-    /* Analizar → parseo simulado */
     analyzeBtn.addEventListener('click', () => {
       if (!selectedFile) return;
       analyzeBtn.disabled = true;
       analyzeBtn.textContent = 'Analizando…';
-      /* Simular parseo con delay realista */
       setTimeout(() => {
-        const mock = MOCK_ROWS[tipo];
-        const totalRows = mock.valid.length + mock.errors.length;
-        parseResults = { total: totalRows, valid: mock.valid, errors: mock.errors };
-        renderResults(parseResults);
-        analyzeBtn.textContent = 'Analizar archivo';
+        const mock = MOCK_ROWS[activeTipo];
+        parseResults = { total: mock.valid.length + mock.errors.length, valid: mock.valid, errors: mock.errors };
+        renderResults(parseResults, cfg);
+        analyzeBtn.innerHTML = `${I.file} Analizar archivo`;
         analyzeBtn.disabled = false;
       }, 900);
     });
   }
 
-  /* ─── Panel de resultados ─── */
-  function renderResults(r) {
+  /* ─── Panel de resultados del análisis ─── */
+  function renderResults(r, cfg) {
     const panel = document.getElementById('resultsPanel');
     if (!panel) return;
-    const nOk = r.valid.length;
-    const nErr = r.errors.length;
-
+    const nOk = r.valid.length, nErr = r.errors.length;
     const errRows = r.errors.map((e) => `
       <div class="carg-err-row">
         <span class="carg-err-row__ico">${I.warn}</span>
         <span><span class="carg-err-row__fila">Fila ${e.fila}</span> &nbsp;·&nbsp; <span class="carg-err-row__msg">${esc(e.msg)}</span></span>
-      </div>
-    `).join('');
+      </div>`).join('');
 
     panel.innerHTML = `
       <div class="carg-results__summary">
-        <div class="carg-results__stat carg-results__stat--total">
-          <span class="carg-results__stat-val">${r.total}</span>
-          <span class="carg-results__stat-lbl">Total filas</span>
-        </div>
-        <div class="carg-results__stat carg-results__stat--ok">
-          <span class="carg-results__stat-val">${nOk}</span>
-          <span class="carg-results__stat-lbl">Válidas</span>
-        </div>
-        <div class="carg-results__stat carg-results__stat--err">
-          <span class="carg-results__stat-val">${nErr}</span>
-          <span class="carg-results__stat-lbl">Con error</span>
-        </div>
+        <div class="carg-results__stat carg-results__stat--total"><span class="carg-results__stat-val">${r.total}</span><span class="carg-results__stat-lbl">Total filas</span></div>
+        <div class="carg-results__stat carg-results__stat--ok"><span class="carg-results__stat-val">${nOk}</span><span class="carg-results__stat-lbl">Válidas</span></div>
+        <div class="carg-results__stat carg-results__stat--err"><span class="carg-results__stat-val">${nErr}</span><span class="carg-results__stat-lbl">Con error</span></div>
       </div>
       <div class="carg-results__body">
-        ${nErr > 0 ? `
-          <div class="carg-results__section-label">Filas con error (${nErr}) — corrige y re-sube</div>
-          <div class="carg-err-list">${errRows}</div>
-        ` : ''}
-        ${nOk > 0 ? `
-          <div class="carg-results__section-label">Filas válidas</div>
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-            <span class="carg-ok-badge">${I.check} ${nOk} filas listas para cargar</span>
-          </div>
-        ` : `<p style="color:var(--text-muted);font-size:13px;margin:8px 0 0">Sin filas válidas en este archivo.</p>`}
+        ${nErr > 0 ? `<div class="carg-results__section-label">Filas con error (${nErr}) — corrige y re-sube</div><div class="carg-err-list">${errRows}</div>` : ''}
+        ${nOk > 0
+          ? `<div class="carg-results__section-label">Filas válidas</div><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span class="carg-ok-badge">${I.check} ${nOk} filas listas para cargar</span></div>`
+          : `<p style="color:var(--text-muted);font-size:13px;margin:8px 0 0">Sin filas válidas en este archivo.</p>`}
       </div>
       ${nOk > 0 ? `
         <div class="carg-results__actions">
-          <span class="carg-results__actions-note">
-            ${nErr > 0
-              ? `Las ${nErr} fila${nErr > 1 ? 's' : ''} con error no se cargarán. Puedes cargar las ${nOk} válidas ahora y re-subir las erróneas después de corregirlas.`
-              : `Todas las filas son válidas. Listo para cargar.`
-            }
-          </span>
-          <button class="naowee-btn naowee-btn--loud" id="submitBtn">
-            ${I.check} Cargar ${nOk} fila${nOk !== 1 ? 's' : ''} válida${nOk !== 1 ? 's' : ''}
-          </button>
-        </div>
-      ` : ''}
+          <span class="carg-results__actions-note">${nErr > 0
+            ? `Las ${nErr} fila${nErr > 1 ? 's' : ''} con error no se cargarán. Puedes cargar las ${nOk} válidas ahora y re-subir las erróneas después de corregirlas.`
+            : `Todas las filas son válidas. Listo para cargar.`}</span>
+          <button class="naowee-btn naowee-btn--loud" id="submitBtn">${I.check} Cargar ${nOk} fila${nOk !== 1 ? 's' : ''} válida${nOk !== 1 ? 's' : ''}</button>
+        </div>` : ''}
     `;
-
     panel.classList.add('is-visible');
-
-    /* Bind submit */
-    document.getElementById('submitBtn')?.addEventListener('click', () => commitUpload(nOk));
+    document.getElementById('submitBtn')?.addEventListener('click', () => commitUpload(r.valid, cfg));
   }
 
-  /* ─── Confirmar cargue ─── */
-  function commitUpload(n) {
-    if (!selectedEventId || !n) return;
+  /* ─── Confirmar cargue masivo → crea versión de archivo + actualiza progreso ─── */
+  function commitUpload(validRows, cfg) {
+    if (!selectedEventId || !validRows.length) return;
+    const n = validRows.length;
+    const fileName = (selectedFile && selectedFile.name) || cfg.plantilla;
     applyUpload(selectedEventId, cfg.storeTipo, n);
-    addUploadRecord(selectedEventId, {
-      tipo: cfg.label, n, modeLabel: 'Masivo',
-      timestamp: new Date().toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })
+    const ts = nowStamp();
+    addUploadRecord(selectedEventId, { tipo: cfg.label, n, modeLabel: 'Masivo', timestamp: ts });
+    addFileVersion(selectedEventId, cfg.storeTipo, {
+      fileName, n, modeLabel: 'Masivo', timestamp: ts,
+      columns: cfg.columns, rows: validRows
     });
-    flash(`✓ ${n} ${cfg.labelShort.toLowerCase()}${n !== 1 ? 'es' : ''} cargada${n !== 1 ? 's' : ''} correctamente.`, 'success');
-    /* Actualiza historial */
-    renderHistory();
-    /* Reset uploader */
-    setTimeout(() => {
-      document.getElementById('fileUploader')?.classList.remove('has-file');
-      const ph = document.getElementById('filePlaceholder');
-      if (ph) { ph.textContent = 'Ningún archivo seleccionado'; ph.classList.remove('has-file'); }
-      document.getElementById('resultsPanel')?.classList.remove('is-visible');
-      selectedFile = null;
-      parseResults = null;
-      const ab = document.getElementById('analyzeBtn');
-      if (ab) ab.disabled = true;
-    }, 400);
+    flash(`✓ ${n} fila${n !== 1 ? 's' : ''} cargada${n !== 1 ? 's' : ''} correctamente en ${cfg.label}.`, 'success');
+    /* Refresca el panel (resetea uploader + muestra la nueva versión arriba). */
+    selectedFile = null; parseResults = null;
+    renderTabPanel();
   }
 
-  /* ─── MODO MANUAL ─── */
-  function renderManual(container) {
-    if (tipo === 'inscripciones') renderManualSearch(container);
-    else renderManualGrid(container);
+  /* ═══ MODO MANUAL ═══ */
+  function renderManual(container, cfg) {
+    if (cfg.manualMode === 'search') renderManualSearch(container, cfg);
+    else renderManualGrid(container, cfg);
   }
 
-  function renderManualSearch(container) {
+  function renderManualSearch(container, cfg) {
     container.innerHTML = `
       <div class="carg-card">
         <div class="carg-card__head">
@@ -886,15 +870,11 @@
                 <button class="naowee-searchbox__clear" id="athleteClear" type="button" aria-label="Limpiar búsqueda">${I.x}</button>
               </div>
             </div>
-            <button class="naowee-btn naowee-btn--ghost naowee-btn--sm" id="searchBtn" type="button">
-              ${I.search} Buscar
-            </button>
+            <button class="naowee-btn naowee-btn--ghost naowee-btn--sm" id="searchBtn" type="button">${I.search} Buscar</button>
           </div>
           <div id="athleteResults"></div>
           <div style="padding-top:8px;border-top:1px solid var(--border);margin-top:8px">
-            <button class="naowee-btn naowee-btn--link naowee-btn--sm" type="button" id="newAthleteBtn">
-              ${I.user} Registrar nuevo deportista
-            </button>
+            <button class="naowee-btn naowee-btn--link naowee-btn--sm" type="button" id="newAthleteBtn">${I.user} Registrar nuevo deportista</button>
           </div>
         </div>
       </div>
@@ -910,125 +890,97 @@
     const searchBtn = document.getElementById('searchBtn');
     const newBtn = document.getElementById('newAthleteBtn');
 
+    function docOf(a) { return `${a.tipoDoc} ${a.nroDoc}`; }
     function performSearch() {
       const q = input.value.trim().toLowerCase();
       searchBox.classList.toggle('naowee-searchbox--has-value', q.length > 0);
       if (!q) { results.innerHTML = ''; return; }
-      const matches = MOCK_ROWS.inscripciones.valid.filter((a) =>
-        a.nombre.toLowerCase().includes(q) || a.doc.toLowerCase().includes(q)
-      );
+      const matches = MOCK_ROWS.inscripciones.valid.filter((a) => a.nombre.toLowerCase().includes(q) || docOf(a).toLowerCase().includes(q));
       if (matches.length === 0) {
-        results.innerHTML = `<div class="carg-athlete-empty">${I.inbox} No se encontraron deportistas con "<strong>${esc(q)}</strong>" en el sistema.</div>`;
+        results.innerHTML = `<div class="carg-athlete-empty">${I.inbox}<span>No se encontraron deportistas con "<strong>${esc(q)}</strong>" en el sistema.</span></div>`;
         return;
       }
       results.innerHTML = `
         <div class="carg-athlete-list">
           ${matches.map((a) => `
-            <div class="carg-athlete-row" data-nombre="${esc(a.nombre)}" data-doc="${esc(a.doc)}">
+            <div class="carg-athlete-row" data-nombre="${esc(a.nombre)}">
               <div class="carg-athlete-row__ava">${a.nombre.split(' ').slice(0,2).map((w)=>w[0]).join('')}</div>
               <div class="carg-athlete-row__info">
                 <div class="carg-athlete-row__name">${esc(a.nombre)}</div>
-                <div class="carg-athlete-row__doc">${esc(a.doc)}</div>
+                <div class="carg-athlete-row__doc">${esc(docOf(a))} · ${esc(a.deporte)}</div>
               </div>
-              <div class="carg-athlete-row__btn">
-                <button class="naowee-btn naowee-btn--loud naowee-btn--sm inscribir-btn" type="button">Inscribir</button>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      `;
+              <div class="carg-athlete-row__btn"><button class="naowee-btn naowee-btn--loud naowee-btn--sm inscribir-btn" type="button">Inscribir</button></div>
+            </div>`).join('')}
+        </div>`;
       results.querySelectorAll('.inscribir-btn').forEach((btn) => {
         btn.addEventListener('click', (e) => {
           const row = e.target.closest('[data-nombre]');
           const nombre = row.dataset.nombre;
           applyUpload(selectedEventId, 'insc', 1);
-          addUploadRecord(selectedEventId, {
-            tipo: 'Inscripción individual', n: 1, modeLabel: 'Manual',
-            timestamp: new Date().toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })
-          });
+          addUploadRecord(selectedEventId, { tipo: 'Inscripción individual', n: 1, modeLabel: 'Manual', timestamp: nowStamp() });
           flash(`✓ ${nombre} inscrito/a correctamente.`, 'success');
-          btn.disabled = true;
-          btn.textContent = 'Inscrito ✓';
-          btn.style.background = 'var(--green)';
-          renderHistory();
+          btn.disabled = true; btn.textContent = 'Inscrito ✓'; btn.style.background = 'var(--green)';
         });
       });
     }
-
     searchBtn.addEventListener('click', performSearch);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') performSearch(); });
-    clear.addEventListener('click', () => {
-      input.value = ''; results.innerHTML = '';
-      searchBox.classList.remove('naowee-searchbox--has-value');
-      input.focus();
-    });
+    clear.addEventListener('click', () => { input.value = ''; results.innerHTML = ''; searchBox.classList.remove('naowee-searchbox--has-value'); input.focus(); });
     newBtn.addEventListener('click', () => flash('Registrar nuevo deportista — flujo disponible en la próxima fase de la demo.'));
   }
 
-  function renderManualGrid(container) {
-    const isRanking = tipo === 'ranking';
+  function renderManualGrid(container, cfg) {
+    const isRanking = activeTipo === 'ranking';
     const rows = MOCK_INSCRITOS;
-
     const headerCols = isRanking
       ? `<span>Deportista</span><span>Posición</span><span>Marca/Tiempo</span><span>Fase</span>`
       : `<span>Departamento</span><span>🥇 Oro</span><span>🥈 Plata</span><span>🥉 Bronce</span><span>Total</span>`;
     const headerClass = isRanking ? 'g-ranking' : 'g-medalleria';
-
     const rowsHTML = isRanking
       ? rows.map((r) => `
           <div class="carg-manual-row g-ranking" data-id="${r.id}">
-            <div>
-              <div class="carg-manual-row__name">${esc(r.nombre)}</div>
-              <div class="carg-manual-row__doc">${esc(r.doc)} · ${esc(r.deporte)} · ${esc(r.prueba)}</div>
-            </div>
-            <input class="carg-manual-input" type="number" min="1" placeholder="—" data-field="posicion" data-id="${r.id}" value="${r.posicion ?? ''}">
-            <input class="carg-manual-input" type="text" placeholder="ej: 10.45s" data-field="marca" data-id="${r.id}" value="${r.marca ?? ''}">
-            <input class="carg-manual-input" type="text" placeholder="Final" data-field="fase" data-id="${r.id}">
-          </div>`)
+            <div><div class="carg-manual-row__name">${esc(r.nombre)}</div><div class="carg-manual-row__doc">${esc(r.doc)} · ${esc(r.deporte)} · ${esc(r.prueba)}</div></div>
+            <input class="carg-manual-input" type="number" min="1" placeholder="—" data-field="posicion">
+            <input class="carg-manual-input" type="text" placeholder="ej: 10.45s" data-field="marca">
+            <input class="carg-manual-input" type="text" placeholder="Final" data-field="fase">
+          </div>`).join('')
       : [
           { depto: 'Bogotá D.C.', deporte: 'Atletismo' },
           { depto: 'Antioquia', deporte: 'Natación' },
           { depto: 'Valle del Cauca', deporte: 'Taekwondo' }
         ].map((dep) => `
           <div class="carg-manual-row g-medalleria">
-            <div>
-              <div class="carg-manual-row__name">${dep.depto}</div>
-              <div class="carg-manual-row__doc">${dep.deporte}</div>
-            </div>
+            <div><div class="carg-manual-row__name">${dep.depto}</div><div class="carg-manual-row__doc">${dep.deporte}</div></div>
             <input class="carg-manual-input" type="number" min="0" placeholder="0" data-field="oro">
             <input class="carg-manual-input" type="number" min="0" placeholder="0" data-field="plata">
             <input class="carg-manual-input" type="number" min="0" placeholder="0" data-field="bronce">
             <input class="carg-manual-input" type="number" min="0" placeholder="0" data-field="total" readonly style="background:var(--bg-soft);color:var(--text-secondary)">
-          </div>`);
+          </div>`).join('');
 
     container.innerHTML = `
       <div class="carg-card">
         <div class="carg-card__head">
           <div>
-            <h3 class="carg-card__title">Captura manual — ${cfg.label}</h3>
+            <h3 class="carg-card__title">Captura manual — ${esc(cfg.label)}</h3>
             <p class="carg-card__sub">${isRanking ? 'Registra posición, marca/tiempo y fase para cada deportista inscrito.' : 'Ingresa el medallero por departamento y disciplina.'}</p>
           </div>
         </div>
         <div class="carg-manual-grid">
           <div class="carg-manual-grid__header ${headerClass}">${headerCols}</div>
-          ${rowsHTML.join('')}
+          ${rowsHTML}
         </div>
         <div style="display:flex;justify-content:flex-end;margin-top:18px">
-          <button class="naowee-btn naowee-btn--loud" id="manualSaveBtn">
-            ${I.check} Guardar ${cfg.labelShort.toLowerCase()}
-          </button>
+          <button class="naowee-btn naowee-btn--loud" id="manualSaveBtn">${I.check} Guardar ${esc(cfg.labelShort.toLowerCase())}</button>
         </div>
       </div>
     `;
 
-    /* Auto-calcular total en medallería */
     if (!isRanking) {
       container.querySelectorAll('.carg-manual-row.g-medalleria').forEach((row) => {
         const inputs = row.querySelectorAll('[data-field="oro"],[data-field="plata"],[data-field="bronce"]');
         const totalInput = row.querySelector('[data-field="total"]');
         inputs.forEach((inp) => inp.addEventListener('input', () => {
-          const sum = Array.from(inputs).reduce((s, i) => s + (parseInt(i.value) || 0), 0);
-          totalInput.value = sum;
+          totalInput.value = Array.from(inputs).reduce((s, i) => s + (parseInt(i.value) || 0), 0);
         }));
       });
     }
@@ -1036,135 +988,125 @@
     document.getElementById('manualSaveBtn').addEventListener('click', () => {
       const n = isRanking ? rows.length : 3;
       applyUpload(selectedEventId, cfg.storeTipo, n);
-      addUploadRecord(selectedEventId, {
-        tipo: cfg.label, n, modeLabel: 'Manual',
-        timestamp: new Date().toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })
-      });
-      flash(`✓ ${n} ${cfg.labelShort.toLowerCase()}${n !== 1 ? 'es' : ''} guardada${n !== 1 ? 's' : ''} correctamente.`, 'success');
-      renderHistory();
+      addUploadRecord(selectedEventId, { tipo: cfg.label, n, modeLabel: 'Manual', timestamp: nowStamp() });
+      flash(`✓ ${n} ${cfg.labelShort.toLowerCase()}${n !== 1 ? 's' : ''} guardada${n !== 1 ? 's' : ''} correctamente.`, 'success');
     });
   }
 
-  /* ─── Historial de cargues ─── */
-  function renderHistory() {
-    const app = document.getElementById('cargueApp');
-    if (!app || !selectedEventId) return;
-    let histEl = document.getElementById('cargHistory');
-    if (!histEl) {
-      histEl = document.createElement('div');
-      histEl.id = 'cargHistory';
-      histEl.className = 'carg-history';
-      app.appendChild(histEl);
+  /* ═══ ARCHIVOS CARGADOS — versiones + tabla con columnas de la planilla ═══ */
+  function filesHTML() {
+    const cfg = TIPO_CFG[activeTipo];
+    const versions = getFileVersions(selectedEventId, cfg.storeTipo);
+    if (versions.length === 0) {
+      return `
+        <div class="carg-files">
+          <div class="carg-files__title">${I.layers} Archivos cargados <span class="carg-files__count">(0)</span></div>
+          <div class="empty-state">
+            <div class="empty-state__icon">${I.fileSheet}</div>
+            <p class="empty-state__title">Aún no hay archivos cargados</p>
+            <p class="empty-state__desc">Cuando subas un archivo de ${esc(cfg.label.toLowerCase())}, aquí verás cada versión con su data en formato tabla.</p>
+          </div>
+        </div>`;
     }
-    const records = getUploadHistory(selectedEventId);
-    histEl.innerHTML = `
-      <div class="carg-card">
-        <h3 class="carg-card__title" style="margin-bottom:12px">${I.history} Historial de cargues</h3>
-        ${records.length === 0
-          ? `<p class="carg-history__empty">Aún no se han realizado cargues en este evento durante esta sesión.</p>`
-          : `<div class="carg-history__list">
-              ${records.map((r) => `
-                <div class="carg-history__item">
-                  <span class="carg-history__item-tipo">${esc(r.tipo)}</span>
-                  <span>·</span>
-                  <span class="carg-history__item-n">+${r.n} registros</span>
-                  <span>·</span>
-                  <span style="color:var(--text-secondary)">${esc(r.modeLabel)}</span>
-                  <span class="carg-history__item-time">${esc(r.timestamp)}</span>
-                </div>`).join('')}
-            </div>`
-        }
+    return `
+      <div class="carg-files">
+        <div class="carg-files__title">${I.layers} Archivos cargados <span class="carg-files__count">(${versions.length})</span></div>
+        <div class="carg-files__list">
+          ${versions.map((v, i) => fileCardHTML(v, i === 0)).join('')}
+        </div>
+      </div>`;
+  }
+
+  function fileCardHTML(v, open) {
+    return `
+      <div class="carg-file ${open ? 'is-open' : ''}" data-file>
+        <button class="carg-file__head" type="button" aria-expanded="${open ? 'true' : 'false'}">
+          <span class="carg-file__ico">${I.fileSheet}</span>
+          <span class="carg-file__meta">
+            <span class="carg-file__name"><span class="carg-file__name-txt">${esc(v.fileName)}</span><span class="carg-file__ver">v${v.version}</span></span>
+            <span class="carg-file__sub"><span class="carg-file__n">${v.n} registros</span><span>·</span><span>${esc(v.modeLabel)}</span><span>·</span><span>${esc(v.timestamp)}</span></span>
+          </span>
+          <span class="carg-file__chev">${I.chevD}</span>
+        </button>
+        <div class="carg-file__body">
+          ${fileTableHTML(v)}
+        </div>
+      </div>`;
+  }
+
+  function fileTableHTML(v) {
+    const cols = v.columns || [];
+    const rows = v.rows || [];
+    const thead = cols.map((c) => `<th class="${c.num ? 'num' : ''}">${c.l}</th>`).join('');
+    const tbody = rows.map((row) => `
+      <tr>${cols.map((c) => `<td class="${c.num ? 'num' : ''}">${esc(row[c.k] ?? '—')}</td>`).join('')}</tr>
+    `).join('');
+    return `
+      <div class="carg-file__table-wrap">
+        <table class="carg-data-table">
+          <thead><tr>${thead}</tr></thead>
+          <tbody>${tbody}</tbody>
+        </table>
       </div>
-    `;
+      <div class="carg-file__table-foot">${rows.length} fila${rows.length !== 1 ? 's' : ''} · ${cols.length} columnas de la plantilla. Desliza horizontalmente para ver todas.</div>`;
   }
 
-  /* ─── Utilidad ─── */
-  function esc(str) {
-    return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  function bindFiles() {
+    document.querySelectorAll('[data-file]').forEach((card) => {
+      const head = card.querySelector('.carg-file__head');
+      head?.addEventListener('click', () => {
+        const open = card.classList.toggle('is-open');
+        head.setAttribute('aria-expanded', String(open));
+      });
+    });
   }
 
-  /* ─── OVERSIGHT: modo Admin (solo lectura) ─── */
+  /* ═══════════════════════════════════════════════════════════════
+     OVERSIGHT — modo Admin (solo lectura, sin cambios funcionales)
+     ═══════════════════════════════════════════════════════════════ */
   function renderOversight() {
+    const tipo = TIPOS.includes(tipoParam) ? tipoParam : 'inscripciones';
+    const cfg = TIPO_CFG[tipo];
     const app = document.getElementById('cargueApp');
-    const tipoLabel = { inscripciones: 'Inscripciones', ranking: 'Ranking / Resultados', medalleria: 'Medallería' }[tipo] || cfg.label;
     const storeKey = { inscripciones: 'insc', ranking: 'res', medalleria: 'med' }[tipo] || 'insc';
-
     const events = allEvents();
 
-    function resolveGestor(ev) {
-      const gid = ev.assignedGestorId || GESTOR_MAP[ev.id];
+    function resolveGestor(e) {
+      const gid = e.assignedGestorId || GESTOR_MAP[e.id];
       return GESTORES.find((g) => g.id === gid) || null;
     }
+    function progPct(e) { const o = e[storeKey]; return (o && o.total) ? Math.round((o.done / o.total) * 100) : 0; }
+    function progLabel(e) { const o = e[storeKey]; return (o && o.total) ? `${o.done} / ${o.total}` : '—'; }
 
-    function lastCargue(ev) {
-      const hist = getUploadHistory(ev.id);
-      if (!hist.length) return '—';
-      return hist[0].timestamp || '—';
-    }
-
-    function progPct(ev) {
-      const o = ev[storeKey === 'insc' ? 'insc' : storeKey === 'res' ? 'res' : 'med'];
-      if (!o || !o.total) return 0;
-      return Math.round((o.done / o.total) * 100);
-    }
-
-    function progLabel(ev) {
-      const o = ev[storeKey === 'insc' ? 'insc' : storeKey === 'res' ? 'res' : 'med'];
-      if (!o) return '—';
-      if (!o.total) return '—';
-      return `${o.done} / ${o.total}`;
-    }
-
-    const rows = events.map((ev, i) => {
-      const gestor = resolveGestor(ev);
-      const p = progPct(ev);
-      const hist = getUploadHistory(ev.id);
+    const rows = events.map((e, i) => {
+      const gestor = resolveGestor(e);
+      const p = progPct(e);
+      const versions = getFileVersions(e.id, storeKey);
+      const last = versions.length ? versions[0].timestamp : '—';
       const histId = `ov-hist-${i}`;
       return `
         <tr>
           <td data-label="Evento">
             <div class="ev-row__name">
-              <span class="ev-row__emoji" aria-hidden="true">${esc(ev.emoji)}</span>
-              <div style="min-width:0">
-                <div class="ev-row__nm">${esc(ev.name)}</div>
-                <div class="ev-row__sport" style="font-size:11.5px">${esc(ev.id)}</div>
-              </div>
+              <span class="ev-row__emoji" aria-hidden="true">${esc(e.emoji)}</span>
+              <div style="min-width:0"><div class="ev-row__nm">${esc(e.name)}</div><div class="ev-row__sport" style="font-size:11.5px">${esc(e.id)}</div></div>
             </div>
           </td>
-          <td data-label="Estado"><span class="badge s-${ev.status}">${STATUS_LABEL[ev.status] || ev.status}</span></td>
+          <td data-label="Estado"><span class="badge s-${e.status}">${STATUS_LABEL[e.status] || e.status}</span></td>
           <td class="ov-col-gestor" data-label="Gestor">
-            ${gestor
-              ? `<div class="ov-gestor-chip"><span class="ov-gestor-av" style="background:${esc(gestor.color)}">${esc(gestor.avatar)}</span><span class="ov-gestor-name">${esc(gestor.name)}</span></div>`
-              : '<span style="color:var(--text-secondary);font-size:12px">Sin asignar</span>'
-            }
+            ${gestor ? `<div class="ov-gestor-chip"><span class="ov-gestor-av" style="background:${esc(gestor.color)}">${esc(gestor.avatar)}</span><span class="ov-gestor-name">${esc(gestor.name)}</span></div>` : '<span style="color:var(--text-secondary);font-size:12px">Sin asignar</span>'}
           </td>
-          <td class="ov-col-prog" data-label="Progreso">
-            <div class="ov-prog-wrap">
-              <div class="ov-prog-track"><div class="ov-prog-fill" style="width:${p}%"></div></div>
-              <span class="ov-prog-pct">${progLabel(ev)}</span>
-            </div>
-          </td>
-          <td class="ov-col-last" data-label="Último cargue"><span class="ov-last-cargue">${esc(lastCargue(ev))}</span></td>
-          <td data-label="Historial" style="text-align:right">
-            ${hist.length
-              ? `<button type="button" class="ov-history-toggle" data-hist="${histId}" aria-expanded="false">Ver historial</button>`
-              : '<span style="font-size:11.5px;color:var(--text-muted)">Sin cargues</span>'
-            }
+          <td class="ov-col-prog" data-label="Progreso"><div class="ov-prog-wrap"><div class="ov-prog-track"><div class="ov-prog-fill" style="width:${p}%"></div></div><span class="ov-prog-pct">${progLabel(e)}</span></div></td>
+          <td class="ov-col-last" data-label="Último cargue"><span class="ov-last-cargue">${esc(last)}</span></td>
+          <td data-label="Archivos" style="text-align:right">
+            ${versions.length ? `<button type="button" class="ov-history-toggle" data-hist="${histId}" aria-expanded="false">Ver archivos (${versions.length})</button>` : '<span style="font-size:11.5px;color:var(--text-muted)">Sin cargues</span>'}
           </td>
         </tr>
-        ${hist.length ? `
+        ${versions.length ? `
         <tr class="ov-history-row" id="${histId}">
           <td class="ov-history-cell" colspan="6">
             <div class="ov-history-list">
-              ${hist.slice(0, 8).map((r) => `
-                <div class="ov-history-item">
-                  <strong>${esc(r.tipo)}</strong>
-                  <span>+${r.n} registros</span>
-                  <span>·</span>
-                  <span>${esc(r.modeLabel)}</span>
-                  <span>·</span>
-                  <span>${esc(r.timestamp)}</span>
-                </div>`).join('')}
+              ${versions.slice(0, 8).map((vr) => `<div class="ov-history-item"><strong>${esc(vr.fileName)} · v${vr.version}</strong><span>+${vr.n} registros</span><span>·</span><span>${esc(vr.modeLabel)}</span><span>·</span><span>${esc(vr.timestamp)}</span></div>`).join('')}
             </div>
           </td>
         </tr>` : ''}`;
@@ -1172,69 +1114,50 @@
 
     app.innerHTML = `
       <div class="oversight-head">
-        <div class="oversight-head__title">
-          <h2>${esc(tipoLabel)} · seguimiento</h2>
-          <p>Monitoreo de cargues por evento — lectura en vivo del progreso de cada gestor.</p>
-        </div>
+        <div class="oversight-head__title"><h2>${esc(cfg.label)} · seguimiento</h2><p>Monitoreo de cargues por evento — lectura en vivo del progreso de cada gestor.</p></div>
         <span class="oversight-badge">${I.info} Solo lectura</span>
       </div>
-
       <div class="naowee-table-card">
         <div class="naowee-table-card__table-wrap">
           <table class="naowee-table--in-card">
             <colgroup>
-              <col style="min-width:200px">
-              <col style="width:110px">
-              <col class="ov-col-gestor" style="width:180px">
-              <col class="ov-col-prog" style="width:180px">
-              <col class="ov-col-last" style="width:140px">
-              <col style="width:110px">
+              <col style="min-width:200px"><col style="width:110px">
+              <col class="ov-col-gestor" style="width:180px"><col class="ov-col-prog" style="width:180px">
+              <col class="ov-col-last" style="width:140px"><col style="width:130px">
             </colgroup>
             <thead><tr>
-              <th>Evento</th>
-              <th>Estado</th>
-              <th class="ov-col-gestor">Gestor asignado</th>
-              <th class="ov-col-prog">Cargado · progreso</th>
-              <th class="ov-col-last">Último cargue</th>
-              <th style="text-align:right">Historial</th>
+              <th>Evento</th><th>Estado</th><th class="ov-col-gestor">Gestor asignado</th>
+              <th class="ov-col-prog">Cargado · progreso</th><th class="ov-col-last">Último cargue</th><th style="text-align:right">Archivos</th>
             </tr></thead>
-            <tbody>
-              ${events.length === 0
-                ? `<tr class="ov-empty-row"><td colspan="6">No hay eventos registrados.</td></tr>`
-                : rows
-              }
-            </tbody>
+            <tbody>${events.length === 0 ? `<tr class="ov-empty-row"><td colspan="6">No hay eventos registrados.</td></tr>` : rows}</tbody>
           </table>
         </div>
       </div>
     `;
-
-    /* Bind toggles de historial */
     app.querySelectorAll('.ov-history-toggle').forEach((btn) => {
       btn.addEventListener('click', () => {
         const target = document.getElementById(btn.dataset.hist);
         if (!target) return;
         const open = target.classList.toggle('is-open');
         btn.setAttribute('aria-expanded', String(open));
-        btn.textContent = open ? 'Ocultar' : 'Ver historial';
+        btn.textContent = open ? 'Ocultar' : `Ver archivos (${target.querySelectorAll('.ov-history-item').length})`;
       });
     });
   }
 
   /* ─── Bootstrap ─── */
-  mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: tipo });
+  mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: roleCode === 'ADMIN' ? (TIPOS.includes(tipoParam) ? tipoParam : 'inscripciones') : 'eventos' });
   mountHeader({ headerEl: document.getElementById('topHeader'), role });
   mountBackdrop();
   mountDemoSwitcher({ roleCode });
 
-  /* Admin → oversight; Gestor / demás → cargue normal */
   if (roleCode === 'ADMIN') {
     renderOversight();
+    document.title = `Naowee Eventos — ${TIPO_CFG[TIPOS.includes(tipoParam) ? tipoParam : 'inscripciones'].label} · seguimiento`;
   } else {
     render();
+    document.title = ev ? `Naowee Eventos — ${ev.name}` : 'Naowee Eventos — Cargues';
   }
-
-  document.title = `Naowee Eventos — ${cfg.label}${roleCode === 'ADMIN' ? ' · seguimiento' : ''}`;
 </script>
 
 </body>

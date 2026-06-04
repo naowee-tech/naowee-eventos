@@ -99,7 +99,7 @@
      USER → Ver detalle. */
   function actionForEv(ev) {
     if (isGestor && gestorScope === 'mine') {
-      return { label: 'Ir a cargues', href: `cargue.html?tipo=inscripciones&id=${encodeURIComponent(ev.id)}&role=${roleCode}` };
+      return { label: 'Ir a cargues', href: `cargue.html?id=${encodeURIComponent(ev.id)}&role=${roleCode}` };
     }
     if (canCreate) {
       return { label: 'Gestionar', href: `evento-detalle.html?id=${encodeURIComponent(ev.id)}&role=${roleCode}` };

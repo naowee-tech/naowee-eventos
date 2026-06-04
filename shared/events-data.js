@@ -225,3 +225,39 @@ export function addUploadRecord(eventId, record) {
   all[eventId].unshift(record);
   sessionStorage.setItem(HISTORY_KEY, JSON.stringify(all));
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   ARCHIVOS CARGADOS — versionado por (evento, tipo)
+   sessionStorage key: 'naowee-eventos-cargue-files'
+   Shape: { [eventId]: { insc:[...], res:[...], med:[...] } }
+   Cada registro: { version, fileName, n, modeLabel, timestamp, columns, rows }
+   Permite mostrar "el archivo subido versionado con su data tipo tabla".
+   ═══════════════════════════════════════════════════════════════ */
+const FILES_KEY = 'naowee-eventos-cargue-files';
+
+/** Lista de versiones de archivo de un (evento, tipo). Más reciente primero. */
+export function getFileVersions(eventId, tipo) {
+  try {
+    const all = JSON.parse(sessionStorage.getItem(FILES_KEY) || '{}');
+    return (all[eventId] && all[eventId][tipo]) ? all[eventId][tipo] : [];
+  } catch { return []; }
+}
+
+/**
+ * Persiste una nueva versión de archivo cargado y devuelve su número de versión.
+ * @param {string} eventId
+ * @param {'insc'|'res'|'med'} tipo
+ * @param {{ fileName:string, n:number, modeLabel:string, timestamp:string, columns:Array, rows:Array }} record
+ * @returns {number} version asignada (autoincremental por evento+tipo)
+ */
+export function addFileVersion(eventId, tipo, record) {
+  let all;
+  try { all = JSON.parse(sessionStorage.getItem(FILES_KEY) || '{}'); }
+  catch { all = {}; }
+  if (!all[eventId]) all[eventId] = {};
+  if (!all[eventId][tipo]) all[eventId][tipo] = [];
+  const version = all[eventId][tipo].length + 1;
+  all[eventId][tipo].unshift({ version, ...record });
+  sessionStorage.setItem(FILES_KEY, JSON.stringify(all));
+  return version;
+}
