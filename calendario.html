@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="shared/tokens.css?v=0.4.0">
 <link rel="stylesheet" href="shared/shell.css?v=0.4.4">
 <link rel="stylesheet" href="shared/list-components.css?v=0.4.2">
-<link rel="stylesheet" href="shared/forms.css?v=0.4.1">
+<link rel="stylesheet" href="shared/forms.css?v=0.4.2">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
 <script src="shared/naowee-footer.js?v=0.4.0" defer></script>
 
@@ -710,6 +710,27 @@ function setupDatepicker(name, onPick) {
 /* ════════════════ Estado del form modal ════════════════ */
 const formState = { fecha: null, fin: null, hora: '' };
 
+/* ─── Validación: CTA deshabilitado hasta obligatorios + wiggle/scroll/helper ─── */
+const REDUCE_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function wiggle(el) {
+  if (!el || REDUCE_MOTION) return;
+  el.classList.remove('naowee-shake'); void el.offsetWidth;
+  el.classList.add('naowee-shake');
+  el.addEventListener('animationend', () => el.classList.remove('naowee-shake'), { once: true });
+}
+function controlOf(fieldEl) {
+  return fieldEl.querySelector('.naowee-textfield__input-wrap, .naowee-datepicker__trigger') || fieldEl;
+}
+/* El CTA "Guardar evento" sólo se habilita con los obligatorios (título + fecha de inicio). */
+function syncSaveEnabled() {
+  const ok = !!document.getElementById('evTitulo').value.trim() && !!formState.fecha;
+  document.getElementById('calModalSave').disabled = !ok;
+}
+document.getElementById('evTitulo').addEventListener('input', () => {
+  document.getElementById('fieldTitulo').classList.remove('naowee-textfield--error');
+  syncSaveEnabled();
+});
+
 /* ─── Horas disponibles (06:00 – 21:00, cada 30 min) ─── */
 const HORAS_OPTS = (() => {
   const list = [{ value: '', label: '— Sin hora —' }];
@@ -726,6 +747,7 @@ const dpFecha = setupDatepicker('calFecha', (d) => {
   /* Quitar error al elegir fecha */
   document.getElementById('fieldFecha').classList.remove('naowee-datepicker--error');
   document.getElementById('msgFecha').style.display = 'none';
+  syncSaveEnabled();
 });
 
 const dpFin = setupDatepicker('calFin', (d) => {
@@ -757,6 +779,7 @@ function openModal() {
   document.getElementById('msgFecha').style.display = 'none';
   document.getElementById('msgFin').style.display = 'none';
   document.getElementById('fieldFin').classList.remove('naowee-datepicker--error');
+  syncSaveEnabled();   /* arranca deshabilitado: form vacío */
   overlay.classList.add('is-open');
   document.getElementById('evTitulo').focus();
   document.body.style.overflow = 'hidden';
@@ -832,7 +855,10 @@ document.getElementById('calModalSave').addEventListener('click', () => {
 
   if (!valid) {
     const first = document.querySelector('.naowee-textfield--error, .naowee-datepicker--error');
-    if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (first) {
+      first.scrollIntoView({ behavior: REDUCE_MOTION ? 'auto' : 'smooth', block: 'center' });
+      wiggle(controlOf(first));
+    }
     return;
   }
 

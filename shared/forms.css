@@ -139,7 +139,9 @@
 .naowee-textfield__prefix-ico svg { width: 18px; height: 18px; }
 
 /* Textarea */
-.naowee-textfield--textarea .naowee-textfield__input-wrap { align-items: flex-start; padding: 10px 12px; }
+/* height:auto → el wrap crece con el textarea (si no, queda 48px fijo y el textarea
+   se desborda y el grip de resize nativo "flota" debajo del borde). */
+.naowee-textfield--textarea .naowee-textfield__input-wrap { align-items: flex-start; padding: 10px 12px; height: auto; }
 .naowee-textfield--textarea .naowee-textfield__input {
   height: auto; min-height: 84px; resize: vertical; line-height: 1.5; padding: 0; width: 100%;
 }

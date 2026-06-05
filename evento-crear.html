@@ -11,7 +11,7 @@
 
 <link rel="stylesheet" href="shared/tokens.css?v=0.4.0">
 <link rel="stylesheet" href="shared/shell.css?v=0.4.4">
-<link rel="stylesheet" href="shared/forms.css?v=0.4.1">
+<link rel="stylesheet" href="shared/forms.css?v=0.4.2">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
 <script src="shared/naowee-footer.js?v=0.4.0" defer></script>
 
@@ -594,7 +594,7 @@
 
   function initSection1() {
     const nombre = document.getElementById('f-nombre');
-    nombre.addEventListener('input', () => { state.nombre = nombre.value; if (nombre.value.trim()) clearFieldError('nombre'); });
+    nombre.addEventListener('input', () => { state.nombre = nombre.value; if (nombre.value.trim()) clearFieldError('nombre'); syncSaveEnabled(); });
     document.getElementById('f-desc').addEventListener('input', (e) => { state.descripcion = e.target.value; });
     initLugarCascade();
 
@@ -603,12 +603,23 @@
       // si fin < inicio, lo invalida visualmente
       if (state.fin && state.fin < d) { setFieldError('fin', 'La fecha de fin debe ser igual o posterior al inicio.'); }
       else if (state.fin) clearFieldError('fin');
+      syncSaveEnabled();
     });
     dpFin = setupDatepicker('fin', (d) => {
       state.fin = d; dpFin.setValue(d);
       if (state.inicio && d < state.inicio) setFieldError('fin', 'La fecha de fin debe ser igual o posterior al inicio.');
       else clearFieldError('fin');
+      syncSaveEnabled();
     }, () => state.inicio); // min del fin = inicio
+
+    syncSaveEnabled();   // arranca deshabilitado: obligatorios vacíos
+  }
+
+  /* CTA "Guardar" deshabilitado hasta los obligatorios (nombre + fecha inicio + fin). */
+  function syncSaveEnabled() {
+    const ok = !!(state.nombre || '').trim() && !!state.inicio && !!state.fin;
+    const btn = document.getElementById('saveBtn');
+    if (btn) btn.disabled = !ok;
   }
 
   /* ════════════════ Guardar ════════════════ */
