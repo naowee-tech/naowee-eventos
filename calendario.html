@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="shared/tokens.css?v=0.4.0">
 <link rel="stylesheet" href="shared/shell.css?v=0.4.4">
 <link rel="stylesheet" href="shared/list-components.css?v=0.4.2">
-<link rel="stylesheet" href="shared/forms.css?v=0.4.2">
+<link rel="stylesheet" href="shared/forms.css?v=0.4.3">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
 <script src="shared/naowee-footer.js?v=0.4.1" defer></script>
 
@@ -36,9 +36,12 @@
   .cal-link-cell a {
     display: inline-flex; align-items: center; gap: 5px;
     font-size: 12.5px; font-weight: 600; color: var(--accent);
-    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 100%; overflow: hidden; white-space: nowrap;
   }
-  .cal-link-cell a:hover { text-decoration: underline; }
+  /* Ícono de link: tamaño fijo y sin encoger (antes se reducía al truncar el texto). */
+  .cal-link-cell a svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .cal-link-cell a .cal-link-url { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .cal-link-cell a:hover .cal-link-url { text-decoration: underline; }
   .cal-link--none { font-size: 12.5px; color: var(--text-muted); font-style: italic; }
   .cal-fecha { color: var(--text-secondary); white-space: nowrap; }
   .cal-fecha-fin { font-size: 12px; color: var(--text-muted); margin-top: 2px; font-weight: 500; }
@@ -178,7 +181,7 @@
             <p>Eventos del organismo que se reflejan en el calendario de la landing pública. Solo visible para el organismo.</p>
           </div>
           <div class="page-head__actions">
-            <button type="button" class="naowee-btn naowee-btn--loud" id="btnCrearEvento">
+            <button type="button" class="naowee-btn naowee-btn--loud naowee-btn--lg" id="btnCrearEvento">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               Crear evento
             </button>
@@ -439,7 +442,7 @@ function renderTabla(lista) {
       <td class="cal-link-cell">${ev.link
         ? `<a href="${ev.link}" target="_blank" rel="noopener noreferrer">
              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-             ${ev.link.replace(/^https?:\/\//, '')}
+             <span class="cal-link-url">${ev.link.replace(/^https?:\/\//, '')}</span>
            </a>`
         : '<span class="cal-link--none">Sin link</span>'}
       </td>
