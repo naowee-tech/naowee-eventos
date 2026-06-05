@@ -41,6 +41,8 @@
   .cal-link-cell a:hover { text-decoration: underline; }
   .cal-link--none { font-size: 12.5px; color: var(--text-muted); font-style: italic; }
   .cal-fecha { color: var(--text-secondary); white-space: nowrap; }
+  .cal-fecha-fin { font-size: 12px; color: var(--text-muted); margin-top: 2px; font-weight: 500; }
+  .cal-opt { color: var(--text-muted); font-weight: 400; }
   .cal-name { display: flex; align-items: center; gap: 11px; min-width: 0; }
   .cal-emoji { font-size: 20px; line-height: 1; flex-shrink: 0; }
   .cal-title { font-size: 14px; font-weight: 700; color: var(--text-primary); min-width: 0; }
@@ -114,7 +116,7 @@
   }
 
   /* Row fecha + hora */
-  .fecha-hora-row { display: grid; grid-template-columns: 1fr 160px; gap: 12px; }
+  .fecha-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
 
   /* Mobile bottom-sheet */
@@ -129,7 +131,7 @@
     .cal-modal__header { padding: 18px 20px 14px; }
     .cal-modal__body { padding: 18px 20px; }
     .cal-modal__footer { padding: 14px 20px; }
-    .fecha-hora-row { grid-template-columns: 1fr; }
+    .fecha-row { grid-template-columns: 1fr; }
   }
 
   /* Toast */
@@ -216,7 +218,7 @@
               <thead>
                 <tr>
                   <th>Título del evento</th>
-                  <th>Fecha y hora</th>
+                  <th>Fechas</th>
                   <th>Link</th>
                 </tr>
               </thead>
@@ -260,11 +262,11 @@
           </div>
         </div>
 
-        <!-- Fecha y hora -->
+        <!-- Fechas: inicio + cierre -->
         <div class="form-group">
-          <div class="fecha-hora-row">
+          <div class="fecha-row">
             <div id="fieldFecha">
-              <label class="naowee-textfield__label naowee-textfield__label--required" id="lbl-calFecha">Fecha</label>
+              <label class="naowee-textfield__label naowee-textfield__label--required" id="lbl-calFecha">Fecha de inicio</label>
               <div class="naowee-datepicker" data-datepicker="calFecha">
                 <button type="button" class="naowee-datepicker__trigger" aria-haspopup="dialog" aria-labelledby="lbl-calFecha">
                   <span class="naowee-datepicker__ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
@@ -273,18 +275,35 @@
               </div>
               <span class="naowee-textfield__msg" id="msgFecha" role="alert" style="display:none">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                La fecha es obligatoria.
+                La fecha de inicio es obligatoria.
               </span>
             </div>
-            <div id="fieldHora">
-              <label class="naowee-textfield__label" id="lbl-calHora">Hora (opcional)</label>
-              <div class="naowee-dropdown" data-dd="calHora" data-sheet-title="Hora del evento">
-                <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-labelledby="lbl-calHora">
-                  <span class="naowee-dropdown__value is-placeholder" data-dd-val>— Sin hora —</span>
-                  <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+            <div id="fieldFin">
+              <label class="naowee-textfield__label" id="lbl-calFin">Fecha de cierre <span class="cal-opt">(opcional)</span></label>
+              <div class="naowee-datepicker" data-datepicker="calFin">
+                <button type="button" class="naowee-datepicker__trigger" aria-haspopup="dialog" aria-labelledby="lbl-calFin">
+                  <span class="naowee-datepicker__ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+                  <span class="naowee-datepicker__val is-placeholder" data-dp-val>Selecciona una fecha</span>
                 </button>
-                <div class="naowee-dropdown__menu" role="listbox"></div>
               </div>
+              <span class="naowee-textfield__msg" id="msgFin" role="alert" style="display:none">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                El cierre no puede ser antes del inicio.
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hora -->
+        <div class="form-group">
+          <div id="fieldHora" style="max-width:220px">
+            <label class="naowee-textfield__label" id="lbl-calHora">Hora de inicio (opcional)</label>
+            <div class="naowee-dropdown" data-dd="calHora" data-sheet-title="Hora del evento">
+              <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-labelledby="lbl-calHora">
+                <span class="naowee-dropdown__value is-placeholder" data-dd-val>— Sin hora —</span>
+                <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+              </button>
+              <div class="naowee-dropdown__menu" role="listbox"></div>
             </div>
           </div>
         </div>
@@ -359,6 +378,7 @@ const MOCK_INICIAL = [
     id: 'c1', emoji: '🏊',
     titulo: 'Copa Departamental de Natación Categorías Menores 2026',
     fecha: '2026-07-12',
+    fechaFin: '2026-07-14',
     hora: '08:00',
     link: 'https://liganatacionvalle.com/copa-departamental-2026'
   },
@@ -366,6 +386,7 @@ const MOCK_INICIAL = [
     id: 'c2', emoji: '🌊',
     titulo: 'Festival Acuático Interligas Valle del Cauca',
     fecha: '2026-09-05',
+    fechaFin: '2026-09-06',
     hora: '09:30',
     link: ''
   },
@@ -411,7 +432,10 @@ function renderTabla(lista) {
   body.innerHTML = lista.map(ev => `
     <tr>
       <td><div class="cal-name"><span class="cal-emoji" aria-hidden="true">${ev.emoji || '📅'}</span><span class="cal-title">${ev.titulo}</span></div></td>
-      <td class="cal-fecha">${fmtFecha(ev.fecha, ev.hora)}</td>
+      <td class="cal-fecha">
+        <div>${fmtFecha(ev.fecha, ev.hora)}</div>
+        ${ev.fechaFin ? `<div class="cal-fecha-fin">hasta ${fmtFecha(ev.fechaFin, '')}</div>` : ''}
+      </td>
       <td class="cal-link-cell">${ev.link
         ? `<a href="${ev.link}" target="_blank" rel="noopener noreferrer">
              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
@@ -629,6 +653,8 @@ function setupDatepicker(name, onPick) {
       e.stopPropagation();
       const picked = new Date(curYear, curMonth, Number(b.dataset.d));
       selected = picked;
+      valEl.textContent = fmtDate(picked);   /* refleja la fecha elegida en el campo */
+      valEl.classList.remove('is-placeholder');
       onPick(picked);
       close();
     }));
@@ -682,7 +708,7 @@ function setupDatepicker(name, onPick) {
 }
 
 /* ════════════════ Estado del form modal ════════════════ */
-const formState = { fecha: null, hora: '' };
+const formState = { fecha: null, fin: null, hora: '' };
 
 /* ─── Horas disponibles (06:00 – 21:00, cada 30 min) ─── */
 const HORAS_OPTS = (() => {
@@ -702,6 +728,12 @@ const dpFecha = setupDatepicker('calFecha', (d) => {
   document.getElementById('msgFecha').style.display = 'none';
 });
 
+const dpFin = setupDatepicker('calFin', (d) => {
+  formState.fin = d;
+  document.getElementById('fieldFin').classList.remove('naowee-datepicker--error');
+  document.getElementById('msgFin').style.display = 'none';
+});
+
 const ddHora = setupDropdown('calHora', HORAS_OPTS, (o) => {
   formState.hora = o.value;
   ddHora.setLabel(o.label, !o.value);
@@ -713,14 +745,18 @@ const overlay = document.getElementById('calModalOverlay');
 function openModal() {
   /* Reset estado form */
   formState.fecha = null;
+  formState.fin = null;
   formState.hora = '';
   dpFecha.reset();
+  dpFin.reset();
   ddHora.setLabel('— Sin hora —', true);
   /* Reset textfields */
   document.getElementById('calForm').reset();
   ['fieldTitulo','fieldLink'].forEach(id =>
     document.getElementById(id).classList.remove('naowee-textfield--error'));
   document.getElementById('msgFecha').style.display = 'none';
+  document.getElementById('msgFin').style.display = 'none';
+  document.getElementById('fieldFin').classList.remove('naowee-datepicker--error');
   overlay.classList.add('is-open');
   document.getElementById('evTitulo').focus();
   document.body.style.overflow = 'hidden';
@@ -787,22 +823,28 @@ document.getElementById('calModalSave').addEventListener('click', () => {
   setError('fieldLink', linkInvalid);
   if (linkInvalid) valid = false;
 
+  /* Cierre (opcional): si está, no puede ser anterior al inicio */
+  const fin = formState.fin;
+  const finInvalid = !!(fin && fecha && fin < fecha);
+  document.getElementById('fieldFin').classList.toggle('naowee-datepicker--error', finInvalid);
+  document.getElementById('msgFin').style.display = finInvalid ? '' : 'none';
+  if (finInvalid) valid = false;
+
   if (!valid) {
     const first = document.querySelector('.naowee-textfield--error, .naowee-datepicker--error');
     if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }
 
-  /* Serializar fecha como "YYYY-MM-DD" para compatibilidad con fmtFecha */
-  const y = fecha.getFullYear();
-  const m = String(fecha.getMonth() + 1).padStart(2, '0');
-  const d = String(fecha.getDate()).padStart(2, '0');
-  const fechaStr = `${y}-${m}-${d}`;
+  /* Serializar fechas como "YYYY-MM-DD" para compatibilidad con fmtFecha */
+  const toISO = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+  const fechaStr = toISO(fecha);
+  const fechaFinStr = fin ? toISO(fin) : '';
 
   const nuevoEv = {
     id: `c${Date.now()}`,
     emoji: '🏊',
-    titulo, fecha: fechaStr, hora, link
+    titulo, fecha: fechaStr, fechaFin: fechaFinStr, hora, link
   };
   eventos = [nuevoEv, ...eventos];
   guardarEventos(eventos);
