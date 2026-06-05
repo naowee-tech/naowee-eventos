@@ -303,6 +303,38 @@
     .naowee-table-card .naowee-table--in-card tr.ov-history-row { padding: 0; }
     .naowee-table-card .naowee-table--in-card td.ov-history-cell { padding: 0 16px 12px !important; }
   }
+
+  /* ── Modal "Archivos cargados" (oversight ADMIN) — pequeño + timeline ── */
+  .ov-modal-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(40,40,52,.48); opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+  .ov-modal-overlay.is-open { opacity: 1; pointer-events: auto; }
+  .ov-modal { background: var(--surface); border-radius: var(--radius-xl); width: 95vw; max-width: 460px; max-height: 84vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow-card); transform: translateY(20px) scale(.98); opacity: 0; transition: transform .26s cubic-bezier(.4,0,.2,1), opacity .2s ease; }
+  .ov-modal-overlay.is-open .ov-modal { transform: none; opacity: 1; }
+  .ov-modal__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 20px 22px 14px; border-bottom: 1px solid var(--border); border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
+  .ov-modal__head h3 { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0; }
+  .ov-modal__head p { font-size: 12.5px; color: var(--text-secondary); margin: 4px 0 0; line-height: 1.4; }
+  .ov-modal__close { width: 32px; height: 32px; border: none; background: transparent; border-radius: var(--radius-md); color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background var(--duration-fast), color var(--duration-fast); }
+  .ov-modal__close:hover { background: var(--bg-soft); color: var(--text-primary); }
+  .ov-modal__close:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215,64,9,.18); }
+  .ov-modal__close svg { width: 18px; height: 18px; }
+  .ov-modal__body { padding: 18px 22px 22px; overflow-y: auto; }
+  .ov-modal__empty { text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px; }
+
+  /* Timeline de archivos */
+  .carg-timeline { position: relative; display: flex; flex-direction: column; gap: 18px; }
+  .carg-timeline::before { content: ''; position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background: var(--border); }
+  .carg-tl-item { position: relative; display: flex; gap: 14px; padding-left: 0; }
+  .carg-tl-dot { width: 16px; height: 16px; flex-shrink: 0; border-radius: 50%; background: var(--green-bg); border: 2px solid var(--green); margin-top: 3px; z-index: 1; }
+  .carg-tl-content { flex: 1; min-width: 0; }
+  .carg-tl-file { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+  .carg-tl-ico { width: 30px; height: 30px; border-radius: var(--radius-md); background: var(--green-bg); color: var(--green); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .carg-tl-ico svg { width: 16px; height: 16px; }
+  .carg-tl-name { font-size: 13px; font-weight: 700; color: var(--text-primary); word-break: break-word; }
+  .carg-tl-meta { font-size: 12px; color: var(--text-secondary); margin-top: 6px; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .carg-tl-who { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--text-primary); }
+  .carg-tl-av { width: 20px; height: 20px; border-radius: 50%; color: #fff; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .carg-tl-n { color: var(--green); font-weight: 700; }
+  .carg-tl-time { font-size: 11.5px; color: var(--text-muted); margin-top: 4px; }
+  @media (prefers-reduced-motion: reduce) { .ov-modal, .ov-modal-overlay { transition: none !important; } }
 </style>
 
 </head>
@@ -1364,23 +1396,14 @@
           <td class="ov-col-prog" data-label="Progreso"><div class="ov-prog-wrap"><div class="ov-prog-track"><div class="ov-prog-fill" style="width:${p}%"></div></div><span class="ov-prog-pct">${progLabel(e)}</span></div></td>
           <td class="ov-col-last" data-label="Último cargue"><span class="ov-last-cargue">${esc(last)}</span></td>
           <td data-label="Archivos" style="text-align:right">
-            ${versions.length ? `<button type="button" class="ov-history-toggle" data-hist="${histId}" aria-expanded="false">Ver archivos (${versions.length})</button>` : '<span style="font-size:11.5px;color:var(--text-muted)">Sin cargues</span>'}
+            ${versions.length ? `<button type="button" class="ov-history-toggle" data-ev-id="${esc(e.id)}">Ver archivos (${versions.length})</button>` : '<span style="font-size:11.5px;color:var(--text-muted)">Sin cargues</span>'}
           </td>
-        </tr>
-        ${versions.length ? `
-        <tr class="ov-history-row" id="${histId}">
-          <td class="ov-history-cell" colspan="6">
-            <div class="ov-history-list">
-              ${versions.slice(0, 8).map((vr) => `<div class="ov-history-item"><strong>${esc(vr.fileName)} · v${vr.version}</strong><span>+${vr.n} registros</span><span>·</span><span>${esc(vr.modeLabel)}</span><span>·</span><span>${esc(vr.timestamp)}</span></div>`).join('')}
-            </div>
-          </td>
-        </tr>` : ''}`;
+        </tr>`;
     }).join('');
 
     app.innerHTML = `
       <div class="oversight-head">
         <div class="oversight-head__title"><h2>${esc(cfg.label)} · seguimiento</h2><p>Monitoreo de cargues por evento — lectura en vivo del progreso de cada gestor.</p></div>
-        <span class="oversight-badge">${I.info} Solo lectura</span>
       </div>
       <div class="naowee-table-card">
         <div class="naowee-table-card__table-wrap">
@@ -1400,14 +1423,61 @@
       </div>
     `;
     app.querySelectorAll('.ov-history-toggle').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const target = document.getElementById(btn.dataset.hist);
-        if (!target) return;
-        const open = target.classList.toggle('is-open');
-        btn.setAttribute('aria-expanded', String(open));
-        btn.textContent = open ? 'Ocultar' : `Ver archivos (${target.querySelectorAll('.ov-history-item').length})`;
-      });
+      btn.addEventListener('click', () => openArchivosModal(btn.dataset.evId, cfg, storeKey));
     });
+  }
+
+  /* ─── Modal "Archivos cargados" (oversight) — timeline de versiones ─── */
+  function ensureOvModal() {
+    let overlay = document.getElementById('ovModalOverlay');
+    if (overlay) return overlay;
+    overlay = document.createElement('div');
+    overlay.className = 'ov-modal-overlay';
+    overlay.id = 'ovModalOverlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.innerHTML = `
+      <div class="ov-modal" role="document">
+        <div class="ov-modal__head">
+          <div><h3 data-ov-title>Archivos cargados</h3><p data-ov-sub></p></div>
+          <button type="button" class="ov-modal__close" aria-label="Cerrar">${I.x}</button>
+        </div>
+        <div class="ov-modal__body" data-ov-body></div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const close = () => { overlay.classList.remove('is-open'); document.body.style.overflow = ''; };
+    overlay.querySelector('.ov-modal__close').addEventListener('click', close);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && overlay.classList.contains('is-open')) close(); });
+    return overlay;
+  }
+
+  function openArchivosModal(eventId, cfg, storeKey) {
+    const ev = allEvents().find((e) => e.id === eventId);
+    if (!ev) return;
+    const gid = ev.assignedGestorId || GESTOR_MAP[ev.id];
+    const gestor = GESTORES.find((g) => g.id === gid) || null;
+    const versions = getFileVersions(eventId, storeKey);
+    const overlay = ensureOvModal();
+    overlay.querySelector('[data-ov-title]').textContent = 'Archivos cargados';
+    overlay.querySelector('[data-ov-sub]').textContent = `${ev.name} · ${cfg.label}`;
+    const whoHTML = gestor
+      ? `<span class="carg-tl-who"><span class="carg-tl-av" style="background:${esc(gestor.color)}">${esc(gestor.avatar)}</span>${esc(gestor.name)}</span><span>·</span>`
+      : '';
+    const items = versions.map((v) => `
+      <div class="carg-tl-item">
+        <span class="carg-tl-dot" aria-hidden="true"></span>
+        <div class="carg-tl-content">
+          <div class="carg-tl-file"><span class="carg-tl-ico">${I.fileSheet}</span><span class="carg-tl-name">${esc(v.fileName)}</span><span class="carg-file__ver">v${v.version}</span></div>
+          <div class="carg-tl-meta">${whoHTML}<span class="carg-tl-n">+${v.n} registros</span><span>·</span><span>${esc(v.modeLabel)}</span></div>
+          <div class="carg-tl-time">${esc(v.timestamp)}</div>
+        </div>
+      </div>`).join('');
+    overlay.querySelector('[data-ov-body]').innerHTML = versions.length
+      ? `<div class="carg-timeline">${items}</div>`
+      : `<div class="ov-modal__empty">Sin archivos cargados.</div>`;
+    overlay.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
   }
 
   /* ─── Bootstrap ─── */
