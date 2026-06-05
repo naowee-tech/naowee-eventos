@@ -46,12 +46,23 @@
   .perfil-toolbar__filters {
     display: flex; gap: 8px; flex-wrap: wrap;
   }
-  /* Filtros del historial reubicados dentro del perfil */
-  #filtrosBar { align-items: center; margin: 2px 0 6px; }
+  /* Filtros del historial — toolbar superior dentro de la card de historial */
+  #filtrosBar { align-items: center; margin: 0; }
   #filtrosBar .naowee-dropdown { width: 150px; flex-shrink: 0; }
   .perfil-filtros__title {
     font-size: 12.5px; font-weight: 600; color: var(--text-secondary);
     margin-right: 4px; white-space: nowrap;
+  }
+
+  /* ── Historial: card unificada con tabs canónicas ── */
+  /* La card usa .naowee-table-card (padding 20px + gap 16px en columna). */
+  .hist-tabs { margin: 0 -20px; }          /* bleed → divider de borde a borde */
+  .hist-panel { animation: fadeIn .25s var(--easing-smoothout) both; }
+  .hist-panel[hidden] { display: none; }
+  @media (max-width: 600px) {
+    .hist-tabs .naowee-tab { font-size: 12.5px; gap: 5px; padding: 0 8px; }
+    .hist-tabs .naowee-tab svg { width: 15px; height: 15px; }
+    .hist-tabs .naowee-tab__count { display: none; }
   }
   /* Dropdowns de filtro: ancho fijo compacto */
   .perfil-toolbar .naowee-dropdown { width: 148px; }
@@ -162,32 +173,28 @@
 
   /* ═════ Tier badge (copiado 1:1 de incentivos) ═════ */
   .profile-tag {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 4px 10px; border-radius: 9999px;
-    font-size: 11px; font-weight: 700;
-    letter-spacing: .3px; text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px; border-radius: 9999px;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: .2px; text-transform: uppercase;
     border: 1px solid transparent; line-height: 1;
   }
-  .profile-tag svg { width: 12px; height: 12px; flex-shrink: 0; }
+  .profile-tag svg { width: 11px; height: 11px; flex-shrink: 0; }
   .profile-tag--amateur {
     background: linear-gradient(135deg,#f8f9fc,#e3e6f1);
     color: #646587; border-color: #d7dae8;
-    box-shadow: 0 2px 6px rgba(100,101,135,.14);
   }
   .profile-tag--profesional {
     background: linear-gradient(135deg,#eef5ff,#c3dcff);
     color: #1d4ed8; border-color: #a8caf8;
-    box-shadow: 0 2px 6px rgba(37,99,235,.18);
   }
   .profile-tag--olimpico {
     background: linear-gradient(135deg,#fff8d6,#ffe082);
     color: #8a5a00; border-color: #ffd166;
-    box-shadow: 0 2px 6px rgba(255,179,0,.18);
   }
   .profile-tag--juvenil {
     background: linear-gradient(135deg,#f6edff,#e0c9ff);
     color: #7c3aed; border-color: #d3b4ff;
-    box-shadow: 0 2px 6px rgba(124,58,237,.18);
   }
 
   /* Stack derecho: counters + medal-strip */
@@ -251,17 +258,6 @@
   .medal-chip--plata { background: #f1f5f9; color: #475569; }
   .medal-chip--bronce { background: #fff7ed; color: #9a3412; }
   .medal-chip__ico { font-size: 15px; }
-
-  /* ── Section icons dentro del table-card ── */
-  .hsec-header__icon {
-    width: 34px; height: 34px; border-radius: var(--radius-md);
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-  }
-  .hsec-header__icon svg { width: 18px; height: 18px; }
-  .hsec-header__icon--inscripciones { background: var(--blue-bg); color: var(--blue-info); }
-  .hsec-header__icon--resultados { background: var(--orange-bg); color: var(--naranja); }
-  .hsec-header__icon--medalleria { background: #fef9c3; color: #92400e; }
 
   /* .medal-ico y rank helpers */
   .medal-ico { font-size: 16px; }
@@ -482,117 +478,84 @@
           <!-- Header del deportista -->
           <div class="perfil-header" id="perfilHeaderCard"></div>
 
-          <!-- Filtros del historial (Año · Deporte · Evento) -->
-          <div class="perfil-toolbar__filters" id="filtrosBar" style="display:none">
-            <span class="perfil-filtros__title">Filtrar historial</span>
-            <div class="naowee-dropdown naowee-dropdown--medium" data-dd="filtroAno" data-sheet-title="Año">
-              <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-label="Filtrar por año">
-                <span class="naowee-dropdown__value is-placeholder" data-dd-val>Año</span>
-                <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
-              </button>
-              <div class="naowee-dropdown__menu" role="listbox"></div>
-            </div>
-            <div class="naowee-dropdown naowee-dropdown--medium" data-dd="filtroDeporte" data-sheet-title="Deporte">
-              <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-label="Filtrar por deporte">
-                <span class="naowee-dropdown__value is-placeholder" data-dd-val>Deporte</span>
-                <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
-              </button>
-              <div class="naowee-dropdown__menu" role="listbox"></div>
-            </div>
-            <div class="naowee-dropdown naowee-dropdown--medium" data-dd="filtroEvento" data-sheet-title="Evento">
-              <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-label="Filtrar por evento">
-                <span class="naowee-dropdown__value is-placeholder" data-dd-val>Evento</span>
-                <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
-              </button>
-              <div class="naowee-dropdown__menu" role="listbox"></div>
-            </div>
-          </div>
+          <!-- Historial unificado: filtros (top) + tabs canónicas + tabla -->
+          <div class="naowee-table-card hist-card" id="historialCard">
 
-          <!-- Tabla-card: Inscripciones -->
-          <div class="naowee-table-card" id="secInscripciones">
-            <div class="tc-head">
-              <div style="display:flex;align-items:center;gap:10px">
-                <span class="hsec-header__icon hsec-header__icon--inscripciones">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 0 0 4v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4a2 2 0 0 0 0-4z"/><line x1="12" y1="3" x2="12" y2="21" stroke-dasharray="2 2"/></svg>
-                </span>
-                <p class="tc-head__title">Inscripciones</p>
-                <span id="countInscripciones" style="margin-left:auto;font-size:12px;font-weight:600;color:var(--text-muted)">—</span>
+            <!-- Filtros del historial (Año · Deporte · Evento) -->
+            <div class="perfil-toolbar__filters hist-toolbar" id="filtrosBar">
+              <span class="perfil-filtros__title">Filtrar historial</span>
+              <div class="naowee-dropdown naowee-dropdown--medium" data-dd="filtroAno" data-sheet-title="Año">
+                <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-label="Filtrar por año">
+                  <span class="naowee-dropdown__value is-placeholder" data-dd-val>Año</span>
+                  <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+                </button>
+                <div class="naowee-dropdown__menu" role="listbox"></div>
+              </div>
+              <div class="naowee-dropdown naowee-dropdown--medium" data-dd="filtroDeporte" data-sheet-title="Deporte">
+                <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-label="Filtrar por deporte">
+                  <span class="naowee-dropdown__value is-placeholder" data-dd-val>Deporte</span>
+                  <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+                </button>
+                <div class="naowee-dropdown__menu" role="listbox"></div>
+              </div>
+              <div class="naowee-dropdown naowee-dropdown--medium" data-dd="filtroEvento" data-sheet-title="Evento">
+                <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-label="Filtrar por evento">
+                  <span class="naowee-dropdown__value is-placeholder" data-dd-val>Evento</span>
+                  <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+                </button>
+                <div class="naowee-dropdown__menu" role="listbox"></div>
               </div>
             </div>
-            <div class="naowee-table-card__table-wrap">
-              <table class="naowee-table--in-card" id="tablaInscripciones">
-                <colgroup>
-                  <col style="width:38%"><col style="width:28%"><col style="width:18%"><col style="width:16%">
-                </colgroup>
-                <thead>
-                  <tr>
-                    <th>Evento</th>
-                    <th>Deporte · Prueba</th>
-                    <th>Fecha</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-                <tbody id="bodyInscripciones"></tbody>
-              </table>
-            </div>
-          </div>
 
-          <!-- Tabla-card: Resultados -->
-          <div class="naowee-table-card" id="secResultados" style="animation-delay:.06s">
-            <div class="tc-head">
-              <div style="display:flex;align-items:center;gap:10px">
-                <span class="hsec-header__icon hsec-header__icon--resultados">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="4" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="20" y1="20" x2="20" y2="14"/></svg>
-                </span>
-                <p class="tc-head__title">Resultados</p>
-                <span id="countResultados" style="margin-left:auto;font-size:12px;font-weight:600;color:var(--text-muted)">—</span>
+            <!-- Tabs canónicas (proporcional, divider de borde a borde) -->
+            <div class="naowee-tabs naowee-tabs--proportional hist-tabs" id="histTabs" role="tablist" aria-label="Secciones del historial">
+              <button class="naowee-tab naowee-tab--selected" data-tab="inscripciones" type="button" role="tab" aria-selected="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 0 0 4v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4a2 2 0 0 0 0-4z"/><line x1="12" y1="3" x2="12" y2="21" stroke-dasharray="2 2"/></svg>
+                <span>Inscripciones</span><span class="naowee-tab__count" id="tabCountInscripciones">0</span>
+              </button>
+              <button class="naowee-tab" data-tab="resultados" type="button" role="tab" aria-selected="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="4" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="20" y1="20" x2="20" y2="14"/></svg>
+                <span>Resultados</span><span class="naowee-tab__count" id="tabCountResultados">0</span>
+              </button>
+              <button class="naowee-tab" data-tab="medalleria" type="button" role="tab" aria-selected="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="15" r="6"/><path d="M12 12v3l2 1"/><path d="M8.5 9.5L6 3M15.5 9.5L18 3"/></svg>
+                <span>Medallería</span><span class="naowee-tab__count" id="tabCountMedalleria">0</span>
+              </button>
+            </div>
+
+            <!-- Panel: Inscripciones -->
+            <div class="hist-panel" id="panelInscripciones" role="tabpanel">
+              <div class="naowee-table-card__table-wrap">
+                <table class="naowee-table--in-card" id="tablaInscripciones">
+                  <colgroup><col style="width:38%"><col style="width:28%"><col style="width:18%"><col style="width:16%"></colgroup>
+                  <thead><tr><th>Evento</th><th>Deporte · Prueba</th><th>Fecha</th><th>Estado</th></tr></thead>
+                  <tbody id="bodyInscripciones"></tbody>
+                </table>
               </div>
             </div>
-            <div class="naowee-table-card__table-wrap">
-              <table class="naowee-table--in-card" id="tablaResultados">
-                <colgroup>
-                  <col style="width:40%"><col style="width:30%"><col style="width:14%"><col style="width:16%">
-                </colgroup>
-                <thead>
-                  <tr>
-                    <th>Evento</th>
-                    <th>Deporte · Prueba</th>
-                    <th>Ranking</th>
-                    <th>Fecha</th>
-                  </tr>
-                </thead>
-                <tbody id="bodyResultados"></tbody>
-              </table>
-            </div>
-          </div>
 
-          <!-- Tabla-card: Medallería -->
-          <div class="naowee-table-card" id="secMedalleria" style="animation-delay:.12s">
-            <div class="tc-head">
-              <div style="display:flex;align-items:center;gap:10px">
-                <span class="hsec-header__icon hsec-header__icon--medalleria">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="15" r="6"/><path d="M12 12v3l2 1"/><path d="M8.5 9.5L6 3M15.5 9.5L18 3"/></svg>
-                </span>
-                <p class="tc-head__title">Medallería</p>
-                <span id="countMedalleria" style="margin-left:auto;font-size:12px;font-weight:600;color:var(--text-muted)">—</span>
+            <!-- Panel: Resultados -->
+            <div class="hist-panel" id="panelResultados" role="tabpanel" hidden>
+              <div class="naowee-table-card__table-wrap">
+                <table class="naowee-table--in-card" id="tablaResultados">
+                  <colgroup><col style="width:40%"><col style="width:30%"><col style="width:14%"><col style="width:16%"></colgroup>
+                  <thead><tr><th>Evento</th><th>Deporte · Prueba</th><th>Ranking</th><th>Fecha</th></tr></thead>
+                  <tbody id="bodyResultados"></tbody>
+                </table>
               </div>
             </div>
-            <div class="naowee-table-card__table-wrap">
-              <table class="naowee-table--in-card" id="tablaMedalleria">
-                <colgroup>
-                  <col style="width:38%"><col style="width:28%"><col style="width:18%"><col style="width:16%">
-                </colgroup>
-                <thead>
-                  <tr>
-                    <th>Evento</th>
-                    <th>Deporte · Prueba</th>
-                    <th>Medalla</th>
-                    <th>Fecha</th>
-                  </tr>
-                </thead>
-                <tbody id="bodyMedalleria"></tbody>
-              </table>
+
+            <!-- Panel: Medallería -->
+            <div class="hist-panel" id="panelMedalleria" role="tabpanel" hidden>
+              <div class="naowee-table-card__table-wrap">
+                <table class="naowee-table--in-card" id="tablaMedalleria">
+                  <colgroup><col style="width:38%"><col style="width:28%"><col style="width:18%"><col style="width:16%"></colgroup>
+                  <thead><tr><th>Evento</th><th>Deporte · Prueba</th><th>Medalla</th><th>Fecha</th></tr></thead>
+                  <tbody id="bodyMedalleria"></tbody>
+                </table>
+              </div>
             </div>
+
           </div>
 
         </div><!-- /perfilContent -->
@@ -1062,6 +1025,7 @@ function seleccionarDeportista(id) {
   if (!d) return;
   deportistaActual = d;
   filtros.ano = ''; filtros.deporte = ''; filtros.evento = '';
+  histActiveTab = 'inscripciones';
   poblarFiltros(d);
   document.getElementById('filtrosBar').style.display = '';
   document.getElementById('directorio').style.display = 'none';
@@ -1231,66 +1195,81 @@ function renderPerfil(d) {
       ${renderMedalStrip(d.medalleria)}
     </div>`;
 
-  /* ─── helpers de empty-state ─── */
-  function showTableOrEmpty(wrapId, tableId, emptyId, hasRows) {
-    const tableWrap = document.getElementById(tableId).closest('.naowee-table-card__table-wrap');
-    let emptyEl = document.getElementById(emptyId);
-    if (hasRows) {
-      if (tableWrap) tableWrap.style.display = '';
-      if (emptyEl) emptyEl.remove();
-    } else {
-      if (tableWrap) tableWrap.style.display = 'none';
-      if (!emptyEl) {
-        const card = document.getElementById(wrapId);
-        const snippets = {
-          secInscripciones: `<div class="tc-empty-state" id="${emptyId}"><div class="empty-state__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 0 0 4v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4a2 2 0 0 0 0-4z"/><line x1="12" y1="3" x2="12" y2="21" stroke-dasharray="2 2"/></svg></div><p class="empty-state__title">Sin inscripciones registradas</p><p class="empty-state__desc">No hay inscripciones que coincidan con los filtros seleccionados.</p></div>`,
-          secResultados:    `<div class="tc-empty-state" id="${emptyId}"><div class="empty-state__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="4" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="20" y1="20" x2="20" y2="14"/></svg></div><p class="empty-state__title">Sin resultados registrados</p><p class="empty-state__desc">No hay resultados que coincidan con los filtros seleccionados.</p></div>`,
-          secMedalleria:    `<div class="tc-empty-state" id="${emptyId}"><div class="empty-state__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="15" r="6"/><path d="M12 12v3l2 1"/><path d="M8.5 9.5L6 3M15.5 9.5L18 3"/></svg></div><p class="empty-state__title">Sin medallas registradas</p><p class="empty-state__desc">No hay medallas que coincidan con los filtros seleccionados.</p></div>`,
-        };
-        card.insertAdjacentHTML('beforeend', snippets[wrapId] || '');
-      }
-    }
-  }
+  /* Contadores en los tabs */
+  document.getElementById('tabCountInscripciones').textContent = ins.length;
+  document.getElementById('tabCountResultados').textContent = res.length;
+  document.getElementById('tabCountMedalleria').textContent = med.length;
 
-  /* Inscripciones */
-  document.getElementById('countInscripciones').textContent = `${ins.length} registro${ins.length !== 1 ? 's' : ''}`;
-  if (ins.length) {
-    document.getElementById('bodyInscripciones').innerHTML = ins.map(r => `
+  /* Cada panel: tabla con filas o empty-state canónico */
+  fillPanel('panelInscripciones', 'tablaInscripciones', 'bodyInscripciones', ins, r => `
         <tr>
           <td data-label="Evento"><strong style="font-size:13px">${r.evento}</strong></td>
           <td data-label="Deporte / Prueba">${r.deporte} · <span style="color:var(--text-secondary)">${r.prueba}</span></td>
           <td data-label="Fecha" style="color:var(--text-muted);font-size:12px">${fmtFecha(r.fecha)}</td>
           <td data-label="Estado">${estadoBadge(r.estado)}</td>
-        </tr>`).join('');
-  }
-  showTableOrEmpty('secInscripciones', 'tablaInscripciones', 'emptyInscripciones', ins.length > 0);
+        </tr>`, EMPTY_HIST.inscripciones);
 
-  /* Resultados */
-  document.getElementById('countResultados').textContent = `${res.length} registro${res.length !== 1 ? 's' : ''}`;
-  if (res.length) {
-    document.getElementById('bodyResultados').innerHTML = res.map(r => `
+  fillPanel('panelResultados', 'tablaResultados', 'bodyResultados', res, r => `
         <tr>
           <td data-label="Evento"><strong style="font-size:13px">${r.evento}</strong></td>
           <td data-label="Deporte / Prueba">${r.deporte} · <span style="color:var(--text-secondary)">${r.prueba}</span></td>
           <td data-label="Ranking"><span class="rank-val">#${r.ranking}</span></td>
           <td data-label="Fecha" style="color:var(--text-muted);font-size:12px">${fmtFecha(r.fecha)}</td>
-        </tr>`).join('');
-  }
-  showTableOrEmpty('secResultados', 'tablaResultados', 'emptyResultados', res.length > 0);
+        </tr>`, EMPTY_HIST.resultados);
 
-  /* Medallería */
-  document.getElementById('countMedalleria').textContent = `${med.length} medalla${med.length !== 1 ? 's' : ''}`;
-  if (med.length) {
-    document.getElementById('bodyMedalleria').innerHTML = med.map(r => `
+  fillPanel('panelMedalleria', 'tablaMedalleria', 'bodyMedalleria', med, r => `
         <tr>
           <td data-label="Evento"><strong style="font-size:13px">${r.evento}</strong></td>
           <td data-label="Deporte / Prueba">${r.deporte} · <span style="color:var(--text-secondary)">${r.prueba}</span></td>
           <td data-label="Medalla"><span class="medal-ico">${medalIco(r.medalla)}</span> <span style="font-weight:700;font-size:13px">${r.medalla}</span></td>
           <td data-label="Fecha" style="color:var(--text-muted);font-size:12px">${fmtFecha(r.fecha)}</td>
-        </tr>`).join('');
-  }
-  showTableOrEmpty('secMedalleria', 'tablaMedalleria', 'emptyMedalleria', med.length > 0);
+        </tr>`, EMPTY_HIST.medalleria);
+
+  /* Mantiene visible el tab activo */
+  setHistTab(histActiveTab);
 }
+
+/* ─── Tabs del historial (Inscripciones / Resultados / Medallería) ─── */
+let histActiveTab = 'inscripciones';
+const HIST_PANELS = { inscripciones: 'panelInscripciones', resultados: 'panelResultados', medalleria: 'panelMedalleria' };
+const EMPTY_HIST = {
+  inscripciones: `<div class="tc-empty-state"><div class="empty-state__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 0 0 4v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4a2 2 0 0 0 0-4z"/><line x1="12" y1="3" x2="12" y2="21" stroke-dasharray="2 2"/></svg></div><p class="empty-state__title">Sin inscripciones registradas</p><p class="empty-state__desc">No hay inscripciones que coincidan con los filtros seleccionados.</p></div>`,
+  resultados: `<div class="tc-empty-state"><div class="empty-state__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="4" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="20" y1="20" x2="20" y2="14"/></svg></div><p class="empty-state__title">Sin resultados registrados</p><p class="empty-state__desc">No hay resultados que coincidan con los filtros seleccionados.</p></div>`,
+  medalleria: `<div class="tc-empty-state"><div class="empty-state__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="15" r="6"/><path d="M12 12v3l2 1"/><path d="M8.5 9.5L6 3M15.5 9.5L18 3"/></svg></div><p class="empty-state__title">Sin medallas registradas</p><p class="empty-state__desc">No hay medallas que coincidan con los filtros seleccionados.</p></div>`,
+};
+
+function fillPanel(panelId, tableId, bodyId, rows, rowHTML, emptyHTML) {
+  const panel = document.getElementById(panelId);
+  const body = document.getElementById(bodyId);
+  const wrap = document.getElementById(tableId).closest('.naowee-table-card__table-wrap');
+  const existingEmpty = panel.querySelector('.tc-empty-state');
+  if (rows.length) {
+    body.innerHTML = rows.map(rowHTML).join('');
+    if (wrap) wrap.style.display = '';
+    if (existingEmpty) existingEmpty.remove();
+  } else {
+    body.innerHTML = '';
+    if (wrap) wrap.style.display = 'none';
+    if (!existingEmpty) panel.insertAdjacentHTML('beforeend', emptyHTML);
+  }
+}
+
+function setHistTab(name) {
+  histActiveTab = name;
+  document.querySelectorAll('#histTabs .naowee-tab').forEach((tab) => {
+    const on = tab.dataset.tab === name;
+    tab.classList.toggle('naowee-tab--selected', on);
+    tab.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  Object.entries(HIST_PANELS).forEach(([key, panelId]) => {
+    const panel = document.getElementById(panelId);
+    if (panel) panel.hidden = (key !== name);
+  });
+}
+
+document.querySelectorAll('#histTabs .naowee-tab').forEach((tab) => {
+  tab.addEventListener('click', () => setHistTab(tab.dataset.tab));
+});
 
 function fmtFecha(iso) {
   const [y, m, d] = iso.split('-');
