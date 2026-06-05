@@ -126,16 +126,22 @@
   #perfilContent .naowee-table-card:last-child { margin-bottom: 0; }
   /* Avatar redondo grande con glow naranja — replicado de incentivos */
   .perfil-avatar {
+    --ava-glow: 215,64,9;
     width: 84px; height: 84px; border-radius: 50%;
     background: linear-gradient(135deg, #FF7500, #d74009);
     display: flex; align-items: center; justify-content: center;
     color: #fff; font-size: 28px; font-weight: 800; flex-shrink: 0;
-    border: 3px solid #fff;
+    border: 3px solid #fff; text-shadow: 0 1px 2px rgba(0,0,0,.20);
     box-shadow:
       0 0 0 1px var(--border, #e7e9f3),
-      0 10px 28px rgba(215,64,9,.30),
-      0 2px 6px rgba(215,64,9,.18);
+      0 10px 28px rgba(var(--ava-glow), .30),
+      0 2px 6px rgba(var(--ava-glow), .18);
   }
+  /* Color del avatar según nivel deportivo (contrasta con su badge de nivel) */
+  .perfil-avatar--olimpico    { background: linear-gradient(135deg,#f59e0b,#d97706); --ava-glow: 217,119,6; }
+  .perfil-avatar--profesional { background: linear-gradient(135deg,#3b82f6,#1d4ed8); --ava-glow: 29,78,216; }
+  .perfil-avatar--juvenil     { background: linear-gradient(135deg,#a855f7,#7c3aed); --ava-glow: 124,58,237; }
+  .perfil-avatar--amateur     { background: linear-gradient(135deg,#94a3b8,#64748b); --ava-glow: 100,116,139; }
   /* Badge de categoría superpuesto en la base del thumbnail (estilo ribbon) */
   .perfil-avatar-wrap { position: relative; flex-shrink: 0; padding-bottom: 11px; }
   .perfil-avatar__tier {
@@ -371,19 +377,15 @@
   .dir-ava {
     width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
     display: inline-flex; align-items: center; justify-content: center;
-    font-size: 14px; line-height: 1;
+    font-size: 13px; font-weight: 700; line-height: 1;
     background: color-mix(in srgb, var(--accent) 14%, #fff);
     color: var(--accent);
   }
-  /* Paleta variada por deportista (mismo set que usuarios) */
-  .dir-ava--p1 { background:#ffe8e0; color:#c0392b; }
-  .dir-ava--p2 { background:#fff3e6; color:#d97706; }
-  .dir-ava--p3 { background:#fef9c3; color:#a16207; }
-  .dir-ava--p4 { background:#e8f5e9; color:#1f8923; }
-  .dir-ava--p5 { background:#e0f2fe; color:#0369a1; }
-  .dir-ava--p6 { background:#f0fdfa; color:#0d9488; }
-  .dir-ava--p7 { background:#e0f4ff; color:#0284c7; }
-  .dir-ava--p8 { background:#f3eeff; color:#7c3aed; }
+  /* Color por nivel deportivo — mismo hue que el badge de nivel y el avatar del perfil */
+  .dir-ava--olimpico    { background:#fef3c7; color:#b45309; }
+  .dir-ava--profesional { background:#dbeafe; color:#1d4ed8; }
+  .dir-ava--juvenil     { background:#f3e8ff; color:#7c3aed; }
+  .dir-ava--amateur     { background:#eef1f6; color:#475569; }
   .dir-cell-deportista {
     display: flex; align-items: center; gap: 10px;
   }
@@ -911,11 +913,10 @@ function renderDirectory() {
         ? `<span class="profile-tag ${tier.cls}">${TIER_LABELS[d.tier] || d.tier}</span>`
         : '—';
       const sexoLabel = d.sexo === 'F' ? 'Femenino' : d.sexo === 'M' ? 'Masculino' : d.sexo;
-      const avaColor = (DEPORTISTAS.findIndex(x => x.id === d.id) % 8) + 1;
       return `<tr>
         <td data-label="Deportista">
           <div class="dir-cell-deportista">
-            <span class="dir-ava dir-ava--p${avaColor}">${d.avatar}</span>
+            <span class="dir-ava dir-ava--${d.tier || 'olimpico'}">${d.avatar}</span>
             <div class="dir-cell-deportista__text">
               <span class="dir-cell-deportista__nombre">${d.nombre}</span>
             </div>
@@ -1175,7 +1176,7 @@ function renderPerfil(d) {
     : '';
   document.getElementById('perfilHeaderCard').innerHTML = `
     <div class="perfil-avatar-wrap">
-      <div class="perfil-avatar">${d.avatar}</div>
+      <div class="perfil-avatar perfil-avatar--${d.tier || 'olimpico'}">${d.avatar}</div>
       ${tierBadge}
     </div>
     <div class="perfil-header__info">
