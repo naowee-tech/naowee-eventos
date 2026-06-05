@@ -66,6 +66,20 @@
   .cal-today:hover { background: var(--bg-soft); border-color: var(--accent); }
   .cal-title { font-size: 18px; font-weight: 700; color: var(--text-primary); text-transform: capitalize; }
 
+  /* Hint cuando el mes visible no tiene eventos del filtro/scope */
+  .cal-hint {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 10px 14px; margin-bottom: 12px;
+    background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius-md);
+  }
+  .cal-hint__txt { font-size: 13px; color: var(--text-secondary); }
+  .cal-hint__jump {
+    font-family: inherit; font-size: 13px; font-weight: 600; color: var(--accent);
+    background: transparent; border: none; cursor: pointer; padding: 2px 4px; border-radius: 5px;
+  }
+  .cal-hint__jump:hover { text-decoration: underline; }
+  .cal-hint__jump:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215,64,9,.30); }
+
   .cal-grid { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
   .cal-dow { display: grid; grid-template-columns: repeat(7, 1fr); background: var(--bg-soft); border-bottom: 1px solid var(--border); }
   .cal-dow span { padding: 9px 10px; font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--text-secondary); }
@@ -398,6 +412,27 @@
       weeks.push(days);
     }
 
+    /* Contexto cuando el mes visible no tiene eventos del filtro/scope:
+       si hay coincidencias en otros meses → botón para saltar al más cercano;
+       si no hay ninguna en el scope → mensaje claro (p.ej. el gestor sin finalizados). */
+    const inView = evs.filter((o) => o.s <= gridEnd && o.e >= gridStart);
+    const FILTER_LBL = { todos: '', activo: 'activos', borrador: 'en preparación', finalizado: 'finalizados' };
+    const flbl = FILTER_LBL[activeFilter] || '';
+    let hintHTML = '';
+    if (inView.length === 0) {
+      if (evs.length === 0) {
+        const scopeSfx = (isGestor && gestorScope === 'mine') ? ' entre tus eventos asignados' : '';
+        hintHTML = `<div class="cal-hint"><span class="cal-hint__txt">No hay eventos${flbl ? ' ' + flbl : ''}${scopeSfx}.</span></div>`;
+      } else {
+        const nearest = evs.reduce((a, b) => Math.abs(b.s - calCursor) < Math.abs(a.s - calCursor) ? b : a);
+        const ny = nearest.s.getFullYear(), nmo = nearest.s.getMonth();
+        hintHTML = `<div class="cal-hint">
+          <span class="cal-hint__txt">No hay eventos${flbl ? ' ' + flbl : ''} en ${MESES_FULL[m]} ${y}.</span>
+          <button class="cal-hint__jump" type="button" data-jump-y="${ny}" data-jump-m="${nmo}">Ir a ${MESES_FULL[nmo]} ${ny} →</button>
+        </div>`;
+      }
+    }
+
     let html = `
       <div class="cal-bar">
         <div class="cal-nav">
@@ -407,6 +442,7 @@
         </div>
         <div class="cal-title">${MESES_FULL[m]} ${y}</div>
       </div>
+      ${hintHTML}
       <div class="cal-grid">
         <div class="cal-dow">${DOW.map((d) => `<span>${d}</span>`).join('')}</div>`;
 
@@ -495,6 +531,14 @@
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         openDayPopover(new Date(parseInt(btn.dataset.day, 10)), btn);
+      });
+    });
+
+    /* "Ir a [mes]" del hint → salta al mes más cercano con eventos del filtro */
+    slot.querySelectorAll('[data-jump-y]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        calCursor = new Date(parseInt(btn.dataset.jumpY, 10), parseInt(btn.dataset.jumpM, 10), 1);
+        renderList();
       });
     });
   }
