@@ -9,12 +9,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="shared/tokens.css?v=0.3.0">
-<link rel="stylesheet" href="shared/shell.css?v=0.3.0">
-<link rel="stylesheet" href="shared/list-components.css?v=0.3.0">
-<link rel="stylesheet" href="shared/forms.css?v=0.3.0">
-<link rel="stylesheet" href="shared/naowee-footer.css?v=0.3.0">
-<script src="shared/naowee-footer.js?v=0.3.0" defer></script>
+<link rel="stylesheet" href="shared/tokens.css?v=0.4.0">
+<link rel="stylesheet" href="shared/shell.css?v=0.4.0">
+<link rel="stylesheet" href="shared/list-components.css?v=0.4.0">
+<link rel="stylesheet" href="shared/forms.css?v=0.4.0">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
+<script src="shared/naowee-footer.js?v=0.4.0" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -29,51 +29,19 @@
   .page-head__title p { font-size: 13px; color: var(--text-secondary); margin: 0; max-width: 600px; }
   .page-head__actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 
-  /* ── Nota informativa ── */
-  .info-banner {
-    display: flex; align-items: flex-start; gap: 10px;
-    background: var(--blue-bg); border: 1px solid color-mix(in srgb, var(--blue-info) 25%, transparent);
-    border-radius: var(--radius-lg); padding: 12px 16px; margin-bottom: 20px;
-    font-size: 13px; color: var(--blue-info); line-height: 1.5;
-  }
-  .info-banner svg { width: 17px; height: 17px; flex-shrink: 0; margin-top: 1px; }
-
-  /* ── Tabla de calendario ── */
-  .naowee-table-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-xl); padding: 20px;
-    display: flex; flex-direction: column; gap: 16px;
-    animation: fadeInUp .4s var(--easing-smoothout) both;
-  }
-  .tc-head { display: flex; flex-direction: column; gap: 3px; }
-  .tc-head__title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0; }
-  .tc-head__sub { font-size: 12.5px; color: var(--text-secondary); margin: 0; }
-  .tc-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-  .toolbar__count { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-left: auto; }
-
-  .cal-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .cal-table thead th {
-    text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .4px;
-    text-transform: uppercase; color: var(--text-muted);
-    padding: 10px 16px 8px; background: var(--bg-soft);
-    border-bottom: 1px solid var(--border);
-  }
-  .cal-table tbody td {
-    padding: 14px 16px; border-bottom: 1px solid var(--border);
-    vertical-align: middle;
-  }
-  .cal-table tbody tr:last-child td { border-bottom: none; }
-  .cal-table tbody tr:hover td { background: var(--bg-soft); }
-
-  .cal-title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
-  .cal-fecha { font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
-  .cal-link a {
+  /* ── Tabla de calendario: card-table CANÓNICA (.naowee-table-card +
+        .naowee-table--in-card) desde list-components.css. Aquí solo el contenido
+        de las celdas; el info/caution usan .naowee-message canónico. ── */
+  .cal-table-card__wrap { overflow-x: clip; overflow-y: visible; }
+  .cal-link-cell a {
     display: inline-flex; align-items: center; gap: 5px;
-    font-size: 12px; font-weight: 600; color: var(--accent);
-    max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: 12.5px; font-weight: 600; color: var(--accent);
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .cal-link a:hover { text-decoration: underline; }
-  .cal-link--none { font-size: 12px; color: var(--text-muted); font-style: italic; }
+  .cal-link-cell a:hover { text-decoration: underline; }
+  .cal-link--none { font-size: 12.5px; color: var(--text-muted); font-style: italic; }
+  .cal-fecha { color: var(--text-secondary); white-space: nowrap; }
+  .cal-title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
 
   .cal-empty {
     padding: 40px 16px; text-align: center;
@@ -97,8 +65,10 @@
   .cal-modal {
     background: var(--surface); border-radius: var(--radius-xl);
     width: 95vw; max-width: 580px; max-height: 90vh;
-    display: flex; flex-direction: column; overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0,0,0,.22);
+    /* overflow visible → los popovers (datepicker/dropdown) escapan el modal
+       sin recortarse; el form es corto y no requiere scroll interno. */
+    display: flex; flex-direction: column; overflow: visible;
+    box-shadow: var(--shadow-card, 0 20px 60px rgba(0,0,0,.22));
     transform: translateY(24px) scale(.97); opacity: 0;
     transition: transform .28s cubic-bezier(.4,0,.2,1), opacity .22s ease;
   }
@@ -127,8 +97,8 @@
   .cal-modal__dismiss:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215,64,9,.18); }
   .cal-modal__dismiss svg { width: 18px; height: 18px; }
 
-  /* Scrollable body */
-  .cal-modal__body { padding: 24px 28px; overflow-y: auto; flex: 1; }
+  /* Body — overflow visible para que el datepicker/dropdown no se recorten */
+  .cal-modal__body { padding: 24px 28px; overflow: visible; flex: 1; }
   .cal-modal__body .form-group { margin-bottom: 18px; }
   .cal-modal__body .form-group:last-child { margin-bottom: 0; }
 
@@ -142,14 +112,6 @@
   /* Row fecha + hora */
   .fecha-hora-row { display: grid; grid-template-columns: 1fr 160px; gap: 12px; }
 
-  /* Modal info note */
-  .modal-note {
-    background: var(--orange-bg); border: 1px solid var(--orange-border);
-    border-radius: var(--radius-md); padding: 10px 14px;
-    font-size: 12px; color: #92400e; line-height: 1.55;
-    display: flex; gap: 8px; align-items: flex-start;
-  }
-  .modal-note svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px; }
 
   /* Mobile bottom-sheet */
   @media (max-width: 640px) {
@@ -217,9 +179,11 @@
           </div>
         </div>
 
-        <div class="info-banner">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          Los eventos aquí publicados se reflejan en el <strong>&nbsp;calendario de la landing pública</strong>. El render en la landing es responsabilidad del equipo de desarrollo de la Landing (fuera del alcance de esta demo).
+        <div class="naowee-message naowee-message--informative" style="margin-bottom:20px">
+          <div class="naowee-message__header">
+            <span class="naowee-message__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="11" x2="12" y2="16"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+            <span class="naowee-message__body">Los eventos aquí publicados se reflejan en el <strong>calendario de la landing pública</strong>. El render en la landing es responsabilidad del equipo de desarrollo de la Landing (fuera del alcance de esta demo).</span>
+          </div>
         </div>
 
         <!-- Tabla de eventos del organismo -->
@@ -229,7 +193,7 @@
             <p class="tc-head__sub">Liga de Natación del Valle</p>
           </div>
           <div class="tc-toolbar">
-            <div class="naowee-searchbox naowee-searchbox--medium" id="calSearchbox" style="width:260px">
+            <div class="naowee-searchbox" id="calSearchbox" style="width:260px">
               <div class="naowee-searchbox__input-wrap">
                 <span class="naowee-searchbox__icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -242,16 +206,19 @@
             </div>
             <span class="toolbar__count" id="calCount">3 eventos</span>
           </div>
-          <table class="cal-table">
-            <thead>
-              <tr>
-                <th>Título del evento</th>
-                <th>Fecha y hora</th>
-                <th>Link</th>
-              </tr>
-            </thead>
-            <tbody id="calBody"></tbody>
-          </table>
+          <div class="naowee-table-card__table-wrap cal-table-card__wrap">
+            <table class="naowee-table--in-card">
+              <colgroup><col><col style="width:190px"><col style="width:240px"></colgroup>
+              <thead>
+                <tr>
+                  <th>Título del evento</th>
+                  <th>Fecha y hora</th>
+                  <th>Link</th>
+                </tr>
+              </thead>
+              <tbody id="calBody"></tbody>
+            </table>
+          </div>
         </div>
 
       </div>
@@ -336,16 +303,17 @@
           </div>
         </div>
 
-        <!-- Nota -->
-        <div class="modal-note">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <span>Este evento se reflejará en el calendario de la Landing pública. El render en la Landing <strong>no es parte de esta demo</strong> — lo asume el equipo de desarrollo de la Landing.</span>
+        <!-- Nota (caution canónico) -->
+        <div class="naowee-message naowee-message--caution">
+          <div class="naowee-message__header">
+            <span class="naowee-message__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+            <span class="naowee-message__body">Este evento se reflejará en el calendario de la Landing pública. El render en la Landing <strong>no es parte de esta demo</strong> — lo asume el equipo de desarrollo de la Landing.</span>
+          </div>
         </div>
 
       </form>
     </div>
     <div class="cal-modal__footer">
-      <button type="button" class="naowee-btn naowee-btn--link" id="calModalCancel">Cancelar</button>
       <button type="button" class="naowee-btn naowee-btn--loud" id="calModalSave">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
         Guardar evento
@@ -440,7 +408,7 @@ function renderTabla(lista) {
     <tr>
       <td class="cal-title">${ev.titulo}</td>
       <td class="cal-fecha">${fmtFecha(ev.fecha, ev.hora)}</td>
-      <td class="cal-link">${ev.link
+      <td class="cal-link-cell">${ev.link
         ? `<a href="${ev.link}" target="_blank" rel="noopener noreferrer">
              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
              ${ev.link.replace(/^https?:\/\//, '')}
@@ -762,7 +730,6 @@ function closeModal() {
 
 document.getElementById('btnCrearEvento').addEventListener('click', openModal);
 document.getElementById('calModalDismiss').addEventListener('click', closeModal);
-document.getElementById('calModalCancel').addEventListener('click', closeModal);
 
 /* Cerrar al clic en overlay (fuera del panel) — no interfiere con popovers */
 overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });

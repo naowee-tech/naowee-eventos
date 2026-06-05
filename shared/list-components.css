@@ -88,6 +88,8 @@
 .naowee-badge--negative.naowee-badge--quiet { background: var(--red-bg); color: #c4031d; }
 .naowee-badge--neutral { background: var(--text-secondary); color: #fff; }
 .naowee-badge--neutral.naowee-badge--quiet { background: var(--bg-soft); color: var(--text-secondary); }
+.naowee-badge--informative { background: var(--blue-info); color: #fff; }
+.naowee-badge--informative.naowee-badge--quiet { background: var(--blue-bg); color: #134a86; }
 .naowee-badge--brand { background: var(--accent); color: #fff; }
 
 /* ── Grid de eventos (cards) ── */

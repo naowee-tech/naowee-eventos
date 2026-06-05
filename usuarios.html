@@ -385,9 +385,9 @@
               </span>
             </button>
             <div class="naowee-dropdown__menu" id="ddInvRolMenu" role="listbox">
-              <div class="naowee-dropdown__option" role="option" data-val="ADMIN">Administrador de eventos</div>
-              <div class="naowee-dropdown__option" role="option" data-val="GESTOR">Gestor de eventos</div>
-              <div class="naowee-dropdown__option" role="option" data-val="USER">Usuario del módulo</div>
+              <div class="naowee-dropdown__opt" role="option" data-val="ADMIN">Administrador de eventos</div>
+              <div class="naowee-dropdown__opt" role="option" data-val="GESTOR">Gestor de eventos</div>
+              <div class="naowee-dropdown__opt" role="option" data-val="USER">Usuario del módulo</div>
             </div>
           </div>
         </div>
@@ -924,8 +924,8 @@
     var menu = document.getElementById('ddInvRolMenu');
     if (val)  val.textContent = 'Seleccionar rol…';
     if (menu) {
-      menu.querySelectorAll('.naowee-dropdown__option').forEach(function (o) {
-        o.classList.remove('naowee-dropdown__option--selected');
+      menu.querySelectorAll('.naowee-dropdown__opt').forEach(function (o) {
+        o.classList.remove('is-selected');
       });
     }
   }
@@ -933,8 +933,8 @@
   function setModalDropdownValue(val, label) {
     var valEl = document.getElementById('ddInvRolValue');
     if (valEl) valEl.textContent = label;
-    document.getElementById('ddInvRolMenu')?.querySelectorAll('.naowee-dropdown__option').forEach(function (o) {
-      o.classList.toggle('naowee-dropdown__option--selected', o.getAttribute('data-val') === val);
+    document.getElementById('ddInvRolMenu')?.querySelectorAll('.naowee-dropdown__opt').forEach(function (o) {
+      o.classList.toggle('is-selected', o.getAttribute('data-val') === val);
     });
   }
 
@@ -950,7 +950,7 @@
       dd.classList.toggle('naowee-dropdown--open');
     });
 
-    menu.querySelectorAll('.naowee-dropdown__option').forEach(function (opt) {
+    menu.querySelectorAll('.naowee-dropdown__opt').forEach(function (opt) {
       if (opt.__modalBound) return;
       opt.__modalBound = true;
       opt.addEventListener('click', function (e) {
@@ -996,7 +996,7 @@
     var trigger = document.getElementById('ddInvRolTrigger');
     var menu    = document.getElementById('ddInvRolMenu');
     if (trigger) trigger.__modalBound = false;
-    if (menu) menu.querySelectorAll('.naowee-dropdown__option').forEach(function (o) { o.__modalBound = false; });
+    if (menu) menu.querySelectorAll('.naowee-dropdown__opt').forEach(function (o) { o.__modalBound = false; });
   }
 
   /* ─── Modal: Toggle estado ─── */

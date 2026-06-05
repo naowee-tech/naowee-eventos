@@ -230,7 +230,7 @@
 <script type="module">
   import {
     mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher,
-    getRoleFromQuery, ROLES
+    getRoleFromQuery, ROLES, homeForRole
   } from './shared/sidebar.js';
   /* Módulo LIGHT: el alcance NO carga catálogo deportivo. El form de creación
      solo captura datos del evento + asignación de gestor (los deportes/pruebas
@@ -239,6 +239,11 @@
   import { addDraft } from './shared/events-data.js';
 
   const roleCode = getRoleFromQuery();
+  /* Guard de rol: SOLO el Administrador crea eventos (consistente con el resto
+     de pantallas). Otros roles se redirigen a su home. */
+  if (roleCode !== 'ADMIN') {
+    window.location.replace(`${homeForRole(roleCode)}?role=${roleCode}`);
+  }
   const role = ROLES[roleCode];
   const eventosHref = `eventos.html?role=${roleCode}`;
 
