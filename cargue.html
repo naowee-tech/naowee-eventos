@@ -539,7 +539,9 @@
   if (selectedEventId) {
     ev = allEvents().find((e) => e.id === selectedEventId) || null;
   }
-  const gateOpen = ev ? ev.status === 'activo' : false;
+  /* Cargue habilitado salvo en eventos finalizados: los gestores pueden adelantar
+     inscripciones · ranking · medallería incluso antes de que el evento se active. */
+  const gateOpen = ev ? ev.status !== 'finalizado' : false;
 
   /* ─── Gestor del evento (para el detalle) ─── */
   function gestorObj() {
@@ -730,15 +732,13 @@
     const panel = document.getElementById('tabPanel');
     if (!panel) return;
 
-    /* Gate por estado: borrador / finalizado → no se carga, pero se ve la data ya cargada. */
+    /* Único estado que cierra el cargue: finalizado → solo lectura de lo ya cargado.
+       (Borrador NO bloquea: el gestor puede adelantar la operación — feedback Danna.) */
     if (!gateOpen) {
-      const isBorr = ev.status === 'borrador';
       panel.innerHTML = `
-        <div class="carg-gate ${isBorr ? 'carg-gate--borrador' : 'carg-gate--final'}">
-          <span class="carg-gate__ico">${isBorr ? I.info : I.lock}</span>
-          <span>${isBorr
-            ? `El evento aún no está <strong>activo</strong>. Los cargues de <strong>${esc(cfg.label.toLowerCase())}</strong> se habilitan automáticamente cuando inicie (${esc(ev.start)}).`
-            : `Evento <strong>finalizado</strong> · los cargues están cerrados (solo lectura). Puedes consultar los archivos ya cargados.`}</span>
+        <div class="carg-gate carg-gate--final">
+          <span class="carg-gate__ico">${I.lock}</span>
+          <span>Evento <strong>finalizado</strong> · los cargues están cerrados (solo lectura). Puedes consultar los archivos ya cargados.</span>
         </div>
         ${filesHTML()}
       `;
@@ -746,7 +746,16 @@
       return;
     }
 
+    /* Aviso informativo (no bloquea): el evento aún está en borrador pero el gestor
+       puede adelantar los cargues; se activará en su fecha de inicio. */
+    const borradorNote = ev.status === 'borrador'
+      ? `<div class="carg-gate carg-gate--borrador">
+           <span class="carg-gate__ico">${I.info}</span>
+           <span>Evento en <strong>borrador</strong>. Puedes adelantar los cargues de <strong>${esc(cfg.label.toLowerCase())}</strong>; el evento se activará automáticamente el <strong>${esc(ev.start)}</strong>.</span>
+         </div>`
+      : '';
     panel.innerHTML = `
+      ${borradorNote}
       <div class="carg-mode-bar">
         <div class="naowee-segment" data-segmented id="modeSegment" role="tablist" aria-label="Modo de cargue">
           <span class="naowee-segment__pill" aria-hidden="true"></span>
