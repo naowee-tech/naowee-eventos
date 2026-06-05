@@ -333,6 +333,62 @@
   @media (prefers-reduced-motion: reduce) {
     .perfil-header, .naowee-table-card, .empty-state { animation: none !important; }
   }
+
+  /* ── Directorio de deportistas ── */
+  #directorio { animation: fadeInUp .35s var(--easing-smoothout) both; }
+  .dir-toolbar {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .dir-toolbar .naowee-dropdown { width: 160px; }
+  .toolbar__count {
+    margin-left: auto; font-size: 12.5px; font-weight: 600;
+    color: var(--text-muted); white-space: nowrap;
+  }
+
+  /* Celda deportista: avatar + texto */
+  .dir-ava {
+    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    background: color-mix(in srgb, var(--accent) 14%, #fff);
+    color: var(--accent);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+  }
+  .dir-cell-deportista {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .dir-cell-deportista__text { display: flex; flex-direction: column; gap: 1px; }
+  .dir-cell-deportista__nombre { font-size: 13.5px; font-weight: 700; color: var(--text-primary); }
+  .dir-cell-deportista__doc { font-size: 11.5px; color: var(--text-muted); }
+
+  /* Paginador */
+  .dir-pager {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 8px; margin-top: 16px; padding-top: 14px;
+    border-top: 1px solid var(--border); flex-wrap: wrap;
+  }
+  .dir-pager__info {
+    font-size: 12.5px; color: var(--text-secondary);
+  }
+  .dir-pager__btns { display: flex; gap: 4px; flex-wrap: wrap; }
+  .dir-pager__btn {
+    height: 34px; min-width: 34px; padding: 0 8px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-dark, #d0d4e6);
+    background: var(--surface); cursor: pointer;
+    font-size: 13px; font-weight: 600; color: var(--text-primary);
+    transition: border-color var(--duration-fast), background var(--duration-fast), color var(--duration-fast);
+  }
+  .dir-pager__btn:hover:not(.is-active):not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .dir-pager__btn.is-active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .dir-pager__btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  /* Botón volver */
+  #volverDir { margin-bottom: 16px; }
+
+  @media (max-width: 600px) {
+    .dir-toolbar .naowee-dropdown { width: auto; flex: 1; min-width: 120px; }
+  }
 </style>
 </head>
 <body>
@@ -401,17 +457,60 @@
           </div>
         </div>
 
-        <!-- Estado vacío inicial -->
-        <div id="emptyState" class="empty-state">
-          <div class="empty-state__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg>
+        <!-- Directorio de deportistas (vista por defecto) -->
+        <div id="directorio">
+          <div class="naowee-table-card">
+            <div class="tc-head" style="padding:20px 24px 0">
+              <div class="dir-toolbar">
+                <div class="naowee-dropdown" data-dd="dirSexo" data-sheet-title="Sexo">
+                  <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-label="Filtrar por sexo">
+                    <span class="naowee-dropdown__value is-placeholder" data-dd-val>Sexo</span>
+                    <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+                  </button>
+                  <div class="naowee-dropdown__menu" role="listbox"></div>
+                </div>
+                <div class="naowee-dropdown" data-dd="dirDeporte" data-sheet-title="Deporte">
+                  <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-label="Filtrar por deporte">
+                    <span class="naowee-dropdown__value is-placeholder" data-dd-val>Deporte</span>
+                    <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+                  </button>
+                  <div class="naowee-dropdown__menu" role="listbox"></div>
+                </div>
+                <span class="toolbar__count" id="dirCount"></span>
+              </div>
+            </div>
+            <div class="naowee-table-card__table-wrap">
+              <table class="naowee-table--in-card">
+                <colgroup>
+                  <col style="width:22%"><col style="width:13%"><col style="width:8%"><col style="width:16%"><col style="width:12%"><col style="width:8%"><col style="width:8%"><col style="width:13%">
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Deportista</th>
+                    <th>Documento</th>
+                    <th>Sexo</th>
+                    <th>Deporte</th>
+                    <th>Categoría</th>
+                    <th>Inscr.</th>
+                    <th>Medallas</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="dirBody"></tbody>
+              </table>
+            </div>
+            <div class="dir-pager" id="dirPager"></div>
           </div>
-          <p class="empty-state__title">Ningún deportista seleccionado</p>
-          <p class="empty-state__desc">Escribe el nombre o documento en el buscador para ver el historial del deportista.</p>
         </div>
 
         <!-- Contenido del perfil (se muestra al seleccionar) -->
         <div id="perfilContent" style="display:none">
+
+          <!-- Volver al directorio -->
+          <button class="naowee-btn naowee-btn--link naowee-btn--sm" id="volverDir" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;margin-right:4px"><polyline points="15 18 9 12 15 6"/></svg>
+            Volver al directorio
+          </button>
 
           <!-- Header del deportista -->
           <div class="perfil-header" id="perfilHeaderCard"></div>
@@ -529,7 +628,7 @@ const TIERS = {
 
 const DEPORTISTAS = [
   {
-    id: 'd1', nombre: 'Valentina Ríos', doc: 'CC 1.032.987.456',
+    id: 'd1', nombre: 'Valentina Ríos', doc: 'CC 1.032.987.456', sexo: 'F',
     avatar: 'VR', deporte: '🏊 Natación', tier: 'olimpico',
     club: 'Club Aqua Valle', liga: 'Liga de Natación del Valle', federacion: 'Fedecua',
     inscripciones: [
@@ -547,7 +646,7 @@ const DEPORTISTAS = [
     ]
   },
   {
-    id: 'd2', nombre: 'Andrés Mora', doc: 'CC 79.654.231',
+    id: 'd2', nombre: 'Andrés Mora', doc: 'CC 79.654.231', sexo: 'M',
     avatar: 'AM', deporte: '⚽ Fútbol', tier: 'profesional',
     club: 'Deportivo Cali Amateur', liga: 'Liga de Fútbol del Valle', federacion: 'Difútbol',
     inscripciones: [
@@ -562,7 +661,7 @@ const DEPORTISTAS = [
     ]
   },
   {
-    id: 'd3', nombre: 'Sofía Castro', doc: 'CC 1.040.112.882',
+    id: 'd3', nombre: 'Sofía Castro', doc: 'CC 1.040.112.882', sexo: 'F',
     avatar: 'SC', deporte: '🤸 Atletismo', tier: 'olimpico',
     club: 'Club Atletismo Valle', liga: 'Liga Atletismo Antioquia', federacion: 'Fedeatletas',
     inscripciones: [
@@ -578,7 +677,7 @@ const DEPORTISTAS = [
     ]
   },
   {
-    id: 'd4', nombre: 'Carlos Jiménez', doc: 'CC 94.221.003',
+    id: 'd4', nombre: 'Carlos Jiménez', doc: 'CC 94.221.003', sexo: 'M',
     avatar: 'CJ', deporte: '🏀 Baloncesto', tier: 'juvenil',
     club: 'Club Baloncesto Bogotá', liga: 'Liga de Baloncesto de Cundinamarca', federacion: 'Fecoba',
     inscripciones: [
@@ -589,7 +688,7 @@ const DEPORTISTAS = [
     medalleria: []
   },
   {
-    id: 'd5', nombre: 'María Gómez', doc: 'CC 52.112.776',
+    id: 'd5', nombre: 'María Gómez', doc: 'CC 52.112.776', sexo: 'F',
     avatar: 'MG', deporte: '🥋 Judo', tier: 'profesional',
     club: 'Dojo Pacífico', liga: 'Liga Colombiana de Judo', federacion: 'Fedjudo',
     inscripciones: [
@@ -603,7 +702,7 @@ const DEPORTISTAS = [
     ]
   },
   {
-    id: 'd6', nombre: 'Pedro Suárez', doc: 'CC 79.003.445',
+    id: 'd6', nombre: 'Pedro Suárez', doc: 'CC 79.003.445', sexo: 'M',
     avatar: 'PS', deporte: '🏊 Natación', tier: 'amateur',
     club: 'Club Aqua Valle', liga: 'Liga de Natación del Valle', federacion: 'Fedecua',
     inscripciones: [
@@ -612,6 +711,111 @@ const DEPORTISTAS = [
     ],
     resultados: [
       { evento: 'Copa Nacional de Natación 2025', deporte: 'Natación', prueba: '50m Libre', ranking: 5, fecha: '2025-03-14' }
+    ],
+    medalleria: []
+  },
+  {
+    id: 'd7', nombre: 'Laura Martínez', doc: 'CC 1.053.778.112', sexo: 'F',
+    avatar: 'LM', deporte: '🏐 Voleibol', tier: 'profesional',
+    club: 'Club Volcanes Medellín', liga: 'Liga de Voleibol de Antioquia', federacion: 'Fedevol',
+    inscripciones: [
+      { evento: 'Campeonato Nacional de Voleibol 2025', deporte: 'Voleibol', prueba: 'Voleibol Femenino', fecha: '2025-06-12', estado: 'finalizado' },
+      { evento: 'Copa Interclubes 2026', deporte: 'Voleibol', prueba: 'Voleibol Femenino', fecha: '2026-03-18', estado: 'activo' }
+    ],
+    resultados: [
+      { evento: 'Campeonato Nacional de Voleibol 2025', deporte: 'Voleibol', prueba: 'Voleibol Femenino', ranking: 2, fecha: '2025-06-12' }
+    ],
+    medalleria: [
+      { evento: 'Campeonato Nacional de Voleibol 2025', deporte: 'Voleibol', prueba: 'Voleibol Femenino', medalla: 'Plata', fecha: '2025-06-12' }
+    ]
+  },
+  {
+    id: 'd8', nombre: 'Juan Pablo Torres', doc: 'CC 1.018.455.302', sexo: 'M',
+    avatar: 'JT', deporte: '🚴 Ciclismo', tier: 'olimpico',
+    club: 'Team Ciclismo Cundinamarca', liga: 'Liga Ciclismo Cundinamarca', federacion: 'Fedeciclismo',
+    inscripciones: [
+      { evento: 'Vuelta a Colombia Sub-23 2025', deporte: 'Ciclismo', prueba: 'Ruta Individual', fecha: '2025-05-20', estado: 'finalizado' }
+    ],
+    resultados: [
+      { evento: 'Vuelta a Colombia Sub-23 2025', deporte: 'Ciclismo', prueba: 'Ruta Individual', ranking: 1, fecha: '2025-05-20' }
+    ],
+    medalleria: [
+      { evento: 'Vuelta a Colombia Sub-23 2025', deporte: 'Ciclismo', prueba: 'Ruta Individual', medalla: 'Oro', fecha: '2025-05-20' }
+    ]
+  },
+  {
+    id: 'd9', nombre: 'Camila Herrera', doc: 'CC 1.061.890.445', sexo: 'F',
+    avatar: 'CH', deporte: '🏋️ Levantamiento de Pesas', tier: 'juvenil',
+    club: 'Club Halterofilia Cali', liga: 'Liga Halterofilia del Valle', federacion: 'Fedehalterofilia',
+    inscripciones: [
+      { evento: 'Campeonato Juvenil de Halterofilia 2025', deporte: 'Levantamiento de Pesas', prueba: '59kg (F)', fecha: '2025-09-15', estado: 'finalizado' },
+      { evento: 'Juegos Nacionales Juveniles 2026', deporte: 'Levantamiento de Pesas', prueba: '59kg (F)', fecha: '2026-04-10', estado: 'activo' }
+    ],
+    resultados: [
+      { evento: 'Campeonato Juvenil de Halterofilia 2025', deporte: 'Levantamiento de Pesas', prueba: '59kg (F)', ranking: 3, fecha: '2025-09-15' }
+    ],
+    medalleria: [
+      { evento: 'Campeonato Juvenil de Halterofilia 2025', deporte: 'Levantamiento de Pesas', prueba: '59kg (F)', medalla: 'Bronce', fecha: '2025-09-15' }
+    ]
+  },
+  {
+    id: 'd10', nombre: 'Sebastián Vargas', doc: 'CC 1.007.221.834', sexo: 'M',
+    avatar: 'SV', deporte: '🥋 Taekwondo', tier: 'profesional',
+    club: 'Dojang Bogotá', liga: 'Liga Taekwondo Bogotá', federacion: 'Fedataekwondo',
+    inscripciones: [
+      { evento: 'Open Nacional de Taekwondo 2025', deporte: 'Taekwondo', prueba: '80kg (M)', fecha: '2025-10-04', estado: 'finalizado' }
+    ],
+    resultados: [
+      { evento: 'Open Nacional de Taekwondo 2025', deporte: 'Taekwondo', prueba: '80kg (M)', ranking: 1, fecha: '2025-10-04' }
+    ],
+    medalleria: [
+      { evento: 'Open Nacional de Taekwondo 2025', deporte: 'Taekwondo', prueba: '80kg (M)', medalla: 'Oro', fecha: '2025-10-04' }
+    ]
+  },
+  {
+    id: 'd11', nombre: 'Daniela Ospina', doc: 'CC 1.036.654.991', sexo: 'F',
+    avatar: 'DO', deporte: '🤸 Atletismo', tier: 'amateur',
+    club: 'Club Atletismo Medellín', liga: 'Liga Atletismo Antioquia', federacion: 'Fedeatletas',
+    inscripciones: [
+      { evento: 'Copa Departamental Antioquia 2026', deporte: 'Atletismo', prueba: '400m planos', fecha: '2026-01-25', estado: 'activo' }
+    ],
+    resultados: [],
+    medalleria: []
+  },
+  {
+    id: 'd12', nombre: 'Miguel Ángel Reyes', doc: 'CC 80.445.123', sexo: 'M',
+    avatar: 'MR', deporte: '⚽ Fútbol', tier: 'amateur',
+    club: 'Club Unión Barranquilla', liga: 'Liga de Fútbol del Atlántico', federacion: 'Difútbol',
+    inscripciones: [
+      { evento: 'Festival Deportivo SUID 2026', deporte: 'Fútbol', prueba: 'Fútbol 11', fecha: '2026-05-15', estado: 'activo' }
+    ],
+    resultados: [],
+    medalleria: []
+  },
+  {
+    id: 'd13', nombre: 'Natalia Cárdenas', doc: 'CC 1.022.381.567', sexo: 'F',
+    avatar: 'NC', deporte: '🏀 Baloncesto', tier: 'juvenil',
+    club: 'Club Baloncesto Pereira', liga: 'Liga Baloncesto Risaralda', federacion: 'Fecoba',
+    inscripciones: [
+      { evento: 'Campeonato Juvenil Baloncesto 2025', deporte: 'Baloncesto', prueba: 'Baloncesto 5×5 (F)', fecha: '2025-11-08', estado: 'finalizado' },
+      { evento: 'Festival Deportivo SUID 2026', deporte: 'Baloncesto', prueba: 'Baloncesto 5×5 (F)', fecha: '2026-05-15', estado: 'activo' }
+    ],
+    resultados: [
+      { evento: 'Campeonato Juvenil Baloncesto 2025', deporte: 'Baloncesto', prueba: 'Baloncesto 5×5 (F)', ranking: 2, fecha: '2025-11-08' }
+    ],
+    medalleria: [
+      { evento: 'Campeonato Juvenil Baloncesto 2025', deporte: 'Baloncesto', prueba: 'Baloncesto 5×5 (F)', medalla: 'Plata', fecha: '2025-11-08' }
+    ]
+  },
+  {
+    id: 'd14', nombre: 'Cristian Rojas', doc: 'CC 1.045.992.037', sexo: 'M',
+    avatar: 'CR', deporte: '🚴 Ciclismo', tier: 'juvenil',
+    club: 'Team Ciclismo Boyacá', liga: 'Liga Ciclismo Boyacá', federacion: 'Fedeciclismo',
+    inscripciones: [
+      { evento: 'Clásico de Boyacá Sub-23 2025', deporte: 'Ciclismo', prueba: 'Contrarreloj Individual', fecha: '2025-08-30', estado: 'finalizado' }
+    ],
+    resultados: [
+      { evento: 'Clásico de Boyacá Sub-23 2025', deporte: 'Ciclismo', prueba: 'Contrarreloj Individual', ranking: 4, fecha: '2025-08-30' }
     ],
     medalleria: []
   }
@@ -708,10 +912,103 @@ function setupDropdown(name, opts, onSelect, getSelected) {
   };
 }
 
-/* ─── Estado de filtros ─── */
+/* ─── Estado de filtros (historial) ─── */
 let deportistaActual = null;
 const filtros = { ano: '', deporte: '', evento: '' };
 let ddAno = null, ddDeporte = null, ddEvento = null;
+
+/* ─── Estado del directorio ─── */
+const DIR_PAGE_SIZE = 8;
+const dirState = { q: '', sexo: '', deporte: '', page: 1 };
+let ddDirSexo = null, ddDirDeporte = null;
+
+function dirFiltered() {
+  const norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const q = norm(dirState.q);
+  return DEPORTISTAS.filter(d => {
+    if (q && !norm(d.nombre).includes(q) && !norm(d.doc).includes(q)) return false;
+    if (dirState.sexo && d.sexo !== dirState.sexo) return false;
+    if (dirState.deporte) {
+      const depNombre = d.deporte.split(' ').slice(1).join(' ');
+      if (depNombre !== dirState.deporte) return false;
+    }
+    return true;
+  });
+}
+
+const TIER_LABELS = { olimpico: 'Olímpico', profesional: 'Profesional', juvenil: 'Juvenil', amateur: 'Amateur' };
+
+function renderDirectory() {
+  const filtered = dirFiltered();
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / DIR_PAGE_SIZE));
+  dirState.page = Math.max(1, Math.min(dirState.page, totalPages));
+  const start = (dirState.page - 1) * DIR_PAGE_SIZE;
+  const pageItems = filtered.slice(start, start + DIR_PAGE_SIZE);
+
+  const body = document.getElementById('dirBody');
+  if (!pageItems.length) {
+    body.innerHTML = `<tr><td colspan="8"><div class="tc-empty-state"><div class="empty-state__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg></div><p class="empty-state__title">Sin deportistas que coincidan</p><p class="empty-state__desc">Cambia los filtros o el texto de búsqueda.</p></div></td></tr>`;
+  } else {
+    body.innerHTML = pageItems.map(d => {
+      const tier = TIERS[d.tier];
+      const tierBadge = tier
+        ? `<span class="profile-tag ${tier.cls}">${TIER_LABELS[d.tier] || d.tier}</span>`
+        : '—';
+      const sexoLabel = d.sexo === 'F' ? 'Femenino' : d.sexo === 'M' ? 'Masculino' : d.sexo;
+      return `<tr>
+        <td data-label="Deportista">
+          <div class="dir-cell-deportista">
+            <span class="dir-ava">${d.avatar}</span>
+            <div class="dir-cell-deportista__text">
+              <span class="dir-cell-deportista__nombre">${d.nombre}</span>
+            </div>
+          </div>
+        </td>
+        <td data-label="Documento" style="font-size:12.5px;color:var(--text-secondary)">${d.doc}</td>
+        <td data-label="Sexo" style="font-size:12.5px">${sexoLabel}</td>
+        <td data-label="Deporte">${d.deporte}</td>
+        <td data-label="Categoría">${tierBadge}</td>
+        <td data-label="Inscr." style="font-weight:700;text-align:center">${d.inscripciones.length}</td>
+        <td data-label="Medallas" style="font-weight:700;text-align:center">${d.medalleria.length}</td>
+        <td data-label="" style="text-align:right">
+          <button class="naowee-btn naowee-btn--ghost naowee-btn--sm" data-perfil-id="${d.id}" type="button">Ver perfil →</button>
+        </td>
+      </tr>`;
+    }).join('');
+    body.querySelectorAll('[data-perfil-id]').forEach(btn => {
+      btn.addEventListener('click', () => seleccionarDeportista(btn.dataset.perfilId));
+    });
+  }
+
+  /* Count */
+  document.getElementById('dirCount').textContent = `${total} deportista${total !== 1 ? 's' : ''}`;
+
+  /* Pager */
+  const pager = document.getElementById('dirPager');
+  const prevDisabled = dirState.page <= 1 ? 'disabled' : '';
+  const nextDisabled = dirState.page >= totalPages ? 'disabled' : '';
+  let pagesBtns = '';
+  for (let p = 1; p <= totalPages; p++) {
+    pagesBtns += `<button class="dir-pager__btn${p === dirState.page ? ' is-active' : ''}" data-page="${p}" type="button">${p}</button>`;
+  }
+  pager.innerHTML = `
+    <span class="dir-pager__info">Página ${dirState.page} de ${totalPages} · ${total} deportista${total !== 1 ? 's' : ''}</span>
+    <div class="dir-pager__btns">
+      <button class="dir-pager__btn" data-page="prev" type="button" ${prevDisabled}>‹</button>
+      ${pagesBtns}
+      <button class="dir-pager__btn" data-page="next" type="button" ${nextDisabled}>›</button>
+    </div>`;
+  pager.querySelectorAll('[data-page]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const v = btn.dataset.page;
+      if (v === 'prev') dirState.page = Math.max(1, dirState.page - 1);
+      else if (v === 'next') dirState.page = Math.min(totalPages, dirState.page + 1);
+      else dirState.page = parseInt(v);
+      renderDirectory();
+    });
+  });
+}
 
 /* ─── Buscador ─── */
 const input = document.getElementById('deportistaInput');
@@ -723,28 +1020,12 @@ input.addEventListener('input', () => {
   const q = input.value.trim().toLowerCase();
   clearBtn.style.display = q ? 'flex' : 'none';
   searchbox.classList.toggle('naowee-searchbox--has-value', !!q);
-  if (!q) { resultsList.classList.remove('is-open'); return; }
-  const matches = DEPORTISTAS.filter(d =>
-    d.nombre.toLowerCase().includes(q) || d.doc.toLowerCase().includes(q)
-  );
-  if (!matches.length) {
-    resultsList.innerHTML = `<div style="padding:16px;text-align:center;font-size:13px;color:var(--text-muted)">Sin resultados para "${input.value}"</div>`;
-  } else {
-    resultsList.innerHTML = matches.map(d => `
-      <div class="search-result-item" data-id="${d.id}" role="option" tabindex="0">
-        <div class="search-result-item__avatar">${d.avatar}</div>
-        <div>
-          <div class="search-result-item__name">${d.nombre}</div>
-          <div class="search-result-item__meta">${d.doc}</div>
-        </div>
-        <span class="search-result-item__sport">${d.deporte.split(' ').slice(1).join(' ')}</span>
-      </div>`).join('');
-    resultsList.querySelectorAll('.search-result-item').forEach(item => {
-      item.addEventListener('click', () => seleccionarDeportista(item.dataset.id));
-      item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') seleccionarDeportista(item.dataset.id); });
-    });
-  }
-  resultsList.classList.add('is-open');
+  /* Actualiza el directorio en lugar del dropdown flotante */
+  dirState.q = q;
+  dirState.page = 1;
+  renderDirectory();
+  /* Mantiene el dropdown flotante cerrado */
+  resultsList.classList.remove('is-open');
 });
 
 clearBtn.addEventListener('click', () => {
@@ -752,6 +1033,9 @@ clearBtn.addEventListener('click', () => {
   clearBtn.style.display = 'none';
   searchbox.classList.remove('naowee-searchbox--has-value');
   resultsList.classList.remove('is-open');
+  dirState.q = '';
+  dirState.page = 1;
+  renderDirectory();
   limpiarPerfil();
 });
 
@@ -767,8 +1051,13 @@ function limpiarPerfil() {
   deportistaActual = null;
   filtros.ano = ''; filtros.deporte = ''; filtros.evento = '';
   document.getElementById('filtrosBar').style.display = 'none';
-  document.getElementById('emptyState').style.display = '';
+  document.getElementById('directorio').style.display = '';
   document.getElementById('perfilContent').style.display = 'none';
+  dirState.q = '';
+  input.value = '';
+  clearBtn.style.display = 'none';
+  searchbox.classList.remove('naowee-searchbox--has-value');
+  renderDirectory();
 }
 
 function seleccionarDeportista(id) {
@@ -782,8 +1071,40 @@ function seleccionarDeportista(id) {
   filtros.ano = ''; filtros.deporte = ''; filtros.evento = '';
   poblarFiltros(d);
   document.getElementById('filtrosBar').style.display = '';
+  document.getElementById('directorio').style.display = 'none';
+  document.getElementById('perfilContent').style.display = '';
   renderPerfil(d);
 }
+
+/* ─── Botón volver al directorio ─── */
+document.getElementById('volverDir').addEventListener('click', limpiarPerfil);
+
+/* ─── Dropdowns del directorio ─── */
+const deportesUnicos = [...new Set(DEPORTISTAS.map(d => d.deporte.split(' ').slice(1).join(' ')))].sort();
+const optsDirSexo = [
+  { value: '', label: 'Todos' },
+  { value: 'F', label: 'Femenino' },
+  { value: 'M', label: 'Masculino' }
+];
+const optsDirDeporte = [
+  { value: '', label: 'Todos los deportes' },
+  ...deportesUnicos.map(dep => ({ value: dep, label: dep }))
+];
+ddDirSexo = setupDropdown('dirSexo', optsDirSexo, (o) => {
+  dirState.sexo = o.value;
+  dirState.page = 1;
+  ddDirSexo.setLabel(o.value ? o.label : 'Sexo', !o.value);
+  renderDirectory();
+}, () => dirState.sexo);
+ddDirDeporte = setupDropdown('dirDeporte', optsDirDeporte, (o) => {
+  dirState.deporte = o.value;
+  dirState.page = 1;
+  ddDirDeporte.setLabel(o.value ? o.label : 'Deporte', !o.value);
+  renderDirectory();
+}, () => dirState.deporte);
+
+/* Renderiza el directorio por defecto */
+renderDirectory();
 
 /* ─── Filtros con dropdowns canónicos ─── */
 function poblarFiltros(d) {
@@ -880,7 +1201,7 @@ function renderMedalStrip(medalleriaArr) {
 
 /* ─── Render ─── */
 function renderPerfil(d) {
-  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('directorio').style.display = 'none';
   document.getElementById('perfilContent').style.display = '';
 
   const ins = d.inscripciones.filter(matchFiltro);
