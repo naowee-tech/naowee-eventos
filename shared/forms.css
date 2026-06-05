@@ -21,6 +21,10 @@
   --naowee-shadow-loud-md: 0 6px 16px rgba(215, 64, 9, .22);
   --naowee-shadow-loud-lg: 0 10px 28px rgba(215, 64, 9, .32);
   --naowee-shadow-loud-xl: 0 16px 40px rgba(215, 64, 9, .38);
+  /* Glow rojo para CTA destructivo (.naowee-btn--danger) — feedback negative */
+  --naowee-shadow-danger-xs: 0 2px 6px rgba(218, 22, 48, .14);
+  --naowee-shadow-danger-sm: 0 4px 12px rgba(218, 22, 48, .18);
+  --naowee-shadow-danger-lg: 0 10px 28px rgba(218, 22, 48, .32);
   /* Bordes canónicos de inputs (DS interactive-border): idle lavanda · hover gris · error negativo. */
   --field-border-idle: #8788ab;   /* --naowee-color-gray-600 / interactive-border-idle */
   --field-border-hover: #646587;  /* --naowee-color-gray-700 / interactive-border-hover */
@@ -53,6 +57,18 @@
 .naowee-btn--loud.naowee-btn--sm:hover,
 .naowee-btn--loud.naowee-btn--sm:focus-visible { box-shadow: var(--naowee-shadow-loud-sm); }
 .naowee-btn--loud:disabled, .naowee-btn--loud.naowee-btn--disabled {
+  background: var(--border-dark); color: var(--text-muted); cursor: not-allowed;
+  pointer-events: none; box-shadow: none;
+}
+
+/* ── Danger/Destructivo (rojo) — mismo patrón que --loud, tono negative del DS ── */
+.naowee-btn--danger { background: #da1630; color: #fff; box-shadow: var(--naowee-shadow-danger-sm); }
+.naowee-btn--danger:hover,
+.naowee-btn--danger:focus-visible {
+  background: #c4031d; box-shadow: var(--naowee-shadow-danger-lg); outline: none; transform: translateY(-1px);
+}
+.naowee-btn--danger:active { background: #c4031d; box-shadow: var(--naowee-shadow-danger-xs); }
+.naowee-btn--danger:disabled, .naowee-btn--danger.naowee-btn--disabled {
   background: var(--border-dark); color: var(--text-muted); cursor: not-allowed;
   pointer-events: none; box-shadow: none;
 }

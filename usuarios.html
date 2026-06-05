@@ -1022,7 +1022,11 @@
     document.getElementById('toggleStatusBody').textContent = activate
       ? 'El usuario ' + u.nombre + ' recuperará el acceso al módulo Eventos.'
       : 'El usuario ' + u.nombre + ' perderá el acceso al módulo Eventos. Podrás reactivarlo en cualquier momento.';
-    document.getElementById('toggleSubmit').textContent = action;
+    var submit = document.getElementById('toggleSubmit');
+    submit.textContent = action;
+    /* Desactivar = destructivo (rojo); Activar = loud (accent) */
+    submit.classList.toggle('naowee-btn--danger', !activate);
+    submit.classList.toggle('naowee-btn--loud', activate);
     document.getElementById('modalToggleStatus').classList.add('open');
   }
 
