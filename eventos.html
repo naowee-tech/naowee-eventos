@@ -32,6 +32,11 @@
     .page-head__actions { width: 100%; }
     .page-head__actions .naowee-btn { flex: 1; }
   }
+
+  /* Tabs de alcance (Mis eventos / Todos los eventos) DENTRO del card.
+     Bleed -20px (= padding del .naowee-table-card) → el divider va de borde a
+     borde del container. Fondo transparente para no tapar las esquinas redondeadas. */
+  .ev-scope-tabs { margin: -20px -20px 0; background: transparent; padding: 0 8px; }
 </style>
 </head>
 <body>
@@ -205,14 +210,14 @@
       : 'Consulta el estado y el detalle de cada evento.';
   }
 
-  /* Toggle GESTOR: "Mis eventos" | "Todos los eventos" (solo visible para GESTOR). */
-  function gestorToggleHTML() {
+  /* Tabs GESTOR: "Mis eventos" | "Todos los eventos" (solo GESTOR) — canónicos
+     (.naowee-tabs), van DENTRO del card con divider edge-to-edge. */
+  function gestorTabsHTML() {
     if (!isGestor) return '';
     return `
-      <div class="naowee-segment" role="tablist" aria-label="Alcance de eventos" id="gestorScopeSeg" style="margin-bottom:14px">
-        <span class="naowee-segment__pill naowee-segment__pill--no-anim" data-pill></span>
-        <button class="naowee-segment__item${gestorScope === 'mine' ? ' naowee-segment__item--active' : ''}" data-scope="mine" role="tab" aria-selected="${gestorScope === 'mine'}">Mis eventos</button>
-        <button class="naowee-segment__item${gestorScope === 'all' ? ' naowee-segment__item--active' : ''}" data-scope="all" role="tab" aria-selected="${gestorScope === 'all'}">Todos los eventos</button>
+      <div class="naowee-tabs ev-scope-tabs" id="gestorScopeTabs" role="tablist" aria-label="Alcance de eventos">
+        <button class="naowee-tab${gestorScope === 'mine' ? ' naowee-tab--selected' : ''}" data-scope="mine" type="button" role="tab" aria-selected="${gestorScope === 'mine'}">Mis eventos</button>
+        <button class="naowee-tab${gestorScope === 'all' ? ' naowee-tab--selected' : ''}" data-scope="all" type="button" role="tab" aria-selected="${gestorScope === 'all'}">Todos los eventos</button>
       </div>`;
   }
 
@@ -229,9 +234,8 @@
         </div>
       </div>
 
-      ${gestorToggleHTML()}
-
       <div class="naowee-table-card" id="evCard">
+        ${gestorTabsHTML()}
         <div class="tc-toolbar">
           <div class="naowee-searchbox" id="evSearchbox">
             <div class="naowee-searchbox__input-wrap">
@@ -326,19 +330,18 @@
     if (!animate) requestAnimationFrame(() => requestAnimationFrame(() => pill.classList.remove('naowee-segment__pill--no-anim')));
   }
 
-  /* Bind del toggle GESTOR (Mis eventos / Todos los eventos). */
+  /* Bind de las tabs GESTOR (Mis eventos / Todos los eventos) — underline ::after. */
   function bindGestorToggle() {
-    const seg = document.getElementById('gestorScopeSeg');
-    if (!seg) return;
-    positionSegmentPill(seg, false);
-    seg.querySelectorAll('.naowee-segment__item').forEach((btn) => {
+    const tabs = document.getElementById('gestorScopeTabs');
+    if (!tabs) return;
+    tabs.querySelectorAll('.naowee-tab').forEach((btn) => {
       btn.addEventListener('click', () => {
-        seg.querySelectorAll('.naowee-segment__item').forEach((b) => {
-          b.classList.remove('naowee-segment__item--active'); b.setAttribute('aria-selected', 'false');
+        if (btn.dataset.scope === gestorScope) return;
+        tabs.querySelectorAll('.naowee-tab').forEach((b) => {
+          const on = b === btn;
+          b.classList.toggle('naowee-tab--selected', on); b.setAttribute('aria-selected', String(on));
         });
-        btn.classList.add('naowee-segment__item--active'); btn.setAttribute('aria-selected', 'true');
         gestorScope = btn.dataset.scope;
-        positionSegmentPill(seg, true);
         /* Actualiza subtítulo */
         const sub = document.getElementById('evSubtitle');
         if (sub) sub.textContent = headSubtitle();
@@ -355,7 +358,6 @@
         renderList();
       });
     });
-    window.addEventListener('resize', () => positionSegmentPill(seg, false));
   }
 
   function bindToolbar() {
