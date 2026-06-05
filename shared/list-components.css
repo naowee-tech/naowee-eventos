@@ -32,6 +32,22 @@
 /* Tamaño medium (40px) — canónico DS */
 .naowee-searchbox--medium .naowee-searchbox__input-wrap { height: 40px; }
 
+/* ── Paginación canónica (DS .naowee-pagination) — port a tokens, tamaño medium ── */
+.naowee-pagination { display: flex; align-items: center; gap: 16px; font-family: inherit; font-feature-settings: 'case' 1; }
+.naowee-pagination__pages { display: flex; align-items: center; gap: 9px; }
+.naowee-pagination__label { font-size: 13.5px; font-weight: 400; color: var(--text-secondary); white-space: nowrap; }
+.naowee-pagination__total { display: flex; align-items: center; gap: 5px; font-size: 13.5px; color: var(--text-secondary); white-space: nowrap; }
+.naowee-pagination__total strong { font-weight: 600; color: var(--text-primary); }
+.naowee-pagination__input { width: 50px; height: 40px; border: 1px solid var(--field-border-idle); border-radius: var(--radius-md); background: var(--surface); font-family: inherit; font-size: 14px; color: var(--text-primary); text-align: center; padding: 0 6px; transition: border-color var(--duration-normal) var(--easing-smoothout); }
+.naowee-pagination__input:hover { border-color: var(--field-border-hover); }
+.naowee-pagination__input:focus { border-width: 2px; border-color: var(--accent); outline: none; }
+.naowee-pagination__controls { display: flex; align-items: center; gap: 8px; }
+.naowee-pagination__btn { width: 40px; height: 40px; border-radius: var(--radius-md); border: none; background: var(--accent-bg); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--accent); transition: background var(--duration-fast), color var(--duration-fast); flex-shrink: 0; }
+.naowee-pagination__btn:hover { background: var(--accent-bg-warm); }
+.naowee-pagination__btn:disabled { opacity: .45; cursor: not-allowed; background: var(--bg-soft); color: var(--text-muted); }
+.naowee-pagination__btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215, 64, 9, .18); }
+.naowee-pagination__btn svg { width: 18px; height: 18px; }
+
 /* ── Segmented control canónico ── */
 .naowee-segment { position: relative; display: inline-flex; background: var(--surface); border: 1px solid var(--border-dark); border-radius: var(--radius-lg); padding: 4px; gap: 0; height: 40px; overflow: clip; font-feature-settings: 'case' 1; }
 .naowee-segment__pill { box-sizing: border-box; position: absolute; top: 4px; bottom: 4px; left: 0; width: 0; background: var(--surface); border: 2px solid var(--accent); border-radius: var(--radius-md); box-shadow: 0 0 0 3px rgba(215, 64, 9, .08); pointer-events: none; z-index: 0; transform: translate3d(var(--seg-x, 0), 0, 0); transition: transform 380ms var(--easing-smoothout), width 380ms var(--easing-smoothout); will-change: transform, width; }

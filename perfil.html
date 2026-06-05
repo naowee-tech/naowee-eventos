@@ -9,11 +9,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="shared/tokens.css?v=0.3.0">
-<link rel="stylesheet" href="shared/shell.css?v=0.3.0">
-<link rel="stylesheet" href="shared/list-components.css?v=0.3.0">
-<link rel="stylesheet" href="shared/forms.css?v=0.3.0">
-<link rel="stylesheet" href="shared/naowee-footer.css?v=0.3.0">
+<link rel="stylesheet" href="shared/tokens.css?v=0.4.0">
+<link rel="stylesheet" href="shared/shell.css?v=0.4.0">
+<link rel="stylesheet" href="shared/list-components.css?v=0.4.0">
+<link rel="stylesheet" href="shared/forms.css?v=0.4.0">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
 <script src="shared/naowee-footer.js?v=0.3.0" defer></script>
 
 <style>
@@ -45,6 +45,13 @@
   }
   .perfil-toolbar__filters {
     display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  /* Filtros del historial reubicados dentro del perfil */
+  #filtrosBar { align-items: center; margin: 2px 0 6px; }
+  #filtrosBar .naowee-dropdown { width: 150px; flex-shrink: 0; }
+  .perfil-filtros__title {
+    font-size: 12.5px; font-weight: 600; color: var(--text-secondary);
+    margin-right: 4px; white-space: nowrap;
   }
   /* Dropdowns de filtro: ancho fijo compacto */
   .perfil-toolbar .naowee-dropdown { width: 148px; }
@@ -336,24 +343,39 @@
 
   /* ── Directorio de deportistas ── */
   #directorio { animation: fadeInUp .35s var(--easing-smoothout) both; }
+  /* Toolbar canónica: searchbox + filtros (izq) · contador + paginador (der) */
   .dir-toolbar {
-    display: flex; align-items: center; gap: 10px;
-    margin-bottom: 16px; flex-wrap: wrap;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
   }
-  .dir-toolbar .naowee-dropdown { width: 160px; }
+  .dir-toolbar__search { flex: 1 1 240px; max-width: 320px; min-width: 200px; }
+  .dir-toolbar .naowee-dropdown { width: 150px; flex-shrink: 0; }
+  .dir-toolbar__right {
+    display: flex; align-items: center; gap: 16px;
+    margin-left: auto; flex-wrap: wrap;
+  }
+  .dir-toolbar__right .toolbar__count { margin-left: 0; }
   .toolbar__count {
-    margin-left: auto; font-size: 12.5px; font-weight: 600;
+    font-size: 12.5px; font-weight: 600;
     color: var(--text-muted); white-space: nowrap;
   }
 
   /* Celda deportista: avatar + texto */
   .dir-ava {
     width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 14px; line-height: 1;
     background: color-mix(in srgb, var(--accent) 14%, #fff);
     color: var(--accent);
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 700;
   }
+  /* Paleta variada por deportista (mismo set que usuarios) */
+  .dir-ava--p1 { background:#ffe8e0; color:#c0392b; }
+  .dir-ava--p2 { background:#fff3e6; color:#d97706; }
+  .dir-ava--p3 { background:#fef9c3; color:#a16207; }
+  .dir-ava--p4 { background:#e8f5e9; color:#1f8923; }
+  .dir-ava--p5 { background:#e0f2fe; color:#0369a1; }
+  .dir-ava--p6 { background:#f0fdfa; color:#0d9488; }
+  .dir-ava--p7 { background:#e0f4ff; color:#0284c7; }
+  .dir-ava--p8 { background:#f3eeff; color:#7c3aed; }
   .dir-cell-deportista {
     display: flex; align-items: center; gap: 10px;
   }
@@ -361,33 +383,15 @@
   .dir-cell-deportista__nombre { font-size: 13.5px; font-weight: 700; color: var(--text-primary); }
   .dir-cell-deportista__doc { font-size: 11.5px; color: var(--text-muted); }
 
-  /* Paginador */
-  .dir-pager {
-    display: flex; justify-content: space-between; align-items: center;
-    gap: 8px; margin-top: 16px; padding-top: 14px;
-    border-top: 1px solid var(--border); flex-wrap: wrap;
-  }
-  .dir-pager__info {
-    font-size: 12.5px; color: var(--text-secondary);
-  }
-  .dir-pager__btns { display: flex; gap: 4px; flex-wrap: wrap; }
-  .dir-pager__btn {
-    height: 34px; min-width: 34px; padding: 0 8px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-dark, #d0d4e6);
-    background: var(--surface); cursor: pointer;
-    font-size: 13px; font-weight: 600; color: var(--text-primary);
-    transition: border-color var(--duration-fast), background var(--duration-fast), color var(--duration-fast);
-  }
-  .dir-pager__btn:hover:not(.is-active):not(:disabled) { border-color: var(--accent); color: var(--accent); }
-  .dir-pager__btn.is-active { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .dir-pager__btn:disabled { opacity: .45; cursor: not-allowed; }
-
   /* Botón volver */
   #volverDir { margin-bottom: 16px; }
 
+  @media (max-width: 720px) {
+    .dir-toolbar__search { max-width: none; flex-basis: 100%; }
+    .dir-toolbar__right { width: 100%; justify-content: space-between; margin-left: 0; }
+  }
   @media (max-width: 600px) {
-    .dir-toolbar .naowee-dropdown { width: auto; flex: 1; min-width: 120px; }
+    .dir-toolbar .naowee-dropdown { width: auto; flex: 1 1 120px; min-width: 120px; }
   }
 </style>
 </head>
@@ -408,81 +412,41 @@
         </div>
 
         <!-- Buscador + filtros en una sola toolbar -->
-        <div class="search-wrap">
-          <div class="perfil-toolbar">
-            <!-- Searchbox deportista -->
-            <div class="perfil-toolbar__search">
-              <div class="naowee-searchbox" id="deportistaSearchbox">
+        <!-- Directorio de deportistas (vista por defecto) -->
+        <div id="directorio">
+          <div class="naowee-table-card">
+            <!-- Toolbar única: searchbox + filtros + contador + paginador canónico -->
+            <div class="dir-toolbar">
+              <div class="naowee-searchbox naowee-searchbox--medium dir-toolbar__search" id="deportistaSearchbox">
                 <div class="naowee-searchbox__input-wrap">
-                  <span class="naowee-searchbox__icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                  </span>
-                  <input id="deportistaInput" type="text" class="naowee-searchbox__input"
-                    placeholder="Buscar deportista…"
-                    autocomplete="off" spellcheck="false">
-                  <button class="naowee-searchbox__clear" id="deportistaClear" type="button" aria-label="Limpiar búsqueda" style="display:none">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  </button>
+                  <span class="naowee-searchbox__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+                  <input id="deportistaInput" type="text" class="naowee-searchbox__input" placeholder="Buscar deportista…" autocomplete="off" spellcheck="false">
+                  <button class="naowee-searchbox__clear" id="deportistaClear" type="button" aria-label="Limpiar búsqueda" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                 </div>
               </div>
-              <div class="search-results" id="searchResults">
-                <div class="search-results__list" id="searchResultsList" role="listbox"></div>
-              </div>
-            </div>
-
-            <!-- Filtros canónicos: 3 naowee-dropdown -->
-            <div class="perfil-toolbar__filters" id="filtrosBar" style="display:none">
-              <div class="naowee-dropdown" data-dd="filtroAno" data-sheet-title="Año">
-                <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-label="Filtrar por año">
-                  <span class="naowee-dropdown__value is-placeholder" data-dd-val>Año</span>
+              <div class="naowee-dropdown naowee-dropdown--medium" data-dd="dirSexo" data-sheet-title="Sexo">
+                <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-label="Filtrar por sexo">
+                  <span class="naowee-dropdown__value is-placeholder" data-dd-val>Sexo</span>
                   <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
                 </button>
                 <div class="naowee-dropdown__menu" role="listbox"></div>
               </div>
-              <div class="naowee-dropdown" data-dd="filtroDeporte" data-sheet-title="Deporte">
+              <div class="naowee-dropdown naowee-dropdown--medium" data-dd="dirDeporte" data-sheet-title="Deporte">
                 <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-label="Filtrar por deporte">
                   <span class="naowee-dropdown__value is-placeholder" data-dd-val>Deporte</span>
                   <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
                 </button>
                 <div class="naowee-dropdown__menu" role="listbox"></div>
               </div>
-              <div class="naowee-dropdown" data-dd="filtroEvento" data-sheet-title="Evento">
-                <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-label="Filtrar por evento">
-                  <span class="naowee-dropdown__value is-placeholder" data-dd-val>Evento</span>
-                  <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
-                </button>
-                <div class="naowee-dropdown__menu" role="listbox"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Directorio de deportistas (vista por defecto) -->
-        <div id="directorio">
-          <div class="naowee-table-card">
-            <div class="tc-head" style="padding:20px 24px 0">
-              <div class="dir-toolbar">
-                <div class="naowee-dropdown" data-dd="dirSexo" data-sheet-title="Sexo">
-                  <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-label="Filtrar por sexo">
-                    <span class="naowee-dropdown__value is-placeholder" data-dd-val>Sexo</span>
-                    <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
-                  </button>
-                  <div class="naowee-dropdown__menu" role="listbox"></div>
-                </div>
-                <div class="naowee-dropdown" data-dd="dirDeporte" data-sheet-title="Deporte">
-                  <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-label="Filtrar por deporte">
-                    <span class="naowee-dropdown__value is-placeholder" data-dd-val>Deporte</span>
-                    <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
-                  </button>
-                  <div class="naowee-dropdown__menu" role="listbox"></div>
-                </div>
+              <div class="dir-toolbar__right">
                 <span class="toolbar__count" id="dirCount"></span>
+                <nav class="naowee-pagination" id="dirPager" aria-label="Paginación"></nav>
               </div>
             </div>
             <div class="naowee-table-card__table-wrap">
               <table class="naowee-table--in-card">
                 <colgroup>
-                  <col style="width:22%"><col style="width:13%"><col style="width:8%"><col style="width:16%"><col style="width:12%"><col style="width:8%"><col style="width:8%"><col style="width:13%">
+                  <col style="width:21%"><col style="width:14%"><col style="width:8%"><col style="width:14%"><col style="width:12%"><col style="width:7%"><col style="width:11%"><col style="width:13%">
                 </colgroup>
                 <thead>
                   <tr>
@@ -499,7 +463,6 @@
                 <tbody id="dirBody"></tbody>
               </table>
             </div>
-            <div class="dir-pager" id="dirPager"></div>
           </div>
         </div>
 
@@ -514,6 +477,32 @@
 
           <!-- Header del deportista -->
           <div class="perfil-header" id="perfilHeaderCard"></div>
+
+          <!-- Filtros del historial (Año · Deporte · Evento) -->
+          <div class="perfil-toolbar__filters" id="filtrosBar" style="display:none">
+            <span class="perfil-filtros__title">Filtrar historial</span>
+            <div class="naowee-dropdown naowee-dropdown--medium" data-dd="filtroAno" data-sheet-title="Año">
+              <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-label="Filtrar por año">
+                <span class="naowee-dropdown__value is-placeholder" data-dd-val>Año</span>
+                <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+              </button>
+              <div class="naowee-dropdown__menu" role="listbox"></div>
+            </div>
+            <div class="naowee-dropdown naowee-dropdown--medium" data-dd="filtroDeporte" data-sheet-title="Deporte">
+              <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-label="Filtrar por deporte">
+                <span class="naowee-dropdown__value is-placeholder" data-dd-val>Deporte</span>
+                <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+              </button>
+              <div class="naowee-dropdown__menu" role="listbox"></div>
+            </div>
+            <div class="naowee-dropdown naowee-dropdown--medium" data-dd="filtroEvento" data-sheet-title="Evento">
+              <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-label="Filtrar por evento">
+                <span class="naowee-dropdown__value is-placeholder" data-dd-val>Evento</span>
+                <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+              </button>
+              <div class="naowee-dropdown__menu" role="listbox"></div>
+            </div>
+          </div>
 
           <!-- Tabla-card: Inscripciones -->
           <div class="naowee-table-card" id="secInscripciones">
@@ -956,16 +945,17 @@ function renderDirectory() {
         ? `<span class="profile-tag ${tier.cls}">${TIER_LABELS[d.tier] || d.tier}</span>`
         : '—';
       const sexoLabel = d.sexo === 'F' ? 'Femenino' : d.sexo === 'M' ? 'Masculino' : d.sexo;
+      const avaColor = (DEPORTISTAS.findIndex(x => x.id === d.id) % 8) + 1;
       return `<tr>
         <td data-label="Deportista">
           <div class="dir-cell-deportista">
-            <span class="dir-ava">${d.avatar}</span>
+            <span class="dir-ava dir-ava--p${avaColor}">${d.avatar}</span>
             <div class="dir-cell-deportista__text">
               <span class="dir-cell-deportista__nombre">${d.nombre}</span>
             </div>
           </div>
         </td>
-        <td data-label="Documento" style="font-size:12.5px;color:var(--text-secondary)">${d.doc}</td>
+        <td data-label="Documento" style="font-size:12.5px;color:var(--text-secondary);white-space:nowrap">${d.doc}</td>
         <td data-label="Sexo" style="font-size:12.5px">${sexoLabel}</td>
         <td data-label="Deporte">${d.deporte}</td>
         <td data-label="Categoría">${tierBadge}</td>
@@ -984,64 +974,66 @@ function renderDirectory() {
   /* Count */
   document.getElementById('dirCount').textContent = `${total} deportista${total !== 1 ? 's' : ''}`;
 
-  /* Pager */
+  /* Pager canónico (.naowee-pagination) */
   const pager = document.getElementById('dirPager');
+  pager.style.display = totalPages <= 1 ? 'none' : 'flex';
   const prevDisabled = dirState.page <= 1 ? 'disabled' : '';
   const nextDisabled = dirState.page >= totalPages ? 'disabled' : '';
-  let pagesBtns = '';
-  for (let p = 1; p <= totalPages; p++) {
-    pagesBtns += `<button class="dir-pager__btn${p === dirState.page ? ' is-active' : ''}" data-page="${p}" type="button">${p}</button>`;
-  }
   pager.innerHTML = `
-    <span class="dir-pager__info">Página ${dirState.page} de ${totalPages} · ${total} deportista${total !== 1 ? 's' : ''}</span>
-    <div class="dir-pager__btns">
-      <button class="dir-pager__btn" data-page="prev" type="button" ${prevDisabled}>‹</button>
-      ${pagesBtns}
-      <button class="dir-pager__btn" data-page="next" type="button" ${nextDisabled}>›</button>
+    <div class="naowee-pagination__pages">
+      <span class="naowee-pagination__label">Página</span>
+      <input class="naowee-pagination__input" id="dirPageInput" type="text" inputmode="numeric" value="${dirState.page}" aria-label="Número de página">
+      <span class="naowee-pagination__total">de <strong>${totalPages}</strong></span>
+    </div>
+    <div class="naowee-pagination__controls">
+      <button class="naowee-pagination__btn" data-page="prev" type="button" ${prevDisabled} aria-label="Página anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <button class="naowee-pagination__btn" data-page="next" type="button" ${nextDisabled} aria-label="Página siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
     </div>`;
   pager.querySelectorAll('[data-page]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const v = btn.dataset.page;
-      if (v === 'prev') dirState.page = Math.max(1, dirState.page - 1);
-      else if (v === 'next') dirState.page = Math.min(totalPages, dirState.page + 1);
-      else dirState.page = parseInt(v);
+      if (btn.dataset.page === 'prev') dirState.page = Math.max(1, dirState.page - 1);
+      else dirState.page = Math.min(totalPages, dirState.page + 1);
       renderDirectory();
     });
   });
+  const pageInput = document.getElementById('dirPageInput');
+  if (pageInput) {
+    const commitPage = () => {
+      let n = parseInt(pageInput.value, 10);
+      if (isNaN(n)) n = dirState.page;
+      dirState.page = Math.max(1, Math.min(n, totalPages));
+      renderDirectory();
+    };
+    pageInput.addEventListener('change', commitPage);
+    pageInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); commitPage(); } });
+  }
 }
 
-/* ─── Buscador ─── */
+/* ─── Buscador (filtra el directorio) ─── */
 const input = document.getElementById('deportistaInput');
 const clearBtn = document.getElementById('deportistaClear');
 const searchbox = document.getElementById('deportistaSearchbox');
-const resultsList = document.getElementById('searchResultsList');
 
 input.addEventListener('input', () => {
   const q = input.value.trim().toLowerCase();
   clearBtn.style.display = q ? 'flex' : 'none';
   searchbox.classList.toggle('naowee-searchbox--has-value', !!q);
-  /* Actualiza el directorio en lugar del dropdown flotante */
   dirState.q = q;
   dirState.page = 1;
   renderDirectory();
-  /* Mantiene el dropdown flotante cerrado */
-  resultsList.classList.remove('is-open');
 });
 
 clearBtn.addEventListener('click', () => {
   input.value = '';
   clearBtn.style.display = 'none';
   searchbox.classList.remove('naowee-searchbox--has-value');
-  resultsList.classList.remove('is-open');
   dirState.q = '';
   dirState.page = 1;
   renderDirectory();
-  limpiarPerfil();
+  input.focus();
 });
 
 document.addEventListener('click', e => {
-  if (!document.getElementById('deportistaSearchbox').contains(e.target))
-    resultsList.classList.remove('is-open');
   if (!e.target.closest('.naowee-dropdown')) closeAllPopovers();
 });
 
@@ -1054,6 +1046,7 @@ function limpiarPerfil() {
   document.getElementById('directorio').style.display = '';
   document.getElementById('perfilContent').style.display = 'none';
   dirState.q = '';
+  dirState.page = 1;
   input.value = '';
   clearBtn.style.display = 'none';
   searchbox.classList.remove('naowee-searchbox--has-value');
@@ -1064,10 +1057,6 @@ function seleccionarDeportista(id) {
   const d = DEPORTISTAS.find(x => x.id === id);
   if (!d) return;
   deportistaActual = d;
-  input.value = d.nombre;
-  clearBtn.style.display = 'flex';
-  searchbox.classList.add('naowee-searchbox--has-value');
-  resultsList.classList.remove('is-open');
   filtros.ano = ''; filtros.deporte = ''; filtros.evento = '';
   poblarFiltros(d);
   document.getElementById('filtrosBar').style.display = '';
