@@ -9,13 +9,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="shared/tokens.css?v=0.3.1">
-<link rel="stylesheet" href="shared/shell.css?v=0.3.1">
-<link rel="stylesheet" href="shared/list-components.css?v=0.3.1">
+<link rel="stylesheet" href="shared/tokens.css?v=0.4.0">
+<link rel="stylesheet" href="shared/shell.css?v=0.4.0">
+<link rel="stylesheet" href="shared/list-components.css?v=0.4.0">
 <link rel="stylesheet" href="shared/event-detail.css?v=0.4.0">
-<link rel="stylesheet" href="shared/forms.css?v=0.3.1">
-<link rel="stylesheet" href="shared/naowee-footer.css?v=0.3.1">
-<script src="shared/naowee-footer.js?v=0.3.1" defer></script>
+<link rel="stylesheet" href="shared/forms.css?v=0.4.0">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
+<script src="shared/naowee-footer.js?v=0.4.0" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -112,8 +112,7 @@
 
   /* Campos deshabilitados (solo lectura) dentro del modal */
   .ev-modal__body .naowee-textfield--readonly .naowee-textfield__input-wrap,
-  .ev-modal__body .naowee-dropdown--disabled .naowee-dropdown__trigger,
-  .ev-modal__body .naowee-datepicker--disabled .naowee-datepicker__trigger {
+  .ev-modal__body .naowee-dropdown--disabled .naowee-dropdown__trigger {
     background: var(--bg-soft); cursor: not-allowed; opacity: .72;
   }
   .ev-modal__body .naowee-textfield--readonly .naowee-textfield__input { pointer-events: none; }
@@ -189,12 +188,12 @@
   import {
     mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher,
     getRoleFromQuery, ROLES
-  } from './shared/sidebar.js?v=0.3.1';
-  import { allEvents, STATUS_LABEL, getUploadHistory, updateEvent } from './shared/events-data.js?v=0.3.1';
+  } from './shared/sidebar.js?v=0.4.0';
+  import { allEvents, STATUS_LABEL, getUploadHistory, updateEvent } from './shared/events-data.js?v=0.4.0';
   /* Módulo LIGHT: el detalle NO carga catálogo deportivo (deportes/pruebas
      viven solo como columnas de los archivos de cargue — Fase 4). Solo se
      usa el catálogo de gestores para mostrar el responsable asignado. */
-  import { GESTORES, DEPARTAMENTOS, municipiosDeDepto } from './shared/catalogo.js?v=0.3.1';
+  import { GESTORES, DEPARTAMENTOS, municipiosDeDepto } from './shared/catalogo.js?v=0.4.0';
 
   /* ─── Iconos (stroke currentColor, paridad módulo). Solo los usados en
      el container consolidado + Seguimiento + acciones del header. ─── */

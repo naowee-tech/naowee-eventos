@@ -70,11 +70,7 @@ export const ROLES = {
 const ITEMS = {
   dashboard:        { id: 'dashboard',        label: 'Dashboard',                icon: 'home',     route: 'dashboard.html' },
   eventos:          { id: 'eventos',          label: 'Eventos',                  icon: 'calendar', route: 'eventos.html' },
-  crearEvento:      { id: 'crear-evento',     label: 'Crear evento',             icon: 'plus',     route: 'evento-crear.html' },
-  inscripciones:    { id: 'inscripciones',    label: 'Inscripciones',            icon: 'ticket',   route: 'cargue.html?tipo=inscripciones' },
-  ranking:          { id: 'ranking',          label: 'Ranking / Resultados',     icon: 'ranking',  route: 'cargue.html?tipo=ranking' },
-  medalleria:       { id: 'medalleria',       label: 'Medallería',               icon: 'medal',    route: 'cargue.html?tipo=medalleria' },
-  /* Ítems ADMIN oversight: mismas rutas, mismo tipo — el rol (ADMIN) activa el modo solo lectura */
+  /* Cargues ADMIN oversight: mismas rutas que el gestor — el rol (ADMIN) activa el modo solo lectura */
   seguInscripciones:{ id: 'inscripciones',    label: 'Inscripciones',            icon: 'ticket',   route: 'cargue.html?tipo=inscripciones' },
   seguRanking:      { id: 'ranking',          label: 'Ranking / Resultados',     icon: 'ranking',  route: 'cargue.html?tipo=ranking' },
   seguMedalleria:   { id: 'medalleria',       label: 'Medallería',               icon: 'medal',    route: 'cargue.html?tipo=medalleria' },

@@ -9,12 +9,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="shared/tokens.css?v=0.3.2">
-<link rel="stylesheet" href="shared/shell.css?v=0.3.2">
-<link rel="stylesheet" href="shared/list-components.css?v=0.3.2">
-<link rel="stylesheet" href="shared/forms.css?v=0.3.2">
-<link rel="stylesheet" href="shared/naowee-footer.css?v=0.3.2">
-<script src="shared/naowee-footer.js?v=0.3.2" defer></script>
+<link rel="stylesheet" href="shared/tokens.css?v=0.4.0">
+<link rel="stylesheet" href="shared/shell.css?v=0.4.0">
+<link rel="stylesheet" href="shared/list-components.css?v=0.4.0">
+<link rel="stylesheet" href="shared/forms.css?v=0.4.0">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
+<script src="shared/naowee-footer.js?v=0.4.0" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -124,7 +124,6 @@
     border-color: var(--field-border-idle, #8788ab);
   }
   .usuarios-toolbar__filters { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; align-items: center; }
-  .usuarios-toolbar__spacer  { flex: 1 1 auto; }
   .usuarios-toolbar .naowee-dropdown { width: 164px !important; }
   @media (max-width: 700px) {
     .usuarios-toolbar { flex-direction: column; align-items: stretch; }
@@ -425,7 +424,7 @@
   import {
     mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher,
     getRoleFromQuery, ROLES
-  } from './shared/sidebar.js?v=0.3.2';
+  } from './shared/sidebar.js?v=0.4.0';
   import { getUsers, addUser, updateUser, toggleUserStatus } from './shared/users-data.js?v=1.0.1';
 
   /* ─── Guard de rol: solo ADMIN puede acceder ─── */
