@@ -119,9 +119,8 @@
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   }
   .usuarios-toolbar__search { flex: 0 1 300px; min-width: 220px; }
-  /* Searchbox: fuerza 48px de altura y borde lavanda (paridad perfil.html) */
+  /* Searchbox: borde lavanda (la altura = .naowee-searchbox--medium = 40px) */
   .usuarios-toolbar .naowee-searchbox__input-wrap {
-    height: 48px;
     border-color: var(--field-border-idle, #8788ab);
   }
   .usuarios-toolbar__filters { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; align-items: center; }
@@ -175,7 +174,7 @@
 
   /* ─── Row actions ─── */
   .row-actions {
-    display: inline-flex; align-items: center; gap: 4px; justify-content: center;
+    display: flex; align-items: center; gap: 4px; justify-content: flex-start;
   }
   /* ─── Tooltip canónico DS (inline, sin design-system.css en Eventos shared) ─── */
   .naowee-tooltip { position: relative; display: inline-flex; }
@@ -298,10 +297,8 @@
   }
 
   .naowee-modal .naowee-modal__body { flex: 1; overflow-y: auto; padding: 24px 28px; }
-  .naowee-modal .naowee-dropdown[data-mod] { position: static; }
-  .naowee-modal .naowee-dropdown[data-mod] .naowee-dropdown__menu {
-    position: absolute; z-index: 10100;
-  }
+  .naowee-modal .naowee-dropdown[data-mod] { position: relative; }
+  .naowee-modal .naowee-dropdown[data-mod] .naowee-dropdown__menu { z-index: 10100; }
 
   /* ─── Animations ─── */
   @keyframes fadeInUp {
@@ -549,9 +546,9 @@
 
   /* Markup canónico para setupDropdown: data-dd + trigger + empty menu */
   function buildDDMarkup(name, placeholder, sheetTitle) {
-    return '<div class="naowee-dropdown" data-dd="' + name + '" data-sheet-title="' + escHtml(sheetTitle) + '">' +
+    return '<div class="naowee-dropdown naowee-dropdown--medium" data-dd="' + name + '" data-sheet-title="' + escHtml(sheetTitle) + '">' +
       '<button type="button" class="naowee-dropdown__trigger" aria-expanded="false" aria-haspopup="listbox">' +
-        '<span data-dd-val class="is-placeholder">' + escHtml(placeholder) + '</span>' +
+        '<span data-dd-val class="naowee-dropdown__value is-placeholder">' + escHtml(placeholder) + '</span>' +
         '<span class="naowee-dropdown__chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>' +
       '</button>' +
       '<div class="naowee-dropdown__menu" role="listbox"></div>' +
@@ -584,7 +581,7 @@
           '<th>Correo institucional</th>' +
           '<th>Estado</th>' +
           '<th>Último acceso</th>' +
-          '<th style="text-align:center;">Acciones</th>' +
+          '<th style="text-align:left;">Acciones</th>' +
         '</tr></thead>' +
         '<tbody>' +
           users.map(buildRow).join('') +
@@ -947,7 +944,11 @@
 
     trigger.addEventListener('click', function (e) {
       e.stopPropagation();
-      dd.classList.toggle('naowee-dropdown--open');
+      var willOpen = !dd.classList.contains('is-open');
+      document.querySelectorAll('.naowee-dropdown.is-open').forEach(function (el) { if (el !== dd) el.classList.remove('is-open'); });
+      dd.classList.toggle('is-open', willOpen);
+      if (willOpen) dd.classList.add('is-up');  /* campo cerca del fondo del modal → abre hacia arriba */
+      trigger.setAttribute('aria-expanded', String(willOpen));
     });
 
     menu.querySelectorAll('.naowee-dropdown__opt').forEach(function (opt) {
@@ -959,10 +960,20 @@
         var l = opt.textContent.trim();
         state.invRol = v;
         setModalDropdownValue(v, l);
-        dd.classList.remove('naowee-dropdown--open');
+        dd.classList.remove('is-open');
+        trigger.setAttribute('aria-expanded', 'false');
         validateModalForm();
       });
     });
+
+    /* Cierre al hacer clic fuera (una sola vez, global) */
+    if (!document.__invRolOutside) {
+      document.__invRolOutside = true;
+      document.addEventListener('click', function (e) {
+        var d = document.getElementById('ddInvRol');
+        if (d && !d.contains(e.target)) d.classList.remove('is-open');
+      });
+    }
   }
 
   function wireModalValidation() {

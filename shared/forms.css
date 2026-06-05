@@ -156,6 +156,8 @@
               border-width var(--duration-fast) var(--easing-smoothout);
 }
 .naowee-dropdown__trigger:hover { border-color: var(--field-border-hover); }
+/* Tamaño medium (40px) — canónico DS */
+.naowee-dropdown--medium .naowee-dropdown__trigger { min-height: 40px; }
 .naowee-dropdown__trigger:focus-visible,
 .naowee-dropdown.is-open .naowee-dropdown__trigger {
   outline: none; border-width: 2px; border-color: var(--accent); padding: 0 11px;

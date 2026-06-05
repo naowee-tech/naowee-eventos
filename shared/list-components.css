@@ -29,6 +29,8 @@
 .naowee-searchbox__clear svg { width: 18px; height: 18px; }
 .naowee-searchbox__clear:hover { background: var(--bg-soft); color: var(--text-secondary); }
 .naowee-searchbox--has-value .naowee-searchbox__clear { display: flex; }
+/* Tamaño medium (40px) — canónico DS */
+.naowee-searchbox--medium .naowee-searchbox__input-wrap { height: 40px; }
 
 /* ── Segmented control canónico ── */
 .naowee-segment { position: relative; display: inline-flex; background: var(--surface); border: 1px solid var(--border-dark); border-radius: var(--radius-lg); padding: 4px; gap: 0; height: 40px; overflow: clip; font-feature-settings: 'case' 1; }
