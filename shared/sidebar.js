@@ -69,7 +69,8 @@ export const ROLES = {
 /* ─── Items de menú (light — sin sub-niveles) ─── */
 const ITEMS = {
   dashboard:        { id: 'dashboard',        label: 'Dashboard',                icon: 'home',     route: 'dashboard.html' },
-  eventos:          { id: 'eventos',          label: 'Eventos',                  icon: 'calendar', route: 'eventos.html' },
+  eventos:          { id: 'eventos',          label: 'Eventos',                  icon: 'list',     route: 'eventos.html' },
+  calendarioEventos:{ id: 'calendario-eventos', label: 'Calendario',             icon: 'calendar', route: 'eventos.html?view=calendar' },
   /* Cargues ADMIN oversight: mismas rutas que el gestor — el rol (ADMIN) activa el modo solo lectura */
   seguInscripciones:{ id: 'inscripciones',    label: 'Inscripciones',            icon: 'ticket',   route: 'cargue.html?tipo=inscripciones' },
   seguRanking:      { id: 'ranking',          label: 'Ranking / Resultados',     icon: 'ranking',  route: 'cargue.html?tipo=ranking' },
@@ -84,14 +85,14 @@ const ITEMS = {
 const MENU_BY_ROLE = {
   USER: [
     { section: null,           items: [ITEMS.dashboard] },
-    { section: 'EVENTOS',      items: [ITEMS.eventos] },
+    { section: 'EVENTOS',      items: [ITEMS.eventos, ITEMS.calendarioEventos] },
     { section: 'CONSULTA',     items: [ITEMS.perfil] }
   ],
   ADMIN: [
     { section: null,           items: [ITEMS.dashboard] },
     /* "Crear evento" se quitó del sidebar: ya es el CTA dentro de eventos.html
        (reduce carga cognitiva — no duplicar la acción). */
-    { section: 'EVENTOS',      items: [ITEMS.eventos] },
+    { section: 'EVENTOS',      items: [ITEMS.eventos, ITEMS.calendarioEventos] },
     /* SEGUIMIENTO: monitoreo de cargues por tipo — modo oversight (solo lectura) */
     { section: 'SEGUIMIENTO',  items: [ITEMS.seguInscripciones, ITEMS.seguRanking, ITEMS.seguMedalleria] },
     { section: 'CONSULTA',        items: [ITEMS.perfil] },
@@ -104,7 +105,7 @@ const MENU_BY_ROLE = {
        a un evento ve el detalle + los 3 cargues (inscripciones · ranking ·
        medallería) como tabs dentro del evento. Ya no hay 3 páginas sueltas de
        cargue en el sidebar (decisión UX Doug 2026-06: un solo punto de entrada). */
-    { section: 'EVENTOS',      items: [ITEMS.eventos] },
+    { section: 'EVENTOS',      items: [ITEMS.eventos, ITEMS.calendarioEventos] },
     { section: 'CONSULTA',     items: [ITEMS.perfil] }
   ],
   ORGANISMO: [

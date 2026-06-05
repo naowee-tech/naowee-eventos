@@ -40,6 +40,77 @@
   /* tab interno 8px → la etiqueta queda a 20px del borde (alineada con el toolbar),
      y el hover/underline no se pegan a la esquina redondeada del card. */
   .ev-scope-tabs .naowee-tab { padding: 0 8px; }
+
+  /* ═══════════════════════════════════════════════════════════════
+     VISTA CALENDARIO (mes) — estilo Google Calendar.
+     Barras que abarcan varios días (eventos multi-fecha), coloreadas
+     por estado; clic en el evento → detalle.
+     ═══════════════════════════════════════════════════════════════ */
+  .cal-bar { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+  .cal-nav { display: flex; align-items: center; gap: 6px; }
+  .cal-nav__btn {
+    width: 34px; height: 34px; border-radius: var(--radius-md);
+    border: 1px solid var(--border-dark); background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-secondary);
+    transition: background var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast);
+  }
+  .cal-nav__btn:hover { background: var(--bg-soft); color: var(--text-primary); border-color: var(--accent); }
+  .cal-nav__btn svg { width: 18px; height: 18px; }
+  .cal-today {
+    height: 34px; padding: 0 16px; border-radius: var(--radius-md);
+    border: 1px solid var(--border-dark); background: var(--surface);
+    font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text-primary); cursor: pointer;
+    transition: background var(--duration-fast), border-color var(--duration-fast);
+  }
+  .cal-today:hover { background: var(--bg-soft); border-color: var(--accent); }
+  .cal-title { font-size: 18px; font-weight: 700; color: var(--text-primary); text-transform: capitalize; }
+
+  .cal-grid { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .cal-dow { display: grid; grid-template-columns: repeat(7, 1fr); background: var(--bg-soft); border-bottom: 1px solid var(--border); }
+  .cal-dow span { padding: 9px 10px; font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--text-secondary); }
+  .cal-week { position: relative; display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid var(--border); }
+  .cal-week:last-child { border-bottom: none; }
+  .cal-cell { border-right: 1px solid var(--border); padding: 6px 8px; min-width: 0; }
+  .cal-cell:last-child { border-right: none; }
+  .cal-cell--out { background: #fcfcfd; }
+  .cal-daynum {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 24px; height: 24px; padding: 0 6px; font-size: 12.5px; font-weight: 600;
+    color: var(--text-secondary); border-radius: var(--radius-full);
+  }
+  .cal-cell--out .cal-daynum { color: var(--text-muted); }
+  .cal-cell--today .cal-daynum { background: var(--accent); color: #fff; font-weight: 700; }
+
+  /* Capa de barras (absoluta sobre la semana) */
+  .cal-bars { position: absolute; inset: 0; pointer-events: none; }
+  .cal-ev {
+    position: absolute; height: 22px; display: flex; align-items: center; gap: 5px;
+    padding: 0 8px; border-radius: 6px; font-size: 11.5px; font-weight: 600;
+    color: #fff; text-decoration: none; white-space: nowrap; overflow: hidden;
+    cursor: pointer; pointer-events: auto; box-shadow: 0 1px 2px rgba(40,40,52,.16);
+    transition: filter var(--duration-fast), box-shadow var(--duration-fast);
+  }
+  .cal-ev:hover { filter: brightness(1.07); box-shadow: 0 3px 8px rgba(40,40,52,.22); }
+  .cal-ev:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215,64,9,.30); }
+  .cal-ev__emoji { font-size: 12px; flex-shrink: 0; }
+  .cal-ev__name { overflow: hidden; text-overflow: ellipsis; }
+  .cal-ev--activo     { background: #1f8923; }
+  .cal-ev--borrador   { background: #f59e0b; }
+  .cal-ev--finalizado { background: #64748b; }
+  .cal-ev--cont-left  { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+  .cal-ev--cont-right { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+
+  @media (max-width: 720px) {
+    .cal-dow span { padding: 7px 6px; font-size: 10px; }
+    .cal-cell { padding: 5px 5px; }
+    .cal-daynum { min-width: 20px; height: 20px; font-size: 11.5px; }
+    .cal-ev { font-size: 10.5px; padding: 0 5px; }
+    .cal-title { font-size: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cal-ev { transition: none; }
+  }
 </style>
 </head>
 <body>
@@ -180,7 +251,11 @@
 
   /* ─── Estado (vista + filtros) ─── */
   const VIEW_KEY = 'naowee-eventos-events-view';
-  let currentView = localStorage.getItem(VIEW_KEY) === 'table' ? 'table' : 'cards';
+  /* ?view=calendar (entrada "Calendario" del sidebar) fuerza la vista calendario;
+     si no, se usa la preferencia guardada (tarjetas/tabla). */
+  const _urlView = new URLSearchParams(location.search).get('view');
+  let currentView = _urlView === 'calendar' ? 'calendar'
+                  : (localStorage.getItem(VIEW_KEY) === 'table' ? 'table' : 'cards');
   let activeFilter = 'todos';
   let query = '';
 
@@ -227,6 +302,126 @@
       </div>`;
   }
 
+  /* ═══════════════════════════════════════════════════════════════
+     VISTA CALENDARIO (mes) — eventos como barras multi-día; clic → detalle.
+     ═══════════════════════════════════════════════════════════════ */
+  const MESES_ABBR = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const MESES_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const DOW = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  /* "Hoy" del demo (el módulo está ambientado en jun 2026). */
+  const DEMO_TODAY = new Date(2026, 5, 5);
+  let calCursor = new Date(DEMO_TODAY.getFullYear(), DEMO_TODAY.getMonth(), 1);
+  const CHEV_L = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
+  const CHEV_R = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+  const MS_DAY = 86400000;
+
+  function parseEvDate(s) {
+    const p = String(s).trim().split(/\s+/);
+    return new Date(parseInt(p[2], 10), MESES_ABBR.indexOf((p[1] || '').toLowerCase()), parseInt(p[0], 10));
+  }
+  function sameDay(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+
+  function renderCalendar(slot) {
+    const y = calCursor.getFullYear(), m = calCursor.getMonth();
+    const evs = filtered()
+      .map((ev) => ({ ev, s: parseEvDate(ev.start), e: parseEvDate(ev.end) }))
+      .filter((o) => !isNaN(o.s) && !isNaN(o.e) && o.e >= o.s);
+
+    const first = new Date(y, m, 1);
+    const gridStart = new Date(y, m, 1 - first.getDay());
+    const last = new Date(y, m + 1, 0);
+    const gridEnd = new Date(y, m, last.getDate() + (6 - last.getDay()));
+
+    const weeks = [];
+    let cur = new Date(gridStart);
+    while (cur <= gridEnd) {
+      const days = [];
+      for (let i = 0; i < 7; i++) { days.push(new Date(cur)); cur.setDate(cur.getDate() + 1); }
+      weeks.push(days);
+    }
+
+    let html = `
+      <div class="cal-bar">
+        <div class="cal-nav">
+          <button class="cal-nav__btn" data-cal="prev" type="button" aria-label="Mes anterior">${CHEV_L}</button>
+          <button class="cal-nav__btn" data-cal="next" type="button" aria-label="Mes siguiente">${CHEV_R}</button>
+          <button class="cal-today" data-cal="today" type="button">Hoy</button>
+        </div>
+        <div class="cal-title">${MESES_FULL[m]} ${y}</div>
+      </div>
+      <div class="cal-grid">
+        <div class="cal-dow">${DOW.map((d) => `<span>${d}</span>`).join('')}</div>`;
+
+    weeks.forEach((week) => {
+      const weekStart = week[0], weekEnd = week[6];
+      const items = evs
+        .filter((o) => o.s <= weekEnd && o.e >= weekStart)
+        .map((o) => ({
+          o,
+          sc: Math.max(0, Math.min(6, Math.round((o.s - weekStart) / MS_DAY))),
+          ec: Math.max(0, Math.min(6, Math.round((o.e - weekStart) / MS_DAY)))
+        }))
+        .sort((a, b) => a.sc - b.sc || (b.ec - b.sc) - (a.ec - a.sc));
+
+      /* Carriles (lanes) — evita que barras del mismo día se solapen */
+      const lanes = [];
+      items.forEach((it) => {
+        let lane = 0;
+        for (;;) {
+          const occ = lanes[lane] || (lanes[lane] = []);
+          if (occ.every((r) => it.sc > r.ec || it.ec < r.sc)) { it.lane = lane; occ.push(it); break; }
+          lane++;
+        }
+      });
+      const weekH = Math.max(104, 34 + lanes.length * 24 + 8);
+
+      let cells = '';
+      week.forEach((d) => {
+        const out = d.getMonth() !== m;
+        const today = sameDay(d, DEMO_TODAY);
+        cells += `<div class="cal-cell ${out ? 'cal-cell--out' : ''} ${today ? 'cal-cell--today' : ''}"><span class="cal-daynum">${d.getDate()}</span></div>`;
+      });
+
+      let bars = '';
+      items.forEach((it) => {
+        const { o, sc, ec, lane } = it;
+        const span = ec - sc + 1;
+        const contLeft = o.s < weekStart, contRight = o.e > weekEnd;
+        bars += `<a class="cal-ev cal-ev--${o.ev.status} ${contLeft ? 'cal-ev--cont-left' : ''} ${contRight ? 'cal-ev--cont-right' : ''}"
+                    href="evento-detalle.html?id=${encodeURIComponent(o.ev.id)}&role=${roleCode}"
+                    style="left:calc(${sc} / 7 * 100% + 3px);width:calc(${span} / 7 * 100% - 6px);top:${34 + lane * 24}px"
+                    title="${o.ev.name} · ${o.ev.start} — ${o.ev.end}">
+                   ${contLeft ? '' : `<span class="cal-ev__emoji">${o.ev.emoji}</span>`}<span class="cal-ev__name">${o.ev.name}</span></a>`;
+      });
+
+      html += `<div class="cal-week" style="min-height:${weekH}px">${cells}<div class="cal-bars">${bars}</div></div>`;
+    });
+
+    html += `</div>`;
+    slot.innerHTML = html;
+
+    slot.querySelectorAll('[data-cal]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const a = btn.dataset.cal;
+        if (a === 'prev') calCursor = new Date(y, m - 1, 1);
+        else if (a === 'next') calCursor = new Date(y, m + 1, 1);
+        else calCursor = new Date(DEMO_TODAY.getFullYear(), DEMO_TODAY.getMonth(), 1);
+        renderList();
+      });
+    });
+  }
+
+  /* Refleja la vista activa en el sidebar (Eventos ⇄ Calendario) al alternar in-page. */
+  function setSidebarActive(id) {
+    document.querySelectorAll('#sidebarRoot .nav-row').forEach((r) => {
+      const on = r.dataset.id === id;
+      r.classList.toggle('active', on);
+      let bar = r.querySelector('.active-bar');
+      if (on && !bar) { bar = document.createElement('span'); bar.className = 'active-bar'; bar.setAttribute('aria-hidden', 'true'); r.prepend(bar); }
+      if (!on && bar) bar.remove();
+    });
+  }
+
   function render() {
     const pool = getPool();
     document.getElementById('eventosPage').innerHTML = `
@@ -260,6 +455,7 @@
           <div class="view-toggle" role="group" aria-label="Cambiar vista">
             <button type="button" class="view-toggle__btn ${currentView === 'cards' ? 'is-active' : ''}" data-view="cards" aria-pressed="${currentView === 'cards'}" aria-label="Vista de tarjetas">${I.gridV}</button>
             <button type="button" class="view-toggle__btn ${currentView === 'table' ? 'is-active' : ''}" data-view="table" aria-pressed="${currentView === 'table'}" aria-label="Vista de tabla">${I.listV}</button>
+            <button type="button" class="view-toggle__btn ${currentView === 'calendar' ? 'is-active' : ''}" data-view="calendar" aria-pressed="${currentView === 'calendar'}" aria-label="Vista de calendario">${I.cal}</button>
           </div>
           <span class="toolbar__count" id="evCount"></span>
         </div>
@@ -285,6 +481,7 @@
     const source = getSource();
     const rows = filtered();
     count.textContent = `${rows.length} de ${source.length} eventos`;
+    if (currentView === 'calendar') { empty.classList.remove('is-shown'); renderCalendar(slot); return; }
     if (rows.length === 0) { slot.innerHTML = ''; empty.classList.add('is-shown'); return; }
     empty.classList.remove('is-shown');
 
@@ -394,7 +591,13 @@
       btn.addEventListener('click', () => {
         if (btn.dataset.view === currentView) return;
         currentView = btn.dataset.view;
-        localStorage.setItem(VIEW_KEY, currentView);
+        /* Calendario ↔ ?view=calendar (reload-safe, coherente con el sidebar);
+           tarjetas/tabla limpian el param y guardan la preferencia. */
+        const url = new URL(location.href);
+        if (currentView === 'calendar') { url.searchParams.set('view', 'calendar'); }
+        else { url.searchParams.delete('view'); localStorage.setItem(VIEW_KEY, currentView); }
+        history.replaceState(null, '', url);
+        setSidebarActive(currentView === 'calendar' ? 'calendario-eventos' : 'eventos');
         document.querySelectorAll('.view-toggle__btn').forEach((b) => {
           const on = b.dataset.view === currentView;
           b.classList.toggle('is-active', on); b.setAttribute('aria-pressed', String(on));
@@ -405,7 +608,7 @@
   }
 
   /* ─── Bootstrap ─── */
-  mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: 'eventos' });
+  mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: currentView === 'calendar' ? 'calendario-eventos' : 'eventos' });
   mountHeader({ headerEl: document.getElementById('topHeader'), role, title: 'Eventos', subtitle: 'Listado · Ministerio del Deporte' });
   mountBackdrop();
   mountDemoSwitcher({ roleCode });
