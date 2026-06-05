@@ -170,11 +170,26 @@ export function pruebasDeDeporte(tipo, id) {
   return d ? d.pruebas : [];
 }
 
-/* Lista mock de gestores (asignación · §3). Iniciales precomputadas. */
+/* Lista mock de gestores (asignación · §3). Iniciales precomputadas.
+   `role` = rol que el perfil tiene HOY en la plataforma. `esGestor` marca
+   si ya es gestor de eventos (si no, al asignarlo se le invita como tal). */
 export const GESTORES = [
-  { id: 'g-andrea', name: 'Andrea Salas',    role: 'Gestor de eventos',  area: 'Atletismo y natación',       avatar: 'AS', color: '#1f8923' },
-  { id: 'g-julian', name: 'Julián Mosquera', role: 'Gestor de eventos',  area: 'Deportes de conjunto',       avatar: 'JM', color: '#1f78d1' },
-  { id: 'g-paola',  name: 'Paola Cárdenas',  role: 'Gestor de eventos',  area: 'Combate y paradeporte',      avatar: 'PC', color: '#7c3aed' },
-  { id: 'g-diego',  name: 'Diego Naranjo',   role: 'Gestor de eventos',  area: 'Ciclismo y patinaje',        avatar: 'DN', color: '#d74009' },
-  { id: 'g-marcela', name: 'Marcela Rivas',  role: 'Gestor de eventos',  area: 'Multideporte · escolares',   avatar: 'MR', color: '#c0392b' }
+  { id: 'g-andrea', name: 'Andrea Salas',    role: 'Gestor de eventos',  area: 'Atletismo y natación',       avatar: 'AS', color: '#1f8923', esGestor: true },
+  { id: 'g-julian', name: 'Julián Mosquera', role: 'Gestor de eventos',  area: 'Deportes de conjunto',       avatar: 'JM', color: '#1f78d1', esGestor: true },
+  { id: 'g-paola',  name: 'Paola Cárdenas',  role: 'Gestor de eventos',  area: 'Combate y paradeporte',      avatar: 'PC', color: '#7c3aed', esGestor: true },
+  { id: 'g-diego',  name: 'Diego Naranjo',   role: 'Gestor de eventos',  area: 'Ciclismo y patinaje',        avatar: 'DN', color: '#d74009', esGestor: true },
+  { id: 'g-marcela', name: 'Marcela Rivas',  role: 'Gestor de eventos',  area: 'Multideporte · escolares',   avatar: 'MR', color: '#c0392b', esGestor: true }
+];
+
+/* Perfiles de la plataforma que un administrador puede asignar como gestor de
+   un evento. NO todos son gestores hoy: al asignar a un Usuario del módulo (o
+   un administrador) se le INVITA como gestor de ese evento. El campo `role`
+   refleja el rol actual del perfil en la plataforma; `esGestor=false` dispara
+   la nota de invitación en el formulario de creación. Superconjunto de
+   GESTORES → cualquier id aquí resuelve en el detalle del evento. */
+export const PERFILES_ASIGNABLES = [
+  ...GESTORES,
+  { id: 'u-laura',  name: 'Laura Méndez',          role: 'Usuario del módulo',        avatar: 'LM', color: '#1f78d1', esGestor: false },
+  { id: 'u-miguel', name: 'Miguel Ángel Torres',   role: 'Usuario del módulo',        avatar: 'MT', color: '#1f8923', esGestor: false },
+  { id: 'u-sofia',  name: 'Sofía Bermúdez',        role: 'Administrador de eventos',  avatar: 'SB', color: '#d74009', esGestor: false }
 ];

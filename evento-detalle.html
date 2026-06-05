@@ -193,7 +193,7 @@
   /* Módulo LIGHT: el detalle NO carga catálogo deportivo (deportes/pruebas
      viven solo como columnas de los archivos de cargue — Fase 4). Solo se
      usa el catálogo de gestores para mostrar el responsable asignado. */
-  import { GESTORES, DEPARTAMENTOS, municipiosDeDepto } from './shared/catalogo.js?v=0.4.0';
+  import { PERFILES_ASIGNABLES, DEPARTAMENTOS, municipiosDeDepto } from './shared/catalogo.js?v=0.4.4';
 
   /* ─── Iconos (stroke currentColor, paridad módulo). Solo los usados en
      el container consolidado + Seguimiento + acciones del header. ─── */
@@ -243,7 +243,7 @@
   };
   function gestorFor() {
     const gid = ev.gestorId || GESTOR_MAP[ev.id];
-    return GESTORES.find((g) => g.id === gid) || GESTORES[0];
+    return PERFILES_ASIGNABLES.find((g) => g.id === gid) || PERFILES_ASIGNABLES[0];
   }
   let gestor = gestorFor();
 
@@ -285,7 +285,7 @@
             <span class="gestor-field__av" style="background:${gestor.color}" aria-hidden="true">${gestor.avatar}</span>
             <span class="gestor-field__meta">
               <span class="gestor-field__nm">${gestor.name}</span>
-              <span class="gestor-field__role">${gestor.area}</span>
+              <span class="gestor-field__role">${gestor.area || gestor.role}</span>
             </span>
           </div>
         </div>

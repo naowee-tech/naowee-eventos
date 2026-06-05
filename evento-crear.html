@@ -57,6 +57,8 @@
   .gestor-preview__ava { width: 40px; height: 40px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
   .gestor-preview__name { font-size: 14px; font-weight: 700; color: var(--text-primary); }
   .gestor-preview__meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .gestor-preview__invite { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 11.5px; font-weight: 600; color: var(--accent); }
+  .gestor-preview__invite svg { width: 13px; height: 13px; flex-shrink: 0; }
   .dd-opt-rich { display: flex; flex-direction: column; line-height: 1.3; }
   .dd-opt-rich small { font-size: 11.5px; color: var(--text-secondary); }
 
@@ -198,12 +200,12 @@
                 <label class="naowee-textfield__label" id="lbl-gestor">Asignar al gestor</label>
                 <div class="naowee-dropdown" data-dd="gestor" data-sheet-title="Asignar al gestor">
                   <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-labelledby="lbl-gestor">
-                    <span class="naowee-dropdown__value is-placeholder" data-dd-val>Selecciona un gestor…</span>
+                    <span class="naowee-dropdown__value is-placeholder" data-dd-val>Selecciona un perfil…</span>
                     <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
                   </button>
                   <div class="naowee-dropdown__menu" role="listbox"></div>
                 </div>
-                <div class="naowee-field-help">Podrás reasignarlo más adelante desde la gestión del evento.</div>
+                <div class="naowee-field-help">Asigna a cualquier perfil de la plataforma; si aún no es gestor, se le invitará como gestor de este evento. Podrás reasignarlo más adelante.</div>
                 <div id="gestorPreview"></div>
               </div>
             </div>
@@ -235,7 +237,7 @@
   /* Módulo LIGHT: el alcance NO carga catálogo deportivo. El form de creación
      solo captura datos del evento + asignación de gestor (los deportes/pruebas
      viven únicamente como columnas dentro de los archivos de cargue — Fase 4). */
-  import { GESTORES, DEPARTAMENTOS, municipiosDeDepto } from './shared/catalogo.js';
+  import { PERFILES_ASIGNABLES, DEPARTAMENTOS, municipiosDeDepto } from './shared/catalogo.js?v=0.4.4';
   import { addDraft } from './shared/events-data.js';
 
   const roleCode = getRoleFromQuery();
@@ -498,10 +500,16 @@
 
   /* ════════════════ Sección 2 · gestor ════════════════ */
   let ddGestor;
+  /* Subtítulo de cada perfil = su rol en la plataforma (+ especialidad si la
+     tiene). Así el administrador ve que no todos son gestores y a quién invita. */
+  function perfilSub(p) {
+    return p.area ? `${p.role} · <span style="color:var(--text-muted)">${p.area}</span>` : p.role;
+  }
+  const INVITE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>';
   function initSection2() {
-    const opts = GESTORES.map((g) => ({
-      value: g.id, label: g.name,
-      html: `<span class="dd-opt-rich"><span>${g.name}</span><small>${g.area}</small></span>`
+    const opts = PERFILES_ASIGNABLES.map((p) => ({
+      value: p.id, label: p.name,
+      html: `<span class="dd-opt-rich"><span>${p.name}</span><small>${perfilSub(p)}</small></span>`
     }));
     ddGestor = setupDropdown('gestor', opts, (o) => {
       state.gestorId = o.value;
@@ -512,14 +520,18 @@
   }
   function renderGestorPreview() {
     const wrap = document.getElementById('gestorPreview');
-    const g = GESTORES.find((x) => x.id === state.gestorId);
-    if (!g) { wrap.innerHTML = ''; return; }
+    const p = PERFILES_ASIGNABLES.find((x) => x.id === state.gestorId);
+    if (!p) { wrap.innerHTML = ''; return; }
+    const meta = p.area ? `${p.role} · ${p.area}` : p.role;
+    const invite = p.esGestor ? '' :
+      `<div class="gestor-preview__invite">${INVITE_ICON}Se le invitará como gestor de este evento</div>`;
     wrap.innerHTML = `
       <div class="gestor-preview">
-        <span class="gestor-preview__ava" style="background:${g.color}22;color:${g.color}">${g.avatar}</span>
+        <span class="gestor-preview__ava" style="background:${p.color}22;color:${p.color}">${p.avatar}</span>
         <div>
-          <div class="gestor-preview__name">${g.name}</div>
-          <div class="gestor-preview__meta">${g.role} · ${g.area}</div>
+          <div class="gestor-preview__name">${p.name}</div>
+          <div class="gestor-preview__meta">${meta}</div>
+          ${invite}
         </div>
       </div>`;
   }
@@ -653,7 +665,7 @@
     const place = state.municipio && state.departamento
       ? `${state.municipio}, ${state.departamento}`
       : (state.departamento || 'Por definir');
-    const g = (typeof GESTORES !== 'undefined') ? GESTORES.find((x) => x.id === state.gestorId) : null;
+    const g = (typeof PERFILES_ASIGNABLES !== 'undefined') ? PERFILES_ASIGNABLES.find((x) => x.id === state.gestorId) : null;
     return {
       id: `EV-2026-${String(Date.now()).slice(-3)}`, emoji: '📅',
       name: state.nombre.trim(), sport: 'Evento deportivo',
