@@ -898,19 +898,20 @@
       }
     }
 
-    /* Gestor */
-    const gestorOpts = GESTORES.map((g) => ({
-      value: g.id, label: g.name,
-      html: `<span class="dd-opt-rich"><span>${g.name}</span><small>${g.area}</small></span>`
+    /* Gestor — perfiles de la plataforma con su rol (paridad con evento-crear).
+       Reasignable en borrador y activo; solo lectura en finalizado. */
+    const gestorOpts = PERFILES_ASIGNABLES.map((p) => ({
+      value: p.id, label: p.name,
+      html: `<span class="dd-opt-rich"><span>${p.name}</span><small>${p.area ? `${p.role} · <span style="color:var(--text-muted)">${p.area}</span>` : p.role}</small></span>`
     }));
     const ddMGestor = setupMDropdown('m-gestor', gestorOpts, (o) => {
       mState.gestorId = o.value;
-      const gFound = GESTORES.find((x) => x.id === o.value);
+      const gFound = PERFILES_ASIGNABLES.find((x) => x.id === o.value);
       if (ddMGestor && gFound) ddMGestor.setLabel(gFound.name, false);
       mClearError('m-gestor');
     }, () => mState.gestorId);
     if (mState.gestorId && ddMGestor) {
-      const gFound = GESTORES.find((x) => x.id === mState.gestorId);
+      const gFound = PERFILES_ASIGNABLES.find((x) => x.id === mState.gestorId);
       if (gFound) ddMGestor.setLabel(gFound.name, false);
     }
 
