@@ -49,14 +49,11 @@
   /* Filtros del historial — toolbar superior dentro de la card de historial */
   #filtrosBar { align-items: center; margin: 0; }
   #filtrosBar .naowee-dropdown { width: 150px; flex-shrink: 0; }
-  .perfil-filtros__title {
-    font-size: 12.5px; font-weight: 600; color: var(--text-secondary);
-    margin-right: 4px; white-space: nowrap;
-  }
 
   /* ── Historial: card unificada con tabs canónicas ── */
   /* La card usa .naowee-table-card (padding 20px + gap 16px en columna). */
-  .hist-tabs { margin: 0 -20px; }          /* bleed → divider de borde a borde */
+  /* bleed (divider de borde a borde) + padding → el hover de los tabs no queda pegado a los bordes */
+  .hist-tabs { margin: 0 -20px; padding: 0 12px; }
   .hist-panel { animation: fadeIn .25s var(--easing-smoothout) both; }
   .hist-panel[hidden] { display: none; }
   @media (max-width: 600px) {
@@ -139,6 +136,14 @@
       0 10px 28px rgba(215,64,9,.30),
       0 2px 6px rgba(215,64,9,.18);
   }
+  /* Badge de categoría superpuesto en la base del thumbnail (estilo ribbon) */
+  .perfil-avatar-wrap { position: relative; flex-shrink: 0; padding-bottom: 11px; }
+  .perfil-avatar__tier {
+    position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
+    white-space: nowrap; gap: 4px; padding: 3px 8px; font-size: 9.5px;
+    box-shadow: 0 0 0 3px var(--surface);
+  }
+  .perfil-avatar__tier svg { width: 10px; height: 10px; }
   .perfil-header__info { flex: 1; min-width: 200px; }
   .perfil-header__name { font-size: 22px; font-weight: 800; letter-spacing: -.3px; color: var(--text-primary); margin: 0 0 4px; }
   .perfil-header__doc { font-size: 13px; color: var(--text-secondary); margin: 0 0 10px; }
@@ -148,8 +153,6 @@
     padding: 5px 12px; border-radius: var(--radius-full);
     font-size: 11.5px; font-weight: 700; letter-spacing: .25px;
     border: 1.5px solid; line-height: 1;
-    box-shadow: 0 1px 3px rgba(40,40,52,.07);
-    transition: box-shadow var(--duration-fast);
   }
   .perfil-badge--deporte {
     border-color: #d0d4e6; color: var(--text-secondary);
@@ -158,17 +161,14 @@
   .perfil-badge--club {
     border-color: #c7defa; color: #1d4ed8;
     background: #eef5ff;
-    box-shadow: 0 1px 3px rgba(29,78,216,.10);
   }
   .perfil-badge--liga {
     border-color: #b7dfb9; color: #1f8923;
     background: #e6f4e7;
-    box-shadow: 0 1px 3px rgba(31,137,35,.10);
   }
   .perfil-badge--federacion {
     border-color: #ffd9b3; color: #d74009;
     background: #fff3e6;
-    box-shadow: 0 1px 3px rgba(215,64,9,.10);
   }
 
   /* ═════ Tier badge (copiado 1:1 de incentivos) ═════ */
@@ -483,7 +483,6 @@
 
             <!-- Filtros del historial (Año · Deporte · Evento) -->
             <div class="perfil-toolbar__filters hist-toolbar" id="filtrosBar">
-              <span class="perfil-filtros__title">Filtrar historial</span>
               <div class="naowee-dropdown naowee-dropdown--medium" data-dd="filtroAno" data-sheet-title="Año">
                 <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-label="Filtrar por año">
                   <span class="naowee-dropdown__value is-placeholder" data-dd-val>Año</span>
@@ -1172,12 +1171,14 @@ function renderPerfil(d) {
   /* Header */
   const tier = d.tier ? TIERS[d.tier] : null;
   const tierBadge = tier
-    ? `<div style="margin-bottom:6px"><span class="profile-tag ${tier.cls}">${tier.ico} ${tier.label}</span></div>`
+    ? `<span class="profile-tag ${tier.cls} perfil-avatar__tier">${tier.ico} ${tier.label}</span>`
     : '';
   document.getElementById('perfilHeaderCard').innerHTML = `
-    <div class="perfil-avatar">${d.avatar}</div>
-    <div class="perfil-header__info">
+    <div class="perfil-avatar-wrap">
+      <div class="perfil-avatar">${d.avatar}</div>
       ${tierBadge}
+    </div>
+    <div class="perfil-header__info">
       <h2 class="perfil-header__name">${d.nombre}</h2>
       <p class="perfil-header__doc">${d.doc}</p>
       <div class="perfil-header__badges">
