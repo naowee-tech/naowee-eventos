@@ -58,6 +58,8 @@
 
   /* ── Sub-segmento Masivo/Manual — CENTRADO bajo los tabs ── */
   .carg-mode-bar { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+  /* Pila de cards del modo activo (form + cola "Deportistas por inscribir") con gap */
+  #modeBody { display: flex; flex-direction: column; gap: 18px; }
 
   /* ── Gate por estado (borrador / finalizado) ── */
   .carg-gate {
@@ -559,7 +561,11 @@
       });
       const rect = items[idx].getBoundingClientRect();
       const segRect = segEl.getBoundingClientRect();
-      const x = rect.left - segRect.left - 4;
+      /* El pill (position:absolute; left:0) se ancla al padding-box del segment
+         (justo dentro del borde). Restar SOLO el ancho del borde lo alinea con el
+         ítem y respeta el padding del contenedor en ambos extremos. */
+      const bl = parseFloat(getComputedStyle(segEl).borderLeftWidth) || 0;
+      const x = rect.left - segRect.left - bl;
       if (instant) {
         /* init / cambio de tab / reflow → posiciona SIN animación */
         pill.classList.add('naowee-segment__pill--no-anim');
