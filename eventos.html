@@ -10,8 +10,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="shared/tokens.css?v=0.4.0">
-<link rel="stylesheet" href="shared/shell.css?v=0.4.0">
-<link rel="stylesheet" href="shared/list-components.css?v=0.4.0">
+<link rel="stylesheet" href="shared/shell.css?v=0.4.2">
+<link rel="stylesheet" href="shared/list-components.css?v=0.4.2">
 <link rel="stylesheet" href="shared/forms.css?v=0.4.1">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
 <script src="shared/naowee-footer.js?v=0.4.0" defer></script>
@@ -295,8 +295,15 @@
   /* ?view=calendar (entrada "Calendario" del sidebar) fuerza la vista calendario;
      si no, se usa la preferencia guardada (tarjetas/tabla). */
   const _urlView = new URLSearchParams(location.search).get('view');
-  let currentView = _urlView === 'calendar' ? 'calendar'
-                  : (localStorage.getItem(VIEW_KEY) === 'table' ? 'table' : 'cards');
+  const _storedView = localStorage.getItem(VIEW_KEY);
+  /* La vista se conserva (incl. calendario): ?view tiene prioridad; luego la
+     preferencia guardada (para volver del detalle a la misma vista); si no, tarjetas. */
+  let currentView = ['cards', 'table', 'calendar'].includes(_urlView) ? _urlView
+                  : ['cards', 'table', 'calendar'].includes(_storedView) ? _storedView
+                  : 'cards';
+  /* Persiste la vista activa también al cargar (p.ej. al entrar por la opción
+     "Calendario" del sidebar) → al volver del detalle se mantiene esa vista. */
+  localStorage.setItem(VIEW_KEY, currentView);
   let activeFilter = 'todos';
   let query = '';
 
@@ -722,11 +729,12 @@
       btn.addEventListener('click', () => {
         if (btn.dataset.view === currentView) return;
         currentView = btn.dataset.view;
-        /* Calendario ↔ ?view=calendar (reload-safe, coherente con el sidebar);
-           tarjetas/tabla limpian el param y guardan la preferencia. */
+        /* Persiste SIEMPRE la vista elegida (incl. calendario) → se conserva al
+           volver del detalle; refleja calendario en ?view para enlaces compartibles. */
+        localStorage.setItem(VIEW_KEY, currentView);
         const url = new URL(location.href);
-        if (currentView === 'calendar') { url.searchParams.set('view', 'calendar'); }
-        else { url.searchParams.delete('view'); localStorage.setItem(VIEW_KEY, currentView); }
+        if (currentView === 'calendar') url.searchParams.set('view', 'calendar');
+        else url.searchParams.delete('view');
         history.replaceState(null, '', url);
         setSidebarActive(currentView === 'calendar' ? 'calendario-eventos' : 'eventos');
         document.querySelectorAll('.view-toggle__btn').forEach((b) => {

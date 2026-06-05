@@ -70,7 +70,7 @@ export const ROLES = {
 const ITEMS = {
   dashboard:        { id: 'dashboard',        label: 'Dashboard',                icon: 'home',     route: 'dashboard.html' },
   eventos:          { id: 'eventos',          label: 'Eventos',                  icon: 'list',     route: 'eventos.html' },
-  calendarioEventos:{ id: 'calendario-eventos', label: 'Calendario',             icon: 'calendar', route: 'eventos.html?view=calendar' },
+  calendarioEventos:{ id: 'calendario-eventos', label: 'Calendario',             icon: 'calendar', route: 'eventos.html?view=calendar', child: true },
   /* Cargues ADMIN oversight: mismas rutas que el gestor — el rol (ADMIN) activa el modo solo lectura */
   seguInscripciones:{ id: 'inscripciones',    label: 'Inscripciones',            icon: 'ticket',   route: 'cargue.html?tipo=inscripciones' },
   seguRanking:      { id: 'ranking',          label: 'Ranking / Resultados',     icon: 'ranking',  route: 'cargue.html?tipo=ranking' },
@@ -164,7 +164,7 @@ function renderRow(item, activeId, roleCode) {
   const tag = href ? 'a' : 'div';
   const hrefAttr = href ? ` href="${href}"` : '';
   return `
-    <${tag} class="nav-row ${isActive ? 'active' : ''}" data-id="${item.id}"${hrefAttr}>
+    <${tag} class="nav-row ${item.child ? 'nav-row--child' : ''} ${isActive ? 'active' : ''}" data-id="${item.id}"${hrefAttr}>
       ${isActive ? '<span class="active-bar" aria-hidden="true"></span>' : ''}
       <span class="icon">${getIcon(item.icon)}</span>
       <span class="lbl">${item.label}</span>

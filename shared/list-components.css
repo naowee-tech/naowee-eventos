@@ -84,10 +84,12 @@
 .naowee-tab--selected .naowee-tab__count { background: var(--accent-bg); color: var(--accent); }
 
 /* ── View toggle (card/tabla) ── */
-.view-toggle { display: inline-flex; align-items: center; background: transparent; border: 1px solid var(--border-dark); border-radius: var(--radius-md); padding: 3px; gap: 2px; }
-.view-toggle__btn { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border: none; background: transparent; border-radius: var(--radius-sm); cursor: pointer; color: var(--text-muted); transition: color var(--duration-fast); }
-.view-toggle__btn:hover { color: var(--text-secondary); }
-.view-toggle__btn.is-active { color: var(--accent); }
+/* Segment toggle (tarjetas/tabla/calendario): track gris + pill blanco con sombra
+   en el activo (ícono accent), ícono slate en los inactivos. */
+.view-toggle { display: inline-flex; align-items: center; background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 3px; gap: 3px; }
+.view-toggle__btn { width: 34px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border: none; background: transparent; border-radius: var(--radius-sm); cursor: pointer; color: var(--text-secondary); transition: color var(--duration-fast), background var(--duration-fast), box-shadow var(--duration-fast); }
+.view-toggle__btn:hover:not(.is-active) { color: var(--text-primary); }
+.view-toggle__btn.is-active { background: var(--surface); color: var(--accent); box-shadow: 0 1px 2px rgba(40,40,52,.12), 0 0 0 1px rgba(40,40,52,.04); }
 .view-toggle__btn svg { width: 17px; height: 17px; }
 
 /* ── Badge de estado ── */

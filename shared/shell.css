@@ -110,6 +110,22 @@ a:hover { text-decoration: none; }
 .nav-row.active .lbl { color: var(--accent); }
 .nav-row.active .icon { color: var(--accent); }
 
+/* ═══ Ítem hijo (anidado) — p.ej. Calendario bajo Eventos ═══
+   Indenta el icono y dibuja una guía en árbol (vertical + codo) que parte
+   del icono del padre hacia el hijo. Solo en sidebar expandido. */
+.sidebar:not(.collapsed) .nav-row--child .icon { margin-left: 50px; }
+.sidebar:not(.collapsed) .nav-row--child .lbl { font-size: 13.5px; }
+.sidebar:not(.collapsed) .nav-row--child::before {
+  content: ''; position: absolute; left: 40px; top: -10px;
+  width: 1.5px; height: calc(50% + 10px);
+  background: var(--border-dark); border-radius: 2px;
+}
+.sidebar:not(.collapsed) .nav-row--child::after {
+  content: ''; position: absolute; left: 40px; top: 50%;
+  width: 11px; height: 1.5px; transform: translateY(-50%);
+  background: var(--border-dark); border-radius: 2px;
+}
+
 .sidebar-bottom {
   flex-shrink: 0; padding: 8px 0; border-top: 1px solid var(--border);
   background: var(--surface);
