@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="shared/list-components.css?v=0.4.2">
 <link rel="stylesheet" href="shared/forms.css?v=0.4.2">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.4.0" defer></script>
+<script src="shared/naowee-footer.js?v=0.4.1" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -295,7 +295,9 @@
     .naowee-modal-overlay.open .naowee-modal { transform: none; }
   }
 
-  .naowee-modal .naowee-modal__body { flex: 1; overflow-y: auto; padding: 24px 28px; }
+  /* overflow visible → el menú del dropdown Rol (y cualquier popover) no se recorta
+     (el modal es corto y no requiere scroll interno). */
+  .naowee-modal .naowee-modal__body { flex: 1; overflow: visible; padding: 24px 28px; }
   .naowee-modal .naowee-dropdown[data-mod] { position: relative; }
   .naowee-modal .naowee-dropdown[data-mod] .naowee-dropdown__menu { z-index: 10100; }
 
@@ -363,11 +365,16 @@
         </div>
         <!-- Correo -->
         <div class="form-grid__field--full">
-          <div class="naowee-textfield">
+          <div class="naowee-textfield" id="fieldCorreo">
             <label class="naowee-textfield__label naowee-textfield__label--required" for="invCorreo">Correo institucional</label>
             <div class="naowee-textfield__input-wrap">
-              <input type="email" class="naowee-textfield__input" id="invCorreo" placeholder="nombre@mindeporte.gov.co" autocomplete="off"/>
+              <!-- type=text + inputmode=email → sin la validación nativa de Chrome; se valida con el DS -->
+              <input type="text" inputmode="email" class="naowee-textfield__input" id="invCorreo" placeholder="nombre@mindeporte.gov.co" autocomplete="off"/>
             </div>
+            <span class="naowee-textfield__msg" role="alert">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Ingresa un correo válido (incluye @).
+            </span>
           </div>
         </div>
         <!-- Rol -->
@@ -886,6 +893,7 @@
     document.getElementById('modalSubmit').disabled = true;
     document.getElementById('invNombre').value = '';
     document.getElementById('invCorreo').value = '';
+    document.getElementById('fieldCorreo').classList.remove('naowee-textfield--error');
     resetModalDropdown();
     document.getElementById('modalUsuario').classList.add('open');
     setTimeout(function () { document.getElementById('invNombre').focus(); }, 60);
@@ -907,6 +915,7 @@
     document.getElementById('modalSubmit').textContent = 'Guardar cambios';
     document.getElementById('invNombre').value = u.nombre;
     document.getElementById('invCorreo').value = u.correo;
+    document.getElementById('fieldCorreo').classList.remove('naowee-textfield--error');
     setModalDropdownValue(u.rol, ROL_LABELS[u.rol] || u.rol);
     document.getElementById('modalSubmit').disabled = false;
     document.getElementById('modalUsuario').classList.add('open');
@@ -975,28 +984,39 @@
     }
   }
 
+  /* Email válido: formato simple con @ y dominio. */
+  function isEmailValid(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+
   function wireModalValidation() {
-    var btn = document.getElementById('modalSubmit');
-    ['invNombre', 'invCorreo'].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (!el || el.__validBound) return;
-      el.__validBound = true;
-      el.addEventListener('input', validateModalForm);
-    });
-    function validateModalForm() {
-      var nombre = document.getElementById('invNombre').value.trim();
-      var correo = document.getElementById('invCorreo').value.trim();
-      var hasRol = !!state.invRol;
-      btn.disabled = !(nombre && correo && hasRol);
+    var nombreEl = document.getElementById('invNombre');
+    var correoEl = document.getElementById('invCorreo');
+    var fieldCorreo = document.getElementById('fieldCorreo');
+    if (nombreEl && !nombreEl.__validBound) {
+      nombreEl.__validBound = true;
+      nombreEl.addEventListener('input', validateModalForm);
+    }
+    if (correoEl && !correoEl.__validBound) {
+      correoEl.__validBound = true;
+      /* Al escribir: limpia el error y revalida el CTA. */
+      correoEl.addEventListener('input', function () {
+        if (fieldCorreo) fieldCorreo.classList.remove('naowee-textfield--error');
+        validateModalForm();
+      });
+      /* Al salir del campo con un correo inválido: muestra el helper error del DS (no el nativo). */
+      correoEl.addEventListener('blur', function () {
+        var v = correoEl.value.trim();
+        if (fieldCorreo) fieldCorreo.classList.toggle('naowee-textfield--error', !!v && !isEmailValid(v));
+      });
     }
     validateModalForm();
   }
 
+  /* CTA habilitado sólo con nombre + correo VÁLIDO (con @) + rol. */
   function validateModalForm() {
     var nombre = document.getElementById('invNombre')?.value.trim() || '';
     var correo = document.getElementById('invCorreo')?.value.trim() || '';
     var btn    = document.getElementById('modalSubmit');
-    if (btn) btn.disabled = !(nombre && correo && state.invRol);
+    if (btn) btn.disabled = !(nombre && isEmailValid(correo) && state.invRol);
   }
 
   function closeModal() {

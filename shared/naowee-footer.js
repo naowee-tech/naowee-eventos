@@ -8,7 +8,11 @@
    ═══════════════════════════════════════════════════════════════ */
 
 const MODULE_NAME = 'Eventos';
-const MODULE_VERSION = 'v0.3.0'; /* Fase 5: perfil del deportista + calendario del organismo */
+/* Versión del módulo mostrada en la pill del footer. Es una CONSTANTE: hay que
+   subirla aquí en cada release (no se deriva sola — por eso se mantenía en 0.3.0).
+   v0.4.0 = vista Calendario (estilo Google Calendar) + eventos del organismo
+   reflejados + refinamientos de formularios/modales. */
+const MODULE_VERSION = 'v0.4.0';
 
 (function () {
   function mount() {
