@@ -432,6 +432,25 @@
   /* ── Estado del modal ── */
   let mState = {};
   let mSaveAttempts = 0;
+  let mBaseline = '';
+
+  /* Snapshot comparable de los campos editables (para detectar cambios). */
+  function mSnapshot() {
+    return JSON.stringify({
+      nombre: (mState.nombre || '').trim(),
+      inicio: mState.inicio ? mState.inicio.getTime() : null,
+      fin: mState.fin ? mState.fin.getTime() : null,
+      departamento: mState.departamento || '',
+      municipio: mState.municipio || '',
+      gestorId: mState.gestorId || '',
+      descripcion: (mState.descripcion || '').trim()
+    });
+  }
+  /* "Guardar cambios" solo se habilita si hay cambios respecto al estado inicial. */
+  function syncDirty() {
+    const btn = document.getElementById('mBtnSave');
+    if (btn) btn.disabled = (mSnapshot() === mBaseline);
+  }
 
   /* ── Sheet backdrop del modal ── */
   let _mBackdrop = null;
@@ -818,6 +837,7 @@
       descripcion: ev.descripcion || ''
     };
     mSaveAttempts = 0;
+    mBaseline = mSnapshot();
 
     if (allLocked) {
       /* Solo lectura: precarga valores visuales */
@@ -830,14 +850,14 @@
     const nomInput = document.getElementById('mf-nombre');
     if (nomInput) {
       nomInput.value = mState.nombre;
-      nomInput.addEventListener('input', () => { mState.nombre = nomInput.value; if (nomInput.value.trim()) mClearError('m-nombre'); });
+      nomInput.addEventListener('input', () => { mState.nombre = nomInput.value; if (nomInput.value.trim()) mClearError('m-nombre'); syncDirty(); });
     }
 
     /* Descripción */
     const descTA = document.getElementById('mf-desc');
     if (descTA) {
       descTA.value = mState.descripcion;
-      descTA.addEventListener('input', () => { mState.descripcion = descTA.value; });
+      descTA.addEventListener('input', () => { mState.descripcion = descTA.value; syncDirty(); });
     }
 
     /* Fecha inicio (solo si Borrador) */
@@ -848,6 +868,7 @@
         mClearError('m-inicio');
         if (mState.fin && mState.fin < d) mSetError('m-fin','La fecha de fin debe ser igual o posterior al inicio.');
         else if (mState.fin) mClearError('m-fin');
+        syncDirty();
       });
       if (mState.inicio) { mDpInstances['m-inicio'].setValue(mState.inicio); }
       else mDpInstances['m-inicio'].setValue(null);
@@ -859,6 +880,7 @@
       mDpInstances['m-fin'].setValue(d);
       if (mState.inicio && d < mState.inicio) mSetError('m-fin','La fecha de fin debe ser igual o posterior al inicio.');
       else mClearError('m-fin');
+      syncDirty();
     }, () => mState.inicio);
     if (mState.fin) mDpInstances['m-fin'].setValue(mState.fin);
     else mDpInstances['m-fin'].setValue(null);
@@ -873,6 +895,7 @@
         mState.municipio = o.value;
         ddMMunicipio.setLabel(o.label, false);
         mClearError('m-municipio');
+        syncDirty();
       }, () => mState.municipio);
 
       ddMDepto = setupMDropdown('m-departamento', deptoOpts, (o) => {
@@ -884,6 +907,7 @@
         if (ddMMunicipio) { ddMMunicipio.setOpts(next); ddMMunicipio.setLabel('Selecciona un municipio…', true); }
         mClearError('m-municipio');
         if (mMuniField) mMuniField.hidden = false;
+        syncDirty();
       }, () => mState.departamento);
 
       /* Precargar depto si ya había uno */
@@ -909,6 +933,7 @@
       const gFound = PERFILES_ASIGNABLES.find((x) => x.id === o.value);
       if (ddMGestor && gFound) ddMGestor.setLabel(gFound.name, false);
       mClearError('m-gestor');
+      syncDirty();
     }, () => mState.gestorId);
     if (mState.gestorId && ddMGestor) {
       const gFound = PERFILES_ASIGNABLES.find((x) => x.id === mState.gestorId);
@@ -927,6 +952,9 @@
         flash('Revisa los campos marcados. Vuelve a tocar Guardar para continuar.');
       }
     });
+
+    /* Estado inicial: sin cambios → "Guardar cambios" arranca deshabilitado. */
+    syncDirty();
   }
 
   function inicioLocked() { return isActivo || isFinal; }
