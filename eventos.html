@@ -10,7 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="shared/tokens.css?v=0.4.0">
-<link rel="stylesheet" href="shared/shell.css?v=0.4.3">
+<link rel="stylesheet" href="shared/shell.css?v=0.4.4">
 <link rel="stylesheet" href="shared/list-components.css?v=0.4.2">
 <link rel="stylesheet" href="shared/forms.css?v=0.4.1">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
@@ -98,6 +98,8 @@
   .cal-ev--activo     { background: #1f8923; }
   .cal-ev--borrador   { background: #f59e0b; }
   .cal-ev--finalizado { background: #64748b; }
+  .cal-ev--organismo  { background: #7c3aed; }   /* eventos publicados por el organismo (liga) */
+  span.cal-ev { cursor: default; }                /* evento de organismo sin link → no navegable */
   .cal-ev--cont-left  { border-top-left-radius: 0; border-bottom-left-radius: 0; }
   .cal-ev--cont-right { border-top-right-radius: 0; border-bottom-right-radius: 0; }
 
@@ -171,7 +173,7 @@
     mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher,
     getRoleFromQuery, ROLES
   } from './shared/sidebar.js';
-  import { allEvents, STATUS_LABEL, pct, gestorIdForRole } from './shared/events-data.js';
+  import { allEvents, STATUS_LABEL, pct, gestorIdForRole, organismoEventsForCalendar } from './shared/events-data.js';
 
   /* ─── Iconos de página (paridad dashboard) ─── */
   const I = {
@@ -292,18 +294,16 @@
 
   /* ─── Estado (vista + filtros) ─── */
   const VIEW_KEY = 'naowee-eventos-events-view';
-  /* ?view=calendar (entrada "Calendario" del sidebar) fuerza la vista calendario;
-     si no, se usa la preferencia guardada (tarjetas/tabla). */
+  /* Calendario SOLO se activa con ?view=calendar (opción "Calendario" del sidebar
+     o al volver del detalle abierto desde el calendario). "Eventos" (sin ?view) usa
+     la preferencia de lista guardada (tarjetas/tabla) — nunca queda fijo en calendario,
+     así siempre puedes volver a la lista. */
   const _urlView = new URLSearchParams(location.search).get('view');
   const _storedView = localStorage.getItem(VIEW_KEY);
-  /* La vista se conserva (incl. calendario): ?view tiene prioridad; luego la
-     preferencia guardada (para volver del detalle a la misma vista); si no, tarjetas. */
-  let currentView = ['cards', 'table', 'calendar'].includes(_urlView) ? _urlView
-                  : ['cards', 'table', 'calendar'].includes(_storedView) ? _storedView
+  let currentView = _urlView === 'calendar' ? 'calendar'
+                  : ['cards', 'table'].includes(_urlView) ? _urlView
+                  : ['cards', 'table'].includes(_storedView) ? _storedView
                   : 'cards';
-  /* Persiste la vista activa también al cargar (p.ej. al entrar por la opción
-     "Calendario" del sidebar) → al volver del detalle se mantiene esa vista. */
-  localStorage.setItem(VIEW_KEY, currentView);
   let activeFilter = 'todos';
   let query = '';
 
@@ -374,7 +374,13 @@
 
   function renderCalendar(slot) {
     const y = calCursor.getFullYear(), m = calCursor.getMonth();
-    const evs = filtered()
+    /* Eventos del organismo (liga) → se reflejan en el calendario del módulo.
+       Aplican búsqueda; el filtro de estado los muestra en "Todos". */
+    const _q = query.trim().toLowerCase();
+    const orgEvs = (activeFilter === 'todos')
+      ? organismoEventsForCalendar().filter((ev) => !_q || `${ev.name} ${ev.org}`.toLowerCase().includes(_q))
+      : [];
+    const evs = [...filtered(), ...orgEvs]
       .map((ev) => ({ ev, s: parseEvDate(ev.start), e: parseEvDate(ev.end) }))
       .filter((o) => !isNaN(o.s) && !isNaN(o.e) && o.e >= o.s);
     _calEvs = evs;
@@ -449,11 +455,15 @@
         const { o, sc, ec, lane } = it;
         const span = ec - sc + 1;
         const contLeft = o.s < weekStart, contRight = o.e > weekEnd;
-        bars += `<a class="cal-ev cal-ev--${o.ev.status} ${contLeft ? 'cal-ev--cont-left' : ''} ${contRight ? 'cal-ev--cont-right' : ''}"
-                    href="evento-detalle.html?id=${encodeURIComponent(o.ev.id)}&role=${roleCode}"
+        const isOrg = o.ev.kind === 'organismo';
+        const href = isOrg ? o.ev.link : `evento-detalle.html?id=${encodeURIComponent(o.ev.id)}&role=${roleCode}&from=calendar`;
+        const tag = href ? 'a' : 'span';
+        const linkAttrs = href ? `href="${href}"${isOrg ? ' target="_blank" rel="noopener"' : ''}` : '';
+        bars += `<${tag} class="cal-ev cal-ev--${o.ev.status} ${contLeft ? 'cal-ev--cont-left' : ''} ${contRight ? 'cal-ev--cont-right' : ''}"
+                    ${linkAttrs}
                     style="left:calc(${sc} / 7 * 100% + 3px);width:calc(${span} / 7 * 100% - 6px);top:${34 + lane * 24}px"
-                    title="${o.ev.name} · ${o.ev.start} — ${o.ev.end}">
-                   ${contLeft ? '' : `<span class="cal-ev__emoji">${o.ev.emoji}</span>`}<span class="cal-ev__name">${o.ev.name}</span></a>`;
+                    title="${o.ev.name} · ${o.ev.start} — ${o.ev.end}${isOrg ? ' · ' + o.ev.org : ''}">
+                   ${contLeft ? '' : `<span class="cal-ev__emoji">${o.ev.emoji}</span>`}<span class="cal-ev__name">${o.ev.name}</span></${tag}>`;
       });
 
       /* "+N más" por día con eventos ocultos → abre el popover del día */
@@ -505,14 +515,19 @@
       .filter((o) => o.s <= date && o.e >= date)
       .sort((a, b) => a.s - b.s || (a.e - a.s) - (b.e - b.s));
     const list = dayEvs.length
-      ? dayEvs.map((o) => `
-        <a class="cal-pop__item" href="evento-detalle.html?id=${encodeURIComponent(o.ev.id)}&role=${roleCode}">
+      ? dayEvs.map((o) => {
+        const isOrg = o.ev.kind === 'organismo';
+        const href = isOrg ? o.ev.link : `evento-detalle.html?id=${encodeURIComponent(o.ev.id)}&role=${roleCode}&from=calendar`;
+        const tag = href ? 'a' : 'div';
+        const linkAttrs = href ? `href="${href}"${isOrg ? ' target="_blank" rel="noopener"' : ''}` : '';
+        return `
+        <${tag} class="cal-pop__item" ${linkAttrs}>
           <span class="cal-pop__dot cal-ev--${o.ev.status}"></span>
           <span class="cal-pop__txt">
             <span class="cal-pop__name">${o.ev.emoji} ${o.ev.name}</span>
-            <span class="cal-pop__sub">${o.ev.start} — ${o.ev.end} · ${STA[o.ev.status]}</span>
+            <span class="cal-pop__sub">${o.ev.start} — ${o.ev.end} · ${isOrg ? o.ev.org : STA[o.ev.status]}</span>
           </span>
-        </a>`).join('')
+        </${tag}>`; }).join('')
       : `<p class="cal-pop__empty">Sin eventos este día.</p>`;
 
     _dayPopBd = document.createElement('div');
@@ -729,12 +744,16 @@
       btn.addEventListener('click', () => {
         if (btn.dataset.view === currentView) return;
         currentView = btn.dataset.view;
-        /* Persiste SIEMPRE la vista elegida (incl. calendario) → se conserva al
-           volver del detalle; refleja calendario en ?view para enlaces compartibles. */
-        localStorage.setItem(VIEW_KEY, currentView);
+        /* Tarjetas/tabla → preferencia de lista (localStorage), sin ?view.
+           Calendario → solo en la URL (?view=calendar), reload-safe; al volver a
+           "Eventos" se respeta la última lista, no queda fijo en calendario. */
         const url = new URL(location.href);
-        if (currentView === 'calendar') url.searchParams.set('view', 'calendar');
-        else url.searchParams.delete('view');
+        if (currentView === 'calendar') {
+          url.searchParams.set('view', 'calendar');
+        } else {
+          url.searchParams.delete('view');
+          localStorage.setItem(VIEW_KEY, currentView);
+        }
         history.replaceState(null, '', url);
         setSidebarActive(currentView === 'calendar' ? 'calendario-eventos' : 'eventos');
         document.querySelectorAll('.view-toggle__btn').forEach((b) => {

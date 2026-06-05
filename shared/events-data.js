@@ -304,3 +304,51 @@ export function addFileVersion(eventId, tipo, record) {
   sessionStorage.setItem(FILES_KEY, JSON.stringify(all));
   return version;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   CALENDARIO DEL ORGANISMO (liga/entidad)
+   Los eventos que el organismo publica en calendario.html se guardan en
+   sessionStorage bajo esta misma clave; aquí se exponen para que el
+   CALENDARIO del módulo (eventos.html) también los refleje.
+   Shape persistido: { id, emoji, titulo, fecha(ISO), fechaFin?(ISO), hora?, link? }
+   ═══════════════════════════════════════════════════════════════ */
+export const ORGANISMO_CAL_KEY = 'naowee-eventos-calendario';
+export const ORGANISMO_CAL_SEED = [
+  { id: 'c1', emoji: '🏊', titulo: 'Copa Departamental de Natación Categorías Menores 2026', fecha: '2026-07-12', fechaFin: '2026-07-14', hora: '08:00', link: 'https://liganatacionvalle.com/copa-departamental-2026' },
+  { id: 'c2', emoji: '🌊', titulo: 'Festival Acuático Interligas Valle del Cauca', fecha: '2026-09-05', fechaFin: '2026-09-06', hora: '09:30', link: '' },
+  { id: 'c3', emoji: '🤽', titulo: 'Campeonato Zonal de Natación Artística 2026', fecha: '2026-10-22', hora: '', link: 'https://liganatacionvalle.com/artistica-2026' }
+];
+
+export function getOrganismoCal() {
+  try { const raw = sessionStorage.getItem(ORGANISMO_CAL_KEY); if (raw) return JSON.parse(raw); }
+  catch (_) { /* noop */ }
+  return [...ORGANISMO_CAL_SEED];
+}
+
+export function saveOrganismoCal(list) {
+  try { sessionStorage.setItem(ORGANISMO_CAL_KEY, JSON.stringify(list)); } catch (_) { /* noop */ }
+}
+
+const _CAL_MES_ABBR = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function _isoToCalDate(iso) {
+  if (!iso) return '';
+  const [y, m, d] = String(iso).split('-');
+  return `${parseInt(d, 10)} ${_CAL_MES_ABBR[parseInt(m, 10) - 1]} ${y}`;
+}
+
+/* Eventos del organismo mapeados al shape que consume el calendario del módulo
+   (name + start/end en 'DD mmm YYYY' + status 'organismo' + link externo). */
+export function organismoEventsForCalendar() {
+  return getOrganismoCal().map((e) => ({
+    id: 'ORG-' + e.id,
+    emoji: e.emoji || '📅',
+    name: e.titulo,
+    start: _isoToCalDate(e.fecha),
+    end: _isoToCalDate(e.fechaFin || e.fecha),
+    status: 'organismo',
+    org: e.org || 'Liga de Natación del Valle',
+    link: e.link || '',
+    hora: e.hora || '',
+    kind: 'organismo'
+  })).filter((e) => e.start);
+}

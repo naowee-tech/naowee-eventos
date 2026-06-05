@@ -10,7 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="shared/tokens.css?v=0.4.0">
-<link rel="stylesheet" href="shared/shell.css?v=0.4.3">
+<link rel="stylesheet" href="shared/shell.css?v=0.4.4">
 <link rel="stylesheet" href="shared/list-components.css?v=0.4.2">
 <link rel="stylesheet" href="shared/event-detail.css?v=0.4.0">
 <link rel="stylesheet" href="shared/forms.css?v=0.4.1">
@@ -188,8 +188,8 @@
   import {
     mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher,
     getRoleFromQuery, ROLES
-  } from './shared/sidebar.js?v=0.4.2';
-  import { allEvents, STATUS_LABEL, getUploadHistory, updateEvent } from './shared/events-data.js?v=0.4.1';
+  } from './shared/sidebar.js?v=0.4.3';
+  import { allEvents, STATUS_LABEL, getUploadHistory, updateEvent } from './shared/events-data.js?v=0.4.2';
   /* Módulo LIGHT: el detalle NO carga catálogo deportivo (deportes/pruebas
      viven solo como columnas de los archivos de cargue — Fase 4). Solo se
      usa el catálogo de gestores para mostrar el responsable asignado. */
@@ -355,7 +355,7 @@
       <section class="det-card" aria-label="Datos del evento">
         <header class="det-head">
           <div class="det-head__id">
-            <a class="det-back" href="eventos.html?role=${roleCode}" aria-label="Volver a eventos" title="Volver a eventos">${I.chevL}</a>
+            <a class="det-back" href="eventos.html?role=${roleCode}${params.get('from') === 'calendar' ? '&view=calendar' : ''}" aria-label="Volver a eventos" title="Volver a eventos">${I.chevL}</a>
             <h2 class="det-head__name">${ev.name}</h2>
             <span class="badge s-${ev.status}">${STATUS_LABEL[ev.status]}</span>
           </div>

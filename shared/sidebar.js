@@ -165,7 +165,7 @@ function renderRow(item, activeId, roleCode) {
   const hrefAttr = href ? ` href="${href}"` : '';
   return `
     <${tag} class="nav-row ${item.child ? 'nav-row--child' : ''} ${isActive ? 'active' : ''}" data-id="${item.id}"${hrefAttr}>
-      ${isActive ? '<span class="active-bar" aria-hidden="true"></span>' : ''}
+      ${isActive && !item.child ? '<span class="active-bar" aria-hidden="true"></span>' : ''}
       <span class="icon">${getIcon(item.icon)}</span>
       <span class="lbl">${item.label}</span>
       ${item.badge ? `<span class="nav-badge">${item.badge}</span>` : ''}
