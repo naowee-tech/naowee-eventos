@@ -221,14 +221,16 @@
 .naowee-message__title { flex: 1; min-width: 0; font-size: 16px; font-weight: 700; line-height: 20px; }
 .naowee-message__body { flex: 1; min-width: 0; font-size: 14px; font-weight: 400; line-height: 18px; }
 .naowee-message__text { font-size: 14px; font-weight: 400; line-height: 18px; width: 100%; }
-.naowee-message--negative { background: var(--red-bg); }
-.naowee-message--negative .naowee-message__icon { background: var(--red); }
-.naowee-message--positive { background: var(--green-bg); }
-.naowee-message--positive .naowee-message__icon { background: var(--green); }
-.naowee-message--informative { background: var(--blue-bg); }
-.naowee-message--informative .naowee-message__icon { background: var(--blue-info); }
-.naowee-message--caution { background: var(--orange-bg); }
-.naowee-message--caution .naowee-message__icon { background: var(--naranja); }
+/* Paleta de feedback CANÓNICA del DS (fill quiet = fondo · fill loud = icon-circle).
+   Valores exactos del design-system (no la paleta semántica general del demo). */
+.naowee-message--informative { background: #cef4ff; }
+.naowee-message--informative .naowee-message__icon { background: #006aff; }
+.naowee-message--positive { background: #defade; }
+.naowee-message--positive .naowee-message__icon { background: #1f8923; }
+.naowee-message--caution { background: #ffedc7; }
+.naowee-message--caution .naowee-message__icon { background: #d74009; }
+.naowee-message--negative { background: #ffe5e9; }
+.naowee-message--negative .naowee-message__icon { background: #da1630; }
 
 /* ───────────────────── Checkbox (svg canónico) ───────────────── */
 .naowee-checkbox { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }

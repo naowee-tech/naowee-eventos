@@ -41,7 +41,9 @@
   .cal-link-cell a:hover { text-decoration: underline; }
   .cal-link--none { font-size: 12.5px; color: var(--text-muted); font-style: italic; }
   .cal-fecha { color: var(--text-secondary); white-space: nowrap; }
-  .cal-title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+  .cal-name { display: flex; align-items: center; gap: 11px; min-width: 0; }
+  .cal-emoji { font-size: 20px; line-height: 1; flex-shrink: 0; }
+  .cal-title { font-size: 14px; font-weight: 700; color: var(--text-primary); min-width: 0; }
 
   .cal-empty {
     padding: 40px 16px; text-align: center;
@@ -210,7 +212,7 @@
           </div>
           <div class="naowee-table-card__table-wrap cal-table-card__wrap">
             <table class="naowee-table--in-card">
-              <colgroup><col><col style="width:190px"><col style="width:240px"></colgroup>
+              <colgroup><col style="width:46%"><col style="width:24%"><col style="width:30%"></colgroup>
               <thead>
                 <tr>
                   <th>Título del evento</th>
@@ -354,21 +356,21 @@ const SS_KEY = 'naowee-eventos-calendario';
 
 const MOCK_INICIAL = [
   {
-    id: 'c1',
+    id: 'c1', emoji: '🏊',
     titulo: 'Copa Departamental de Natación Categorías Menores 2026',
     fecha: '2026-07-12',
     hora: '08:00',
     link: 'https://liganatacionvalle.com/copa-departamental-2026'
   },
   {
-    id: 'c2',
+    id: 'c2', emoji: '🌊',
     titulo: 'Festival Acuático Interligas Valle del Cauca',
     fecha: '2026-09-05',
     hora: '09:30',
     link: ''
   },
   {
-    id: 'c3',
+    id: 'c3', emoji: '🤽',
     titulo: 'Campeonato Zonal de Natación Artística 2026',
     fecha: '2026-10-22',
     hora: '',
@@ -408,7 +410,7 @@ function renderTabla(lista) {
   }
   body.innerHTML = lista.map(ev => `
     <tr>
-      <td class="cal-title">${ev.titulo}</td>
+      <td><div class="cal-name"><span class="cal-emoji" aria-hidden="true">${ev.emoji || '📅'}</span><span class="cal-title">${ev.titulo}</span></div></td>
       <td class="cal-fecha">${fmtFecha(ev.fecha, ev.hora)}</td>
       <td class="cal-link-cell">${ev.link
         ? `<a href="${ev.link}" target="_blank" rel="noopener noreferrer">
@@ -799,6 +801,7 @@ document.getElementById('calModalSave').addEventListener('click', () => {
 
   const nuevoEv = {
     id: `c${Date.now()}`,
+    emoji: '🏊',
     titulo, fecha: fechaStr, hora, link
   };
   eventos = [nuevoEv, ...eventos];
