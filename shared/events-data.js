@@ -42,6 +42,49 @@ export const EVENTS = [
     sport: 'Halterofilia · Marca', place: 'Bucaramanga, Santander', org: 'Federación Colombiana de Pesas',
     start: '08 feb 2026', end: '10 feb 2026', status: 'finalizado',
     insc: { done: 210, total: 210 }, res: { done: 210, total: 210 }, med: { done: 63, total: 63 }
+  },
+  /* ── Clúster jun 2026 — fechas solapadas para poblar el calendario ── */
+  {
+    id: 'EV-2026-007', emoji: '⚽', name: 'Copa Élite de Fútbol Femenino',
+    sport: 'Fútbol · Conjunto', place: 'Cali, Valle del Cauca', org: 'Liga Vallecaucana de Fútbol',
+    start: '15 jun 2026', end: '20 jun 2026', status: 'activo',
+    insc: { done: 320, total: 384 }, res: { done: 40, total: 160 }, med: { done: 0, total: 36 }
+  },
+  {
+    id: 'EV-2026-008', emoji: '🏐', name: 'Torneo Nacional de Voleibol Playa',
+    sport: 'Voleibol playa · Dupla', place: 'Santa Marta, Magdalena', org: 'Federación Colombiana de Voleibol',
+    start: '16 jun 2026', end: '19 jun 2026', status: 'activo',
+    insc: { done: 96, total: 128 }, res: { done: 24, total: 64 }, med: { done: 0, total: 24 }
+  },
+  {
+    id: 'EV-2026-009', emoji: '🚴', name: 'Clásico Ciclístico de Montaña',
+    sport: 'Ciclismo · Ruta', place: 'Manizales, Caldas', org: 'Indeportes Caldas',
+    start: '17 jun 2026', end: '21 jun 2026', status: 'borrador',
+    insc: { done: 0, total: 0 }, res: { done: 0, total: 0 }, med: { done: 0, total: 0 }
+  },
+  {
+    id: 'EV-2026-010', emoji: '🥊', name: 'Velada de Boxeo Amateur',
+    sport: 'Boxeo · Combate', place: 'Cartagena, Bolívar', org: 'Liga de Boxeo de Bolívar',
+    start: '18 jun 2026', end: '18 jun 2026', status: 'activo',
+    insc: { done: 64, total: 64 }, res: { done: 0, total: 32 }, med: { done: 0, total: 18 }
+  },
+  {
+    id: 'EV-2026-011', emoji: '🏓', name: 'Campeonato de Tenis de Mesa',
+    sport: 'Tenis de mesa · Individual', place: 'Bogotá D.C.', org: 'Federación Colombiana de Tenis de Mesa',
+    start: '16 jun 2026', end: '18 jun 2026', status: 'activo',
+    insc: { done: 140, total: 160 }, res: { done: 60, total: 160 }, med: { done: 0, total: 12 }
+  },
+  {
+    id: 'EV-2026-012', emoji: '🤸', name: 'Copa de Gimnasia Artística',
+    sport: 'Gimnasia · Aparatos', place: 'Medellín, Antioquia', org: 'Liga Antioqueña de Gimnasia',
+    start: '20 jun 2026', end: '24 jun 2026', status: 'borrador',
+    insc: { done: 12, total: 90 }, res: { done: 0, total: 0 }, med: { done: 0, total: 0 }
+  },
+  {
+    id: 'EV-2026-013', emoji: '🏸', name: 'Abierto Nacional de Bádminton',
+    sport: 'Bádminton · Individual', place: 'Pereira, Risaralda', org: 'Federación Colombiana de Bádminton',
+    start: '22 jun 2026', end: '25 jun 2026', status: 'activo',
+    insc: { done: 88, total: 120 }, res: { done: 0, total: 80 }, med: { done: 0, total: 18 }
   }
 ];
 

@@ -101,6 +101,47 @@
   .cal-ev--cont-left  { border-top-left-radius: 0; border-bottom-left-radius: 0; }
   .cal-ev--cont-right { border-top-right-radius: 0; border-bottom-right-radius: 0; }
 
+  /* Número de día clicable (cuando tiene eventos) */
+  .cal-daynum--has { border: none; background: transparent; cursor: pointer; font-family: inherit; transition: background var(--duration-fast), color var(--duration-fast); }
+  .cal-daynum--has:hover { background: var(--bg-soft); color: var(--text-primary); }
+  .cal-cell--today .cal-daynum--has:hover { background: var(--accent); color: #fff; }
+
+  /* "+N más" — indicador de overflow por día */
+  .cal-more {
+    position: absolute; height: 18px; display: flex; align-items: center;
+    font-family: inherit; font-size: 11px; font-weight: 600; color: var(--text-secondary);
+    background: transparent; border: none; cursor: pointer; pointer-events: auto;
+    padding: 0 6px; border-radius: 5px; white-space: nowrap; overflow: hidden;
+    transition: background var(--duration-fast), color var(--duration-fast);
+  }
+  .cal-more:hover { background: var(--bg-soft); color: var(--text-primary); }
+  .cal-more:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215,64,9,.30); }
+
+  /* Popover de día — expande y lista TODOS los eventos del día */
+  .cal-pop-backdrop { position: fixed; inset: 0; z-index: 1200; }
+  .cal-pop {
+    position: fixed; z-index: 1201; width: 290px; max-width: 92vw;
+    background: var(--surface); border: 1px solid var(--border-dark);
+    border-radius: var(--radius-lg); box-shadow: var(--shadow-md); overflow: hidden;
+    animation: calPopIn .14s var(--easing-smoothout, ease) both;
+  }
+  @keyframes calPopIn { from { opacity: 0; transform: translateY(-4px) scale(.985); } to { opacity: 1; transform: none; } }
+  .cal-pop__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 14px 14px 10px; }
+  .cal-pop__dow { font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--text-secondary); }
+  .cal-pop__day { font-size: 20px; font-weight: 800; color: var(--text-primary); line-height: 1.1; text-transform: capitalize; }
+  .cal-pop__close { width: 30px; height: 30px; border-radius: var(--radius-md); border: none; background: transparent; cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background var(--duration-fast), color var(--duration-fast); }
+  .cal-pop__close:hover { background: var(--bg-soft); color: var(--text-primary); }
+  .cal-pop__close svg { width: 17px; height: 17px; }
+  .cal-pop__list { max-height: 320px; overflow-y: auto; padding: 2px 8px 10px; display: flex; flex-direction: column; gap: 2px; }
+  .cal-pop__item { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: var(--radius-md); text-decoration: none; transition: background var(--duration-fast); }
+  .cal-pop__item:hover { background: var(--bg-soft); }
+  .cal-pop__item:focus-visible { outline: none; box-shadow: inset 0 0 0 2px rgba(215,64,9,.3); }
+  .cal-pop__dot { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
+  .cal-pop__txt { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .cal-pop__name { font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-pop__sub { font-size: 11.5px; color: var(--text-secondary); }
+  .cal-pop__empty { font-size: 12.5px; color: var(--text-muted); padding: 6px 8px 12px; margin: 0; }
+
   @media (max-width: 720px) {
     .cal-dow span { padding: 7px 6px; font-size: 10px; }
     .cal-cell { padding: 5px 5px; }
@@ -314,6 +355,9 @@
   const CHEV_L = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
   const CHEV_R = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
   const MS_DAY = 86400000;
+  const MAX_LANES = 3;          // carriles visibles por celda; el resto → "+N más"
+  let _calEvs = [];             // eventos parseados del mes (para el popover de día)
+  const CLOSE_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 
   function parseEvDate(s) {
     const p = String(s).trim().split(/\s+/);
@@ -326,6 +370,7 @@
     const evs = filtered()
       .map((ev) => ({ ev, s: parseEvDate(ev.start), e: parseEvDate(ev.end) }))
       .filter((o) => !isNaN(o.s) && !isNaN(o.e) && o.e >= o.s);
+    _calEvs = evs;
 
     const first = new Date(y, m, 1);
     const gridStart = new Date(y, m, 1 - first.getDay());
@@ -373,17 +418,27 @@
           lane++;
         }
       });
-      const weekH = Math.max(104, 34 + lanes.length * 24 + 8);
+      const visibleLanes = Math.min(lanes.length, MAX_LANES);
+      /* Conteo de eventos ocultos (carril ≥ MAX_LANES) por columna → "+N más" */
+      const hidden = [0, 0, 0, 0, 0, 0, 0];
+      items.forEach((it) => { if (it.lane >= MAX_LANES) for (let c = it.sc; c <= it.ec; c++) hidden[c]++; });
+      const hasOverflow = hidden.some((n) => n > 0);
+      const weekH = Math.max(104, 34 + visibleLanes * 24 + (hasOverflow ? 20 : 8));
 
       let cells = '';
-      week.forEach((d) => {
+      week.forEach((d, c) => {
         const out = d.getMonth() !== m;
         const today = sameDay(d, DEMO_TODAY);
-        cells += `<div class="cal-cell ${out ? 'cal-cell--out' : ''} ${today ? 'cal-cell--today' : ''}"><span class="cal-daynum">${d.getDate()}</span></div>`;
+        const dayCount = items.filter((it) => it.sc <= c && it.ec >= c).length;
+        const numTag = dayCount > 0
+          ? `<button class="cal-daynum cal-daynum--has" data-day="${d.getTime()}" type="button" aria-label="Ver ${dayCount} evento(s) del ${d.getDate()}">${d.getDate()}</button>`
+          : `<span class="cal-daynum">${d.getDate()}</span>`;
+        cells += `<div class="cal-cell ${out ? 'cal-cell--out' : ''} ${today ? 'cal-cell--today' : ''}">${numTag}</div>`;
       });
 
       let bars = '';
       items.forEach((it) => {
+        if (it.lane >= MAX_LANES) return;                 // sobra el cupo → se cuenta en "+N más"
         const { o, sc, ec, lane } = it;
         const span = ec - sc + 1;
         const contLeft = o.s < weekStart, contRight = o.e > weekEnd;
@@ -394,7 +449,15 @@
                    ${contLeft ? '' : `<span class="cal-ev__emoji">${o.ev.emoji}</span>`}<span class="cal-ev__name">${o.ev.name}</span></a>`;
       });
 
-      html += `<div class="cal-week" style="min-height:${weekH}px">${cells}<div class="cal-bars">${bars}</div></div>`;
+      /* "+N más" por día con eventos ocultos → abre el popover del día */
+      let more = '';
+      hidden.forEach((n, c) => {
+        if (n <= 0) return;
+        more += `<button class="cal-more" data-day="${week[c].getTime()}" type="button"
+                    style="left:calc(${c} / 7 * 100% + 3px);width:calc(1 / 7 * 100% - 6px);top:${34 + visibleLanes * 24}px">+${n} más</button>`;
+      });
+
+      html += `<div class="cal-week" style="min-height:${weekH}px">${cells}<div class="cal-bars">${bars}${more}</div></div>`;
     });
 
     html += `</div>`;
@@ -409,6 +472,74 @@
         renderList();
       });
     });
+
+    /* Día con eventos (número) o "+N más" → popover de día con TODOS sus eventos */
+    slot.querySelectorAll('[data-day]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openDayPopover(new Date(parseInt(btn.dataset.day, 10)), btn);
+      });
+    });
+  }
+
+  /* ─── Popover de día: expande y lista TODOS los eventos de ese día ─── */
+  let _dayPop = null, _dayPopBd = null;
+  function _dayPopEsc(e) { if (e.key === 'Escape') closeDayPopover(); }
+  function closeDayPopover() {
+    if (_dayPop) { _dayPop.remove(); _dayPop = null; }
+    if (_dayPopBd) { _dayPopBd.remove(); _dayPopBd = null; }
+    document.removeEventListener('keydown', _dayPopEsc, true);
+  }
+  function openDayPopover(date, anchorEl) {
+    closeDayPopover();
+    const STA = { activo: 'Activo', borrador: 'Borrador', finalizado: 'Finalizado' };
+    const DOW_FULL = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const dayEvs = _calEvs
+      .filter((o) => o.s <= date && o.e >= date)
+      .sort((a, b) => a.s - b.s || (a.e - a.s) - (b.e - b.s));
+    const list = dayEvs.length
+      ? dayEvs.map((o) => `
+        <a class="cal-pop__item" href="evento-detalle.html?id=${encodeURIComponent(o.ev.id)}&role=${roleCode}">
+          <span class="cal-pop__dot cal-ev--${o.ev.status}"></span>
+          <span class="cal-pop__txt">
+            <span class="cal-pop__name">${o.ev.emoji} ${o.ev.name}</span>
+            <span class="cal-pop__sub">${o.ev.start} — ${o.ev.end} · ${STA[o.ev.status]}</span>
+          </span>
+        </a>`).join('')
+      : `<p class="cal-pop__empty">Sin eventos este día.</p>`;
+
+    _dayPopBd = document.createElement('div');
+    _dayPopBd.className = 'cal-pop-backdrop';
+    _dayPopBd.addEventListener('click', closeDayPopover);
+
+    _dayPop = document.createElement('div');
+    _dayPop.className = 'cal-pop';
+    _dayPop.setAttribute('role', 'dialog');
+    _dayPop.setAttribute('aria-label', `Eventos del ${date.getDate()} de ${MESES_FULL[date.getMonth()]}`);
+    _dayPop.innerHTML = `
+      <div class="cal-pop__head">
+        <div>
+          <div class="cal-pop__dow">${DOW_FULL[date.getDay()]}</div>
+          <div class="cal-pop__day">${date.getDate()} ${MESES_FULL[date.getMonth()].toLowerCase()}</div>
+        </div>
+        <button class="cal-pop__close" type="button" aria-label="Cerrar">${CLOSE_X}</button>
+      </div>
+      <div class="cal-pop__list">${list}</div>`;
+
+    document.body.appendChild(_dayPopBd);
+    document.body.appendChild(_dayPop);
+    _dayPop.querySelector('.cal-pop__close').addEventListener('click', closeDayPopover);
+
+    /* Posición anclada a la celda, con clamp al viewport. */
+    const r = anchorEl.getBoundingClientRect();
+    const pw = _dayPop.offsetWidth, ph = _dayPop.offsetHeight;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const left = Math.min(Math.max(8, r.left), vw - pw - 8);
+    let top = r.bottom + 6;
+    if (top + ph > vh - 8) top = Math.max(8, r.top - ph - 6);
+    _dayPop.style.left = `${left}px`;
+    _dayPop.style.top = `${top}px`;
+    document.addEventListener('keydown', _dayPopEsc, true);
   }
 
   /* Refleja la vista activa en el sidebar (Eventos ⇄ Calendario) al alternar in-page. */
