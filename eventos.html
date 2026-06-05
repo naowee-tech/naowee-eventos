@@ -36,7 +36,10 @@
   /* Tabs de alcance (Mis eventos / Todos los eventos) DENTRO del card.
      Bleed -20px (= padding del .naowee-table-card) → el divider va de borde a
      borde del container. Fondo transparente para no tapar las esquinas redondeadas. */
-  .ev-scope-tabs { margin: -20px -20px 0; background: transparent; padding: 0 8px; }
+  .ev-scope-tabs { margin: -20px -20px 0; background: transparent; padding: 0 12px; }
+  /* tab interno 8px → la etiqueta queda a 20px del borde (alineada con el toolbar),
+     y el hover/underline no se pegan a la esquina redondeada del card. */
+  .ev-scope-tabs .naowee-tab { padding: 0 8px; }
 </style>
 </head>
 <body>
@@ -214,10 +217,13 @@
      (.naowee-tabs), van DENTRO del card con divider edge-to-edge. */
   function gestorTabsHTML() {
     if (!isGestor) return '';
+    const pool = getPool();
+    const mineCount = pool.filter((ev) => ev.assignedGestorId === myGestorId).length;
+    const allCount = pool.length;
     return `
       <div class="naowee-tabs ev-scope-tabs" id="gestorScopeTabs" role="tablist" aria-label="Alcance de eventos">
-        <button class="naowee-tab${gestorScope === 'mine' ? ' naowee-tab--selected' : ''}" data-scope="mine" type="button" role="tab" aria-selected="${gestorScope === 'mine'}">Mis eventos</button>
-        <button class="naowee-tab${gestorScope === 'all' ? ' naowee-tab--selected' : ''}" data-scope="all" type="button" role="tab" aria-selected="${gestorScope === 'all'}">Todos los eventos</button>
+        <button class="naowee-tab${gestorScope === 'mine' ? ' naowee-tab--selected' : ''}" data-scope="mine" type="button" role="tab" aria-selected="${gestorScope === 'mine'}">Mis eventos <span class="naowee-tab__count">${mineCount}</span></button>
+        <button class="naowee-tab${gestorScope === 'all' ? ' naowee-tab--selected' : ''}" data-scope="all" type="button" role="tab" aria-selected="${gestorScope === 'all'}">Todos los eventos <span class="naowee-tab__count">${allCount}</span></button>
       </div>`;
   }
 
