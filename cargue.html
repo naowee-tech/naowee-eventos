@@ -152,6 +152,39 @@
   .carg-manual-input::-webkit-outer-spin-button,
   .carg-manual-input::-webkit-inner-spin-button { -webkit-appearance: none; }
 
+  /* ── Registro manual de deportistas (búsqueda SUID + form + cola en tabla) ── */
+  .carg-search-row { row-gap: 10px; }
+  .carg-search-row #newAthleteBtn { margin-left: auto; }
+
+  /* Form "nuevo deportista" (panel inline canónico) */
+  .carg-newform { margin-top: 8px; }
+  .carg-newform[hidden] { display: none; }
+  .carg-newform__inner { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-soft); padding: 18px 18px 16px; animation: fadeIn .25s ease both; }
+  .carg-newform__title { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 14px; display: flex; align-items: center; gap: 7px; }
+  .carg-newform__title svg { width: 16px; height: 16px; color: var(--accent); }
+  .carg-newform__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .carg-newform__grid .carg-field--wide { grid-column: span 2; }
+  .carg-newform__foot { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+  .carg-field { display: flex; flex-direction: column; }
+
+  /* Cola de inscripción */
+  .carg-q-count { color: var(--text-muted); font-weight: 700; }
+  .carg-q-foot { display: flex; justify-content: flex-end; margin-top: 16px; }
+  .carg-qrow-x { width: 30px; height: 30px; border-radius: var(--radius-sm); border: none; background: transparent; color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background var(--duration-fast), color var(--duration-fast); }
+  .carg-qrow-x:hover { background: var(--red-bg); color: var(--red); }
+  .carg-qrow-x:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215,64,9,.18); }
+  .carg-qrow-x svg { width: 16px; height: 16px; }
+
+  @media (max-width: 760px) {
+    .carg-newform__grid { grid-template-columns: repeat(2, 1fr); }
+    .carg-newform__grid .carg-field--wide { grid-column: span 2; }
+  }
+  @media (max-width: 520px) {
+    .carg-newform__grid { grid-template-columns: 1fr; }
+    .carg-newform__grid .carg-field--wide { grid-column: span 1; }
+    .carg-search-row #newAthleteBtn { margin-left: 0; }
+  }
+
   /* ═══ ARCHIVOS CARGADOS — versionado + tabla con columnas de la planilla ═══ */
   .carg-files { margin-top: 24px; }
   .carg-files__title { font-size: 12px; font-weight: 700; color: var(--text-secondary); margin: 0 0 12px; text-transform: uppercase; letter-spacing: .3px; display: flex; align-items: center; gap: 7px; }
@@ -287,7 +320,7 @@
 <script type="module">
   import { mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher, getRoleFromQuery, getIcon, ROLES } from './shared/sidebar.js';
   import { allEvents, STATUS_LABEL, applyUpload, addUploadRecord, getFileVersions, addFileVersion, GESTOR_MAP, resolveGestorId, eventsForGestor, gestorIdForRole } from './shared/events-data.js';
-  import { GESTORES } from './shared/catalogo.js';
+  import { GESTORES, DEPORTES_POR_TIPO, DEPARTAMENTOS } from './shared/catalogo.js';
 
   /* ─── Params ─── */
   const params = new URLSearchParams(window.location.search);
@@ -319,7 +352,10 @@
     info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
     lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
     checkCircle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
-    bang: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+    bang: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    userPlus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>',
+    users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
   };
 
   /* ─── Config por tipo (label, plantilla, columnas de la planilla) ─── */
@@ -446,11 +482,22 @@
   }
   function nowStamp() { return new Date().toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }); }
 
+  /* ─── Catálogos para el registro manual (reuso de catalogo.js, sin inventar) ─── */
+  const TIPOS_DOC = [
+    { value: 'TI', label: 'TI · Tarjeta de identidad' }, { value: 'CC', label: 'CC · Cédula de ciudadanía' },
+    { value: 'CE', label: 'CE · Cédula de extranjería' }, { value: 'PA', label: 'Pasaporte' }, { value: 'RC', label: 'RC · Registro civil' }
+  ];
+  const SEXOS = [{ value: 'F', label: 'Femenino' }, { value: 'M', label: 'Masculino' }, { value: 'I', label: 'Intersexual' }];
+  const DEPORTES_LIST = Object.values(DEPORTES_POR_TIPO).flat().map((d) => ({ value: d.label, label: d.label, emoji: d.emoji }));
+  const DEPTOS_LIST = DEPARTAMENTOS.map((d) => ({ value: d, label: d }));
+
   /* ─── Estado ─── */
   let activeTipo = TIPOS.includes(tipoParam) ? tipoParam : 'inscripciones';
   let activeMode = 'masivo';      // 'masivo' | 'manual'
   let selectedFile = null;
   let parseResults = null;
+  let inscQueue = [];             // deportistas en cola para inscripción manual
+  let newDraft = {};              // borrador del form "nuevo deportista"
 
   /* ─── Evento activo ─── */
   let selectedEventId = eventId;
@@ -627,6 +674,7 @@
         activeTipo = val;
         activeMode = 'masivo';
         selectedFile = null; parseResults = null;
+        inscQueue = []; newDraft = {};
         document.querySelectorAll('#tipoTabs .naowee-tab').forEach((t) => {
           const on = t.dataset.tab === val;
           t.classList.toggle('naowee-tab--selected', on);
@@ -890,18 +938,67 @@
     else renderManualGrid(container, cfg);
   }
 
+  /* ── Dropdown flotante canónico (reusable para el form de nuevo deportista) ── */
+  function setupDropdown(ddEl, opts, getVal, onSelect) {
+    if (!ddEl) return;
+    const trigger = ddEl.querySelector('.naowee-dropdown__trigger');
+    const menu = ddEl.querySelector('.naowee-dropdown__menu');
+    const valEl = ddEl.querySelector('.naowee-dropdown__value');
+    function paint() {
+      const cur = getVal();
+      menu.innerHTML = opts.map((o) => `
+        <button type="button" class="naowee-dropdown__opt ${o.value === cur ? 'is-selected' : ''}" data-val="${esc(o.value)}" role="option">
+          ${o.emoji ? `<span class="naowee-dropdown__opt-emoji">${o.emoji}</span>` : ''}<span>${esc(o.label)}</span>
+          <span class="naowee-dropdown__opt-check">${I.check}</span>
+        </button>`).join('');
+      menu.querySelectorAll('.naowee-dropdown__opt').forEach((b) => {
+        b.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const o = opts.find((x) => x.value === b.dataset.val);
+          valEl.textContent = o ? o.label : '';
+          valEl.classList.remove('is-placeholder');
+          ddEl.classList.remove('is-open');
+          onSelect(b.dataset.val, o);
+        });
+      });
+    }
+    trigger.addEventListener('click', (e) => { e.stopPropagation(); const open = ddEl.classList.toggle('is-open'); if (open) paint(); });
+    document.addEventListener('click', (e) => { if (!ddEl.contains(e.target)) ddEl.classList.remove('is-open'); });
+  }
+
+  /* ── Campos del form (markup canónico: textfield + dropdown) ── */
+  function tfFieldHTML(name, label, placeholder, required, wide) {
+    return `
+      <div class="carg-field naowee-textfield${wide ? ' carg-field--wide' : ''}" data-tf="${name}">
+        <label class="naowee-textfield__label${required ? ' naowee-textfield__label--required' : ''}">${label}</label>
+        <div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" type="text" placeholder="${esc(placeholder)}" autocomplete="off"></div>
+      </div>`;
+  }
+  function ddFieldHTML(name, label, placeholder, required) {
+    return `
+      <div class="carg-field">
+        <label class="naowee-textfield__label${required ? ' naowee-textfield__label--required' : ''}">${label}</label>
+        <div class="naowee-dropdown" data-dd="${name}">
+          <button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox">
+            <span class="naowee-dropdown__value is-placeholder">${esc(placeholder)}</span>
+            <svg class="naowee-dropdown__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="naowee-dropdown__menu" role="listbox"></div>
+        </div>
+      </div>`;
+  }
+
+  /* ── Modo manual Inscripciones: búsqueda SUID + form + cola en tabla ── */
   function renderManualSearch(container, cfg) {
     container.innerHTML = `
       <div class="carg-card">
-        <div class="carg-card__head">
-          <div>
-            <h3 class="carg-card__title">Inscripción individual</h3>
-            <p class="carg-card__sub">Busca el deportista por nombre o número de documento. Si no existe en el sistema, puedes registrarlo como nuevo.</p>
-          </div>
-        </div>
+        <div class="carg-card__head"><div>
+          <h3 class="carg-card__title">Inscripción individual</h3>
+          <p class="carg-card__sub">Busca el deportista en el SUID y agrégalo a la lista, o regístralo como nuevo. Cuando termines, inscríbelos a todos de una vez.</p>
+        </div></div>
         <div class="carg-manual-search">
           <div class="carg-search-row">
-            <div class="naowee-searchbox naowee-searchbox--has-value" id="athleteSearch" style="max-width:480px;flex:1">
+            <div class="naowee-searchbox" id="athleteSearch" style="max-width:460px;flex:1 1 260px">
               <div class="naowee-searchbox__input-wrap">
                 <span class="naowee-searchbox__icon">${I.search}</span>
                 <input class="naowee-searchbox__input" type="search" id="athleteInput" placeholder="Nombre o número de documento…" autocomplete="off">
@@ -909,62 +1006,185 @@
               </div>
             </div>
             <button class="naowee-btn naowee-btn--ghost naowee-btn--sm" id="searchBtn" type="button">${I.search} Buscar</button>
+            <button class="naowee-btn naowee-btn--link naowee-btn--sm" type="button" id="newAthleteBtn">${I.userPlus} Registrar nuevo deportista</button>
           </div>
           <div id="athleteResults"></div>
-          <div style="padding-top:8px;border-top:1px solid var(--border);margin-top:8px">
-            <button class="naowee-btn naowee-btn--link naowee-btn--sm" type="button" id="newAthleteBtn">${I.user} Registrar nuevo deportista</button>
-          </div>
+          <div class="carg-newform" id="newAthleteForm" hidden></div>
         </div>
       </div>
+
+      <div class="carg-card" id="queueCard">
+        <div class="carg-card__head"><div>
+          <h3 class="carg-card__title">Deportistas por inscribir <span class="carg-q-count" id="qCount">(0)</span></h3>
+          <p class="carg-card__sub">Revisa la lista; al confirmar quedarán inscritos en el evento y se registrará un archivo manual versionado.</p>
+        </div></div>
+        <div id="queueBody"></div>
+        <div class="carg-q-foot" id="queueFoot"></div>
+      </div>
     `;
-    bindManualSearch();
+    bindManualSearch(cfg);
+    renderQueue(cfg);
   }
 
-  function bindManualSearch() {
+  function renderQueue(cfg) {
+    const body = document.getElementById('queueBody');
+    const foot = document.getElementById('queueFoot');
+    const count = document.getElementById('qCount');
+    if (!body) return;
+    if (count) count.textContent = `(${inscQueue.length})`;
+    if (inscQueue.length === 0) {
+      body.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state__icon">${I.users}</div>
+          <p class="empty-state__title">Aún no has agregado deportistas</p>
+          <p class="empty-state__desc">Busca en el SUID o registra uno nuevo para armar la lista de inscripción.</p>
+        </div>`;
+      foot.innerHTML = '';
+      return;
+    }
+    const heads = ['Origen', 'Tipo doc', 'Nro documento', 'Nombres y apellidos', 'Sexo', 'Deporte', 'Departamento', ''];
+    const rows = inscQueue.map((a, i) => `
+      <tr>
+        <td>${a.origen === 'SUID' ? '<span class="naowee-badge naowee-badge--informative naowee-badge--quiet">SUID</span>' : '<span class="naowee-badge naowee-badge--brand">Nuevo</span>'}</td>
+        <td>${esc(a.tipoDoc)}</td>
+        <td>${esc(a.nroDoc)}</td>
+        <td>${esc(a.nombre)}</td>
+        <td>${esc(a.sexo)}</td>
+        <td>${esc(a.deporte)}</td>
+        <td>${esc(a.depto)}</td>
+        <td style="text-align:right"><button class="carg-qrow-x" type="button" data-i="${i}" aria-label="Quitar de la lista">${I.trash}</button></td>
+      </tr>`).join('');
+    body.innerHTML = `
+      <div class="carg-data-scroll">
+        <table class="naowee-table--in-card">
+          <thead><tr>${heads.map((h) => `<th>${h}</th>`).join('')}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+    foot.innerHTML = `<button class="naowee-btn naowee-btn--loud" id="commitQueueBtn">${I.check} Inscribir ${inscQueue.length} deportista${inscQueue.length !== 1 ? 's' : ''}</button>`;
+    body.querySelectorAll('.carg-qrow-x').forEach((b) => b.addEventListener('click', () => { inscQueue.splice(parseInt(b.dataset.i, 10), 1); renderQueue(cfg); }));
+    document.getElementById('commitQueueBtn').addEventListener('click', () => commitQueue(cfg));
+  }
+
+  function addToQueue(a) {
+    if (inscQueue.some((x) => x.nroDoc === a.nroDoc && x.tipoDoc === a.tipoDoc)) { flash('Ese deportista ya está en la lista.'); return false; }
+    inscQueue.push(a);
+    return true;
+  }
+
+  function commitQueue(cfg) {
+    const n = inscQueue.length;
+    if (!n) return;
+    applyUpload(selectedEventId, 'insc', n);
+    const ts = nowStamp();
+    addUploadRecord(selectedEventId, { tipo: 'Inscripciones', n, modeLabel: 'Manual', timestamp: ts });
+    addFileVersion(selectedEventId, 'insc', {
+      fileName: 'Inscripción manual', n, modeLabel: 'Manual', timestamp: ts,
+      columns: cfg.columns,
+      rows: inscQueue.map((a) => ({ tipoDoc: a.tipoDoc, nroDoc: a.nroDoc, nombre: a.nombre, sexo: a.sexo, deporte: a.deporte, depto: a.depto, correo: a.correo || '—' }))
+    });
+    flash(`✓ ${n} deportista${n !== 1 ? 's' : ''} inscrito${n !== 1 ? 's' : ''} correctamente.`, 'success');
+    inscQueue = []; newDraft = {};
+    renderTabPanel();
+  }
+
+  function bindManualSearch(cfg) {
     const input = document.getElementById('athleteInput');
     const clear = document.getElementById('athleteClear');
     const searchBox = document.getElementById('athleteSearch');
     const results = document.getElementById('athleteResults');
     const searchBtn = document.getElementById('searchBtn');
     const newBtn = document.getElementById('newAthleteBtn');
+    const formEl = document.getElementById('newAthleteForm');
+    const docOf = (a) => `${a.tipoDoc} ${a.nroDoc}`;
 
-    function docOf(a) { return `${a.tipoDoc} ${a.nroDoc}`; }
     function performSearch() {
       const q = input.value.trim().toLowerCase();
       searchBox.classList.toggle('naowee-searchbox--has-value', q.length > 0);
       if (!q) { results.innerHTML = ''; return; }
       const matches = MOCK_ROWS.inscripciones.valid.filter((a) => a.nombre.toLowerCase().includes(q) || docOf(a).toLowerCase().includes(q));
       if (matches.length === 0) {
-        results.innerHTML = `<div class="carg-athlete-empty">${I.inbox}<span>No se encontraron deportistas con "<strong>${esc(q)}</strong>" en el sistema.</span></div>`;
+        results.innerHTML = `<div class="carg-athlete-empty">${I.inbox}<span>No se encontró ningún deportista con "<strong>${esc(q)}</strong>" en el SUID. Puedes registrarlo como nuevo.</span></div>`;
         return;
       }
       results.innerHTML = `
         <div class="carg-athlete-list">
           ${matches.map((a) => `
-            <div class="carg-athlete-row" data-nombre="${esc(a.nombre)}">
+            <div class="carg-athlete-row">
               <div class="carg-athlete-row__ava">${a.nombre.split(' ').slice(0,2).map((w)=>w[0]).join('')}</div>
               <div class="carg-athlete-row__info">
                 <div class="carg-athlete-row__name">${esc(a.nombre)}</div>
-                <div class="carg-athlete-row__doc">${esc(docOf(a))} · ${esc(a.deporte)}</div>
+                <div class="carg-athlete-row__doc">${esc(docOf(a))} · ${esc(a.deporte)} · ${esc(a.depto)}</div>
               </div>
-              <div class="carg-athlete-row__btn"><button class="naowee-btn naowee-btn--loud naowee-btn--sm inscribir-btn" type="button">Inscribir</button></div>
+              <div class="carg-athlete-row__btn"><button class="naowee-btn naowee-btn--loud naowee-btn--sm agregar-btn" type="button">${I.userPlus} Agregar</button></div>
             </div>`).join('')}
         </div>`;
-      results.querySelectorAll('.inscribir-btn').forEach((btn) => {
-        btn.addEventListener('click', (e) => {
-          const row = e.target.closest('[data-nombre]');
-          const nombre = row.dataset.nombre;
-          applyUpload(selectedEventId, 'insc', 1);
-          addUploadRecord(selectedEventId, { tipo: 'Inscripción individual', n: 1, modeLabel: 'Manual', timestamp: nowStamp() });
-          flash(`✓ ${nombre} inscrito/a correctamente.`, 'success');
-          btn.disabled = true; btn.textContent = 'Inscrito ✓'; btn.style.background = 'var(--green)';
+      results.querySelectorAll('.agregar-btn').forEach((btn, idx) => {
+        btn.addEventListener('click', () => {
+          const a = matches[idx];
+          const ok = addToQueue({ tipoDoc: a.tipoDoc, nroDoc: a.nroDoc, nombre: a.nombre, sexo: a.sexo, deporte: a.deporte, depto: a.depto, correo: a.correo, origen: 'SUID' });
+          if (ok) { btn.disabled = true; btn.innerHTML = `${I.check} Agregado`; btn.style.background = 'var(--green)'; renderQueue(cfg); }
         });
       });
     }
+
     searchBtn.addEventListener('click', performSearch);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') performSearch(); });
     clear.addEventListener('click', () => { input.value = ''; results.innerHTML = ''; searchBox.classList.remove('naowee-searchbox--has-value'); input.focus(); });
-    newBtn.addEventListener('click', () => flash('Registrar nuevo deportista — flujo disponible en la próxima fase de la demo.'));
+
+    newBtn.addEventListener('click', () => {
+      if (formEl.hasAttribute('hidden')) openNewForm(cfg, formEl);
+      else { formEl.setAttribute('hidden', ''); formEl.innerHTML = ''; newDraft = {}; }
+    });
+  }
+
+  function openNewForm(cfg, formEl) {
+    newDraft = {};
+    formEl.removeAttribute('hidden');
+    formEl.innerHTML = `
+      <div class="carg-newform__inner">
+        <div class="carg-newform__title">${I.userPlus} Registrar nuevo deportista</div>
+        <div class="carg-newform__grid">
+          ${ddFieldHTML('tipoDoc', 'Tipo de documento', 'Selecciona…', true)}
+          ${tfFieldHTML('nroDoc', 'Número de documento', 'Ej: 1052342871', true)}
+          ${ddFieldHTML('sexo', 'Sexo', 'Selecciona…', true)}
+          ${tfFieldHTML('pn', 'Primer nombre', '', true)}
+          ${tfFieldHTML('sn', 'Segundo nombre', '', false)}
+          ${tfFieldHTML('pa', 'Primer apellido', '', true)}
+          ${tfFieldHTML('sa', 'Segundo apellido', '', false)}
+          ${ddFieldHTML('deporte', 'Deporte', 'Selecciona…', true)}
+          ${ddFieldHTML('depto', 'Departamento', 'Selecciona…', true)}
+          ${tfFieldHTML('correo', 'Correo electrónico', 'nombre@correo.com', false, true)}
+        </div>
+        <div class="carg-newform__foot">
+          <button class="naowee-btn naowee-btn--ghost naowee-btn--sm" type="button" id="newCancel">Cancelar</button>
+          <button class="naowee-btn naowee-btn--loud naowee-btn--sm" type="button" id="newAdd" disabled>${I.check} Agregar a la lista</button>
+        </div>
+      </div>`;
+
+    const addBtn = formEl.querySelector('#newAdd');
+    const REQUIRED = ['tipoDoc', 'nroDoc', 'pn', 'pa', 'sexo', 'deporte', 'depto'];
+    function syncAdd() { addBtn.disabled = !REQUIRED.every((k) => (newDraft[k] || '').trim() !== ''); }
+
+    formEl.querySelectorAll('[data-tf]').forEach((wrap) => {
+      const name = wrap.dataset.tf;
+      const inp = wrap.querySelector('.naowee-textfield__input');
+      inp.addEventListener('input', () => { newDraft[name] = inp.value; wrap.classList.toggle('naowee-textfield--active', inp.value.length > 0); syncAdd(); });
+    });
+    setupDropdown(formEl.querySelector('[data-dd="tipoDoc"]'), TIPOS_DOC, () => newDraft.tipoDoc, (v) => { newDraft.tipoDoc = v; syncAdd(); });
+    setupDropdown(formEl.querySelector('[data-dd="sexo"]'), SEXOS, () => newDraft.sexo, (v) => { newDraft.sexo = v; syncAdd(); });
+    setupDropdown(formEl.querySelector('[data-dd="deporte"]'), DEPORTES_LIST, () => newDraft.deporte, (v) => { newDraft.deporte = v; syncAdd(); });
+    setupDropdown(formEl.querySelector('[data-dd="depto"]'), DEPTOS_LIST, () => newDraft.depto, (v) => { newDraft.depto = v; syncAdd(); });
+
+    formEl.querySelector('#newCancel').addEventListener('click', () => { formEl.setAttribute('hidden', ''); formEl.innerHTML = ''; newDraft = {}; });
+    addBtn.addEventListener('click', () => {
+      const nombre = [newDraft.pn, newDraft.sn, newDraft.pa, newDraft.sa].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+      const ok = addToQueue({
+        tipoDoc: newDraft.tipoDoc, nroDoc: (newDraft.nroDoc || '').trim(), nombre,
+        sexo: newDraft.sexo, deporte: newDraft.deporte, depto: newDraft.depto, correo: (newDraft.correo || '').trim(), origen: 'Nuevo'
+      });
+      if (ok) { flash(`✓ ${nombre} agregado a la lista.`, 'success'); formEl.setAttribute('hidden', ''); formEl.innerHTML = ''; newDraft = {}; renderQueue(cfg); }
+    });
   }
 
   function renderManualGrid(container, cfg) {
