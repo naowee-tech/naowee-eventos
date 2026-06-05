@@ -113,17 +113,17 @@ a:hover { text-decoration: none; }
 /* ═══ Ítem hijo (anidado) — p.ej. Calendario bajo Eventos ═══
    Indenta el icono y dibuja una guía en árbol (vertical + codo) que parte
    del icono del padre hacia el hijo. Solo en sidebar expandido. */
-.sidebar:not(.collapsed) .nav-row--child .icon { margin-left: 50px; }
+.sidebar:not(.collapsed) .nav-row--child .icon { margin-left: 52px; }
 .sidebar:not(.collapsed) .nav-row--child .lbl { font-size: 13.5px; }
+/* Conector en árbol — una sola curva fina y sutil (border-left + border-bottom
+   + radio) que desciende del padre y entra al icono del hijo. Sin codos rectos. */
 .sidebar:not(.collapsed) .nav-row--child::before {
-  content: ''; position: absolute; left: 40px; top: -10px;
-  width: 1.5px; height: calc(50% + 10px);
-  background: var(--border-dark); border-radius: 2px;
-}
-.sidebar:not(.collapsed) .nav-row--child::after {
-  content: ''; position: absolute; left: 40px; top: 50%;
-  width: 11px; height: 1.5px; transform: translateY(-50%);
-  background: var(--border-dark); border-radius: 2px;
+  content: ''; position: absolute; left: 34px; top: -8px;
+  width: 17px; height: calc(50% + 8px);
+  border-left: 1.5px solid var(--border-dark);
+  border-bottom: 1.5px solid var(--border-dark);
+  border-bottom-left-radius: 11px;
+  pointer-events: none;
 }
 
 .sidebar-bottom {
