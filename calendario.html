@@ -82,6 +82,7 @@
   .cal-modal__header {
     display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
     padding: 22px 28px 16px; border-bottom: 1px solid var(--border);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     position: sticky; top: 0; background: var(--surface); z-index: 2; flex-shrink: 0;
   }
   .cal-modal__title { font-size: 18px; font-weight: 700; color: var(--text-primary); margin: 0; line-height: 1.3; }
@@ -105,6 +106,7 @@
   /* Sticky footer */
   .cal-modal__footer {
     padding: 16px 28px; border-top: 1px solid var(--border);
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
     display: flex; align-items: center; justify-content: flex-end; gap: 10px;
     position: sticky; bottom: 0; background: var(--surface); z-index: 2; flex-shrink: 0;
   }
@@ -181,7 +183,7 @@
 
         <div class="naowee-message naowee-message--informative" style="margin-bottom:20px">
           <div class="naowee-message__header">
-            <span class="naowee-message__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="11" x2="12" y2="16"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+            <span class="naowee-message__icon"><svg viewBox="0 0 16 16" fill="none"><path d="M7 7h2v4H7z" fill="#fff"/><circle cx="8" cy="5" r="1" fill="#fff"/></svg></span>
             <span class="naowee-message__body">Los eventos aquí publicados se reflejan en el <strong>calendario de la landing pública</strong>. El render en la landing es responsabilidad del equipo de desarrollo de la Landing (fuera del alcance de esta demo).</span>
           </div>
         </div>
@@ -306,7 +308,7 @@
         <!-- Nota (caution canónico) -->
         <div class="naowee-message naowee-message--caution">
           <div class="naowee-message__header">
-            <span class="naowee-message__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+            <span class="naowee-message__icon"><svg viewBox="0 0 16 16" fill="none"><path d="M7 5h2v4H7z" fill="#fff"/><circle cx="8" cy="11" r="1" fill="#fff"/></svg></span>
             <span class="naowee-message__body">Este evento se reflejará en el calendario de la Landing pública. El render en la Landing <strong>no es parte de esta demo</strong> — lo asume el equipo de desarrollo de la Landing.</span>
           </div>
         </div>
