@@ -323,8 +323,6 @@
   </div>
 </div>
 
-<span class="pf-proposal-tag">Propuesta · Perfil v2 — para revisión</span>
-
 <script type="module">
 import { mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher, getRoleFromQuery } from './shared/sidebar.js?v=0.4.5';
 
@@ -722,7 +720,7 @@ const { role } = mountSidebar({ rootEl: document.getElementById('sidebarRoot'), 
 mountHeader({ headerEl: document.getElementById('topHeader'), role });
 mountBackdrop();
 mountDemoSwitcher({ roleCode });
-document.title = `Perfil del deportista · v2 — ${nombreCompleto}`;
+document.title = `Perfil del deportista — ${nombreCompleto}`;
 render();
 setupEditModal();
 </script>

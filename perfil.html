@@ -780,7 +780,7 @@ function renderDirectory() {
       </tr>`;
     }).join('');
     body.querySelectorAll('[data-perfil-id]').forEach(btn => {
-      btn.addEventListener('click', () => seleccionarDeportista(btn.dataset.perfilId));
+      btn.addEventListener('click', () => { window.location.href = `perfil-detalle.html?id=${encodeURIComponent(btn.dataset.perfilId)}&role=${roleCode}`; });
     });
   }
 
