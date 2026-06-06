@@ -26,10 +26,8 @@
 
   .page { background: var(--surface); }
   .pf-wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
-  /* CTA volver al directorio */
-  .pf-back { align-self: flex-start; display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: var(--radius-full); background: var(--accent-bg); color: var(--accent); font-size: 13px; font-weight: 700; text-decoration: none; transition: background var(--duration-fast); }
-  .pf-back:hover { background: var(--accent-bg-warm, #ffe6d2); }
-  .pf-back svg { width: 15px; height: 15px; }
+  /* CTA volver al directorio — botón link canónico del DS (.naowee-btn--link). */
+  .pf-back { align-self: flex-start; text-decoration: none; }
 
   /* ── HERO (encabezado general del deportista) ── */
   .pf-hero {
@@ -429,7 +427,7 @@ let activeHist = 'trayectoria';
 function render() {
   const t = TIER[ATLETA.tier];
   document.getElementById('pfRoot').innerHTML = `
-    <a class="pf-back" href="perfil.html?role=${roleCode}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Volver al directorio</a>
+    <a class="naowee-btn naowee-btn--link naowee-btn--sm pf-back" href="perfil.html?role=${roleCode}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;margin-right:4px"><polyline points="15 18 9 12 15 6"/></svg>Volver al directorio</a>
     <section class="pf-hero">
       <div class="pf-ava-wrap">
         <div class="pf-ava pf-ava--${ATLETA.tier}">${ATLETA.avatar}</div>
