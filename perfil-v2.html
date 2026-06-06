@@ -33,7 +33,6 @@
     display: flex; align-items: center; gap: 22px; flex-wrap: wrap;
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius-xl); padding: 24px 28px;
-    box-shadow: var(--shadow-card);
     animation: fadeInUp .44s var(--easing-smoothout) both;
   }
   .pf-hero::before {
@@ -90,7 +89,7 @@
   .pf-grid { display: grid; grid-template-columns: 232px 1fr 280px; gap: 18px; align-items: start; }
 
   /* Nav de secciones */
-  .pf-nav { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 8px; box-shadow: var(--shadow-sm); position: sticky; top: 18px; }
+  .pf-nav { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 8px; position: sticky; top: 18px; }
   .pf-nav__group { font-size: 10.5px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--text-muted); padding: 13px 13px 6px; }
   .pf-nav__group:first-child { padding-top: 6px; }
   .pf-nav__item {
@@ -108,7 +107,7 @@
   .pf-nav__alert { margin-left: auto; width: 18px; height: 18px; border-radius: var(--radius-full); background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; }
 
   /* Panel central */
-  .pf-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); overflow: hidden; min-height: 320px; }
+  .pf-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); overflow: hidden; min-height: 320px; }
   .pf-panel__head { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 20px 24px 0; }
   .pf-panel__title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0; }
   .pf-edit { display: inline-flex; align-items: center; gap: 6px; border: none; background: none; color: var(--accent); font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
@@ -130,7 +129,7 @@
 
   /* Aside biometría + completitud */
   .pf-aside { display: flex; flex-direction: column; gap: 18px; position: sticky; top: 18px; }
-  .pf-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 20px 22px; box-shadow: var(--shadow-sm); }
+  .pf-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 20px 22px; }
   .pf-card__title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0 0 16px; }
   .pf-bio-row { display: flex; align-items: center; gap: 13px; padding: 11px 0; border-top: 1px solid var(--border); }
   .pf-bio-row:first-of-type { border-top: none; padding-top: 0; }
@@ -162,7 +161,7 @@
   /* Eventos / inscripciones */
   .pf-ev { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); transition: border-color var(--duration-fast), box-shadow var(--duration-fast); }
   .pf-ev + .pf-ev { margin-top: 10px; }
-  .pf-ev:hover { border-color: var(--border-dark); box-shadow: var(--shadow-sm); }
+  .pf-ev:hover { border-color: var(--border-dark); }
   .pf-ev__emoji { font-size: 22px; flex-shrink: 0; }
   .pf-ev__nm { font-size: 14px; font-weight: 700; color: var(--text-primary); }
   .pf-ev__sub { font-size: 12.5px; color: var(--text-secondary); margin-top: 2px; }
