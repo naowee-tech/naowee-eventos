@@ -126,9 +126,8 @@ a:hover { text-decoration: none; }
   pointer-events: none;
   transition: border-color var(--duration-normal) ease;
 }
-/* Activo del subnivel: SIN barra vertical (esa es de los ítems padre); el conector
-   se tiñe de accent y el texto/ícono ya van en accent → estado claro y sutil. */
-.sidebar:not(.collapsed) .nav-row--child.active::before { border-color: var(--accent); }
+/* Activo del subnivel: el conector se mantiene neutro (sin línea/barra naranja);
+   el estado activo se comunica SOLO por el texto y el ícono en accent. */
 
 .sidebar-bottom {
   flex-shrink: 0; padding: 8px 0; border-top: 1px solid var(--border);
