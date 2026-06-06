@@ -71,14 +71,15 @@
   .pf-name { font-size: 23px; font-weight: 800; letter-spacing: -.4px; color: var(--text-primary); margin: 0; }
   .pf-doc { font-size: 13px; color: var(--text-secondary); margin: 4px 0 12px; }
   .pf-badges { display: flex; flex-wrap: wrap; gap: 8px; }
-  .pf-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: var(--radius-full); font-size: 11.5px; font-weight: 700; letter-spacing: .25px; line-height: 1; }
-  .pf-badge--deporte    { color: var(--text-secondary); background: #eceef4; }
-  .pf-badge--club       { color: #1d4ed8; background: #eef5ff; }
-  .pf-badge--liga       { color: #1f8923; background: #e6f4e7; }
-  .pf-badge--federacion { color: #d74009; background: #fff3e6; }
+  /* Badges neutrales (mismo fondo) con un dot de color para el tipo — sin sobrecarga cromática. */
+  .pf-badge { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: var(--radius-full); font-size: 11.5px; font-weight: 600; letter-spacing: .2px; line-height: 1; color: var(--text-secondary); background: #f3f4f8; }
+  .pf-badge__dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: #9aa0b0; }
+  .pf-badge--club .pf-badge__dot       { background: #1d4ed8; }
+  .pf-badge--liga .pf-badge__dot       { background: #1f8923; }
+  .pf-badge--federacion .pf-badge__dot { background: #d74009; }
 
   /* Lado derecho: contadores + medal-strip */
-  .pf-side { display: flex; flex-direction: column; align-items: flex-end; gap: 11px; margin-left: auto; flex-shrink: 0; }
+  .pf-side { display: flex; align-items: center; justify-content: center; margin-left: auto; flex-shrink: 0; }
   .pf-counts { display: flex; gap: 10px; }
   .pf-stat { text-align: center; min-width: 72px; padding: 9px 16px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius-lg); }
   .pf-stat__n { font-size: 20px; font-weight: 800; color: var(--text-primary); line-height: 1; }
@@ -145,7 +146,7 @@
   .pf-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 20px 22px; }
   .pf-card__title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0 0 16px; }
   .pf-bio-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .pf-bio-tile { padding: 13px; border-radius: var(--radius-lg); background: var(--bg-soft); display: flex; flex-direction: column; }
+  .pf-bio-tile { padding: 13px; border-radius: var(--radius-lg); background: #f9fafc; display: flex; flex-direction: column; }
   .pf-bio-tile__ico { width: 30px; height: 30px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; margin-bottom: 9px; }
   .pf-bio-tile__ico svg { width: 16px; height: 16px; }
   .pf-bio-tile__v { font-size: 18px; font-weight: 800; color: var(--text-primary); line-height: 1; }
@@ -439,17 +440,13 @@ function render() {
         <h1 class="pf-name">${ATLETA.nombre} ${ATLETA.apellido} ${ATLETA.segundoApellido}</h1>
         <p class="pf-doc">CC ${ATLETA.doc.numero}</p>
         <div class="pf-badges">
-          <span class="pf-badge pf-badge--deporte">${ATLETA.deporteEmoji} ${ATLETA.deporte}</span>
-          <span class="pf-badge pf-badge--club">🏛️ ${ATLETA.club}</span>
-          <span class="pf-badge pf-badge--liga">🏆 ${ATLETA.liga}</span>
-          <span class="pf-badge pf-badge--federacion">🎖️ ${ATLETA.federacion}</span>
+          <span class="pf-badge pf-badge--deporte"><span class="pf-badge__dot"></span>${ATLETA.deporte}</span>
+          <span class="pf-badge pf-badge--club"><span class="pf-badge__dot"></span>${ATLETA.club}</span>
+          <span class="pf-badge pf-badge--liga"><span class="pf-badge__dot"></span>${ATLETA.liga}</span>
+          <span class="pf-badge pf-badge--federacion"><span class="pf-badge__dot"></span>${ATLETA.federacion}</span>
         </div>
       </div>
       <div class="pf-side">
-        <div class="pf-counts">
-          <div class="pf-stat"><div class="pf-stat__n">${ATLETA.inscripciones.length}</div><div class="pf-stat__l">Inscrip.</div></div>
-          <div class="pf-stat"><div class="pf-stat__n">${ATLETA.resultados.length}</div><div class="pf-stat__l">Resultados</div></div>
-        </div>
         ${medalStripHTML()}
       </div>
     </section>
