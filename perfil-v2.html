@@ -167,6 +167,11 @@
   .pf-ev { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); transition: border-color var(--duration-fast), box-shadow var(--duration-fast); }
   .pf-ev + .pf-ev { margin-top: 10px; }
   .pf-ev:hover { border-color: var(--border-dark); }
+  .pf-ev-group + .pf-ev-group { margin-top: 22px; }
+  .pf-ev-group__h { display: flex; align-items: center; gap: 8px; margin-bottom: 11px; font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--text-muted); }
+  .pf-ev-group__h span { padding: 1px 8px; border-radius: var(--radius-full); background: var(--bg-soft); color: var(--text-secondary); font-size: 10.5px; }
+  .pf-ev-group__h.is-active { color: var(--green); }
+  .pf-ev-group__h.is-active span { background: var(--green-bg); color: var(--green); }
   .pf-ev__emoji { font-size: 22px; flex-shrink: 0; }
   .pf-ev__nm { font-size: 14px; font-weight: 700; color: var(--text-primary); }
   .pf-ev__sub { font-size: 12.5px; color: var(--text-secondary); margin-top: 2px; }
@@ -437,8 +442,11 @@ function documentosHTML() {
 }
 
 function eventosHTML() {
-  const rows = ATLETA.inscripciones.map(e => `<div class="pf-ev"><span class="pf-ev__emoji">${ATLETA.deporteEmoji}</span><span style="flex:1"><span class="pf-ev__nm">${e.evento}</span><span class="pf-ev__sub">${e.prueba} · ${e.fecha}</span></span><span class="pf-ev__st s-${e.estado}">${e.estado==='activo'?'Activo':'Finalizado'}</span></div>`).join('');
-  return `${head('Eventos · inscripciones', false)}<div class="pf-body">${rows}</div>`;
+  const activos = ATLETA.inscripciones.filter(e => e.estado === 'activo');
+  const finalizados = ATLETA.inscripciones.filter(e => e.estado === 'finalizado');
+  const row = (e) => `<div class="pf-ev"><span class="pf-ev__emoji">${ATLETA.deporteEmoji}</span><span style="flex:1;min-width:0"><span class="pf-ev__nm">${e.evento}</span><span class="pf-ev__sub">${e.prueba} · ${e.fecha}</span></span><span class="pf-ev__st s-${e.estado}">${e.estado==='activo'?'Activo':'Finalizado'}</span></div>`;
+  const group = (label, list, active) => list.length ? `<div class="pf-ev-group"><div class="pf-ev-group__h ${active?'is-active':''}">${label} <span>${list.length}</span></div>${list.map(row).join('')}</div>` : '';
+  return `${head('Eventos e inscripciones', false)}<div class="pf-body">${group('Activos · próximos', activos, true)}${group('Finalizados', finalizados, false)}</div>`;
 }
 
 function historialHTML() {
