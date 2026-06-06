@@ -492,7 +492,7 @@
         const span = ec - sc + 1;
         const contLeft = o.s < weekStart, contRight = o.e > weekEnd;
         const isOrg = o.ev.kind === 'organismo';
-        const href = isOrg ? o.ev.link : `evento-detalle.html?id=${encodeURIComponent(o.ev.id)}&role=${roleCode}&from=calendar`;
+        const href = isOrg ? o.ev.link : `${actionForEv(o.ev).href}&from=calendar`;
         const tag = href ? 'a' : 'span';
         const linkAttrs = href ? `href="${href}"${isOrg ? ' target="_blank" rel="noopener"' : ''}` : '';
         bars += `<${tag} class="cal-ev cal-ev--${o.ev.status} ${contLeft ? 'cal-ev--cont-left' : ''} ${contRight ? 'cal-ev--cont-right' : ''}"
@@ -561,7 +561,7 @@
     const list = dayEvs.length
       ? dayEvs.map((o) => {
         const isOrg = o.ev.kind === 'organismo';
-        const href = isOrg ? o.ev.link : `evento-detalle.html?id=${encodeURIComponent(o.ev.id)}&role=${roleCode}&from=calendar`;
+        const href = isOrg ? o.ev.link : `${actionForEv(o.ev).href}&from=calendar`;
         const tag = href ? 'a' : 'div';
         const linkAttrs = href ? `href="${href}"${isOrg ? ' target="_blank" rel="noopener"' : ''}` : '';
         return `

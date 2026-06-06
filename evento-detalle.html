@@ -389,7 +389,8 @@
     document.querySelectorAll('[data-gate]').forEach((el) => {
       el.addEventListener('click', () => {
         const tipo = el.dataset.gate;
-        window.location.href = `cargue.html?tipo=${tipo}&id=${ev.id}&role=${roleCode}`;
+        const fromCal = params.get('from') === 'calendar' ? '&from=calendar' : '';
+        window.location.href = `cargue.html?tipo=${tipo}&id=${ev.id}&role=${roleCode}${fromCal}`;
       });
     });
     const editBtn = document.querySelector('[data-action="editar"]');

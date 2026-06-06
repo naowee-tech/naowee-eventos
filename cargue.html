@@ -349,6 +349,8 @@
   const TIPOS = ['inscripciones', 'ranking', 'medalleria'];
   const tipoParam = params.get('tipo') || params.get('tab');
   const eventId = params.get('id') || null;
+  /* Si llegamos desde el calendario, "Volver a eventos" regresa a esa vista. */
+  const fromCalendar = params.get('from') === 'calendar';
 
   /* ─── Icons (inline, todos dimensionados por CSS) ─── */
   const I = {
@@ -653,7 +655,7 @@
       <section class="det-card" aria-label="Datos del evento">
         <header class="det-head">
           <div class="det-head__id">
-            <a class="det-back" href="eventos.html?role=${roleCode}" aria-label="Volver a eventos" title="Volver a eventos">${I.chevL}</a>
+            <a class="det-back" href="eventos.html?role=${roleCode}${fromCalendar ? '&view=calendar' : ''}" aria-label="Volver a eventos" title="Volver a eventos">${I.chevL}</a>
             <h2 class="det-head__name">${esc(ev.name)}</h2>
             <span class="badge s-${ev.status}">${STATUS_LABEL[ev.status]}</span>
           </div>
