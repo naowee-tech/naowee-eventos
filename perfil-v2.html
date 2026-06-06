@@ -157,8 +157,14 @@
   .pf-ring-card__txt span { font-size: 12px; color: var(--text-secondary); }
 
   /* Documentos */
-  .pf-doc { display: flex; align-items: center; gap: 13px; padding: 13px 0; border-top: 1px solid var(--border); }
-  .pf-doc:first-of-type { border-top: none; padding-top: 0; }
+  .pf-doc-item { padding: 13px 0; }
+  .pf-doc-item + .pf-doc-item { border-top: 1px solid var(--border); }
+  .pf-doc-item:first-child { padding-top: 0; }
+  .pf-doc { display: flex; align-items: center; gap: 13px; }
+  .pf-doc__txt { flex: 1; min-width: 0; }
+  .pf-doc__ico.is-required { background: var(--red-bg); color: #c0392b; }
+  .pf-doc-up { margin-top: 12px; padding-left: 51px; }
+  .pf-doc-up .naowee-file-uploader__drop-icon svg { width: 24px; height: 24px; }
   .pf-doc__ico { width: 38px; height: 38px; border-radius: var(--radius-md); background: var(--accent-bg); color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .pf-doc__ico svg { width: 19px; height: 19px; }
   .pf-doc__nm { font-size: 14px; font-weight: 600; color: var(--text-primary); }
@@ -166,6 +172,19 @@
   .pf-doc__st { margin-left: auto; padding: 3px 10px; border-radius: var(--radius-full); font-size: 11px; font-weight: 700; }
   .st-verificado, .st-vigente { background: var(--green-bg); color: var(--green); }
   .st-pendiente { background: var(--orange-bg); color: #b45309; }
+  .st-requerido { background: var(--red-bg); color: #c0392b; }
+  .st-revision { background: var(--blue-bg); color: var(--blue-info); }
+
+  /* Trayectoria (timeline) — recorrido deportivo */
+  .pf-tl { position: relative; padding-left: 22px; }
+  .pf-tl::before { content: ''; position: absolute; left: 6px; top: 4px; bottom: 4px; width: 2px; background: var(--border-dark); }
+  .pf-tl__item { position: relative; padding: 0 0 16px; }
+  .pf-tl__item:last-child { padding-bottom: 0; }
+  .pf-tl__item::before { content: ''; position: absolute; left: -22px; top: 3px; width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--surface); background: var(--accent); box-shadow: 0 0 0 1px var(--border-dark); }
+  .pf-tl__item--oro::before { background: #f5b400; } .pf-tl__item--plata::before { background: #9aa0b0; } .pf-tl__item--bronce::before { background: #b06b2f; } .pf-tl__item--proximo::before { background: var(--accent); }
+  .pf-tl__year { font-size: 11px; font-weight: 800; color: var(--accent); letter-spacing: .3px; }
+  .pf-tl__ev { font-size: 13.5px; font-weight: 600; color: var(--text-primary); margin-top: 2px; line-height: 1.3; }
+  .pf-tl__meta { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
 
   /* Eventos / inscripciones */
   .pf-ev { display: flex; align-items: center; gap: 13px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); transition: border-color var(--duration-fast); }
@@ -274,10 +293,10 @@ const ATLETA = {
   biometria: { altura: '168 cm', peso: '61 kg', sangre: 'O+', imc: '21.6' },
   completitud: 78,
   documentos: [
-    { nombre: 'Cédula de ciudadanía', sub: 'Verificada · 12 ene 2024', estado: 'verificado' },
-    { nombre: 'Certificado médico deportivo', sub: 'Vence: 18 ago 2026', estado: 'vigente' },
-    { nombre: 'Afiliación EPS', sub: 'Activa', estado: 'vigente' },
-    { nombre: 'Consentimiento de tratamiento de datos', sub: 'Falta firmar', estado: 'pendiente' }
+    { nombre: 'Cédula de ciudadanía', sub: 'Verificada · 12 ene 2024', estado: 'verificado', subido: true },
+    { nombre: 'Certificado médico deportivo', sub: 'Vence: 18 ago 2026', estado: 'vigente', subido: true },
+    { nombre: 'Afiliación EPS', sub: 'Documento requerido — aún no lo has subido', estado: 'requerido', subido: false },
+    { nombre: 'Consentimiento de tratamiento de datos', sub: 'Falta firmar', estado: 'pendiente', subido: true }
   ],
   inscripciones: [
     { evento: 'Copa Colombia Deportes Acuáticos 2026', prueba: 'Natación · 100m Libre', fecha: '20 feb 2026', estado: 'activo' },
@@ -331,7 +350,7 @@ const NAV_GROUPS = [
 
 let activeSec = 'resumen';
 let activeTab = 'datos';
-let activeHist = 'medalleria';
+let activeHist = 'trayectoria';
 
 /* ── Render principal ── */
 function render() {
@@ -412,6 +431,23 @@ function bindPanel() {
   const ht = document.getElementById('pfHistTabs');
   if (ht) ht.addEventListener('click', (e) => { const t=e.target.closest('.naowee-tab'); if(!t)return; activeHist=t.dataset.tab; renderPanel(); });
   document.querySelectorAll('.pf-sw').forEach(sw => sw.addEventListener('click', () => sw.classList.toggle('is-on')));
+  // File uploader (mock): al subir un archivo, el documento pasa a "En revisión".
+  document.querySelectorAll('#pfPanel .naowee-file-uploader').forEach(up => {
+    const inp = up.querySelector('input[type=file]');
+    const dz = up.querySelector('.naowee-file-uploader__drop-zone');
+    const handle = (file) => {
+      if (!file) return;
+      const doc = ATLETA.documentos.find(d => d.nombre === up.dataset.doc);
+      if (doc) { doc.subido = true; doc.estado = 'revision'; doc.sub = `Cargado: ${file.name} · en revisión`; }
+      renderPanel();
+    };
+    if (inp) inp.addEventListener('change', () => handle(inp.files[0]));
+    if (dz) {
+      ['dragover','dragenter'].forEach(ev => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add('is-drag-over'); }));
+      ['dragleave','dragend'].forEach(ev => dz.addEventListener(ev, () => dz.classList.remove('is-drag-over')));
+      dz.addEventListener('drop', (e) => { e.preventDefault(); dz.classList.remove('is-drag-over'); handle(e.dataTransfer.files[0]); });
+    }
+  });
 }
 
 const fld = (l,v,full) => `<div class="pf-field ${full?'pf-field--full':''}"><div class="pf-field__l">${l}</div><div class="pf-field__v">${v}</div></div>`;
@@ -443,8 +479,30 @@ function resumenHTML() {
   return `${head('Datos personales')}${tabsBar}<div class="pf-body"><div class="pf-fields">${body}</div></div>`;
 }
 
+const DOC_STATUS = { verificado:'Verificado', vigente:'Vigente', pendiente:'Pendiente', requerido:'Requerido', revision:'En revisión' };
+const UPLOAD_ICO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
 function documentosHTML() {
-  const rows = ATLETA.documentos.map(d => `<div class="pf-doc"><span class="pf-doc__ico">${I.doc}</span><span><span class="pf-doc__nm">${d.nombre}</span><span class="pf-doc__sub">${d.sub}</span></span><span class="pf-doc__st st-${d.estado}">${d.estado.charAt(0).toUpperCase()+d.estado.slice(1)}</span></div>`).join('');
+  const rows = ATLETA.documentos.map(d => {
+    const up = d.subido ? '' : `
+      <div class="pf-doc-up">
+        <div class="naowee-file-uploader" data-doc="${d.nombre}">
+          <label class="naowee-file-uploader__drop-zone">
+            <span class="naowee-file-uploader__drop-icon">${UPLOAD_ICO}</span>
+            <span class="naowee-file-uploader__drop-title">Arrastra el archivo o haz clic para subir</span>
+            <span class="naowee-file-uploader__drop-hint">PDF, JPG o PNG · máximo 5 MB</span>
+            <span class="naowee-file-uploader__drop-filename"></span>
+            <input type="file" accept=".pdf,.jpg,.jpeg,.png">
+          </label>
+        </div>
+      </div>`;
+    return `<div class="pf-doc-item ${d.subido?'':'is-required'}">
+      <div class="pf-doc">
+        <span class="pf-doc__ico ${d.subido?'':'is-required'}">${I.doc}</span>
+        <span class="pf-doc__txt"><span class="pf-doc__nm">${d.nombre}</span><span class="pf-doc__sub">${d.sub}</span></span>
+        <span class="pf-doc__st st-${d.estado}">${DOC_STATUS[d.estado] || d.estado}</span>
+      </div>${up}
+    </div>`;
+  }).join('');
   return `${head('Documentos', false)}<div class="pf-body">${rows}</div>`;
 }
 
@@ -456,12 +514,28 @@ function eventosHTML() {
   return `${head('Eventos e inscripciones', false)}<div class="pf-body">${group('Activos · próximos', activos, true)}${group('Finalizados', finalizados, false)}</div>`;
 }
 
+function trayectoriaHTML() {
+  const prox = ATLETA.inscripciones.filter(e => e.estado === 'activo')
+    .map(e => ({ anio: (e.fecha.match(/\d{4}/) || ['2026'])[0], evento: e.evento, meta: `${e.prueba.split(' · ').pop()} · inscrito`, cls: 'proximo', lbl: ' · Próximo' }));
+  const meds = [...ATLETA.medalleria].sort((a, b) => ('' + b.fecha).localeCompare('' + a.fecha))
+    .map(m => ({ anio: '' + m.fecha, evento: m.evento, meta: `${MEDAL_EMOJI[m.medalla]} ${m.medalla} · ${m.prueba}`, cls: m.medalla.toLowerCase(), lbl: '' }));
+  const items = [...prox, ...meds];
+  return `<div class="pf-tl">${items.map(it => `
+    <div class="pf-tl__item pf-tl__item--${it.cls}">
+      <div class="pf-tl__year">${it.anio}${it.lbl}</div>
+      <div class="pf-tl__ev">${it.evento}</div>
+      <div class="pf-tl__meta">${it.meta}</div>
+    </div>`).join('')}</div>`;
+}
+
 function historialHTML() {
   const RANK_ICO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>';
-  const TABS = [['medalleria','Medallería',I.medal],['resultados','Resultados',RANK_ICO]];
+  const TABS = [['trayectoria','Trayectoria',I.clock],['medalleria','Medallería',I.medal],['resultados','Resultados',RANK_ICO]];
   const tabsBar = `<div class="pf-tabs-wrap"><div class="naowee-tabs" id="pfHistTabs" role="tablist">${TABS.map(([id,l,ic])=>`<button class="naowee-tab ${id===activeHist?'naowee-tab--selected':''}" data-tab="${id}" role="tab">${ic}${l}</button>`).join('')}</div></div>`;
   let body;
-  if (activeHist === 'medalleria') {
+  if (activeHist === 'trayectoria') {
+    body = trayectoriaHTML();
+  } else if (activeHist === 'medalleria') {
     body = ATLETA.medalleria.length ? ATLETA.medalleria.map(m => `<div class="pf-tr"><span class="pf-tr__medal m-${m.medalla.toLowerCase()}">${MEDAL_EMOJI[m.medalla]}</span><span><span class="pf-tr__nm">${m.evento}</span><span class="pf-tr__sub">${m.prueba} · ${m.fecha}</span></span><span class="pf-tr__rk is-podio">${m.medalla}</span></div>`).join('') : `<div class="pf-empty">Sin medallas registradas.</div>`;
   } else {
     body = ATLETA.resultados.length ? ATLETA.resultados.map(r => `<div class="pf-tr"><span class="pf-tr__medal" style="background:var(--bg-soft)">${I.medal}</span><span><span class="pf-tr__nm">${r.evento}</span><span class="pf-tr__sub">${r.prueba} · ${r.fecha}</span></span><span class="pf-tr__rk ${r.ranking<=3?'is-podio':''}">Puesto ${r.ranking}°</span></div>`).join('') : `<div class="pf-empty">Sin resultados registrados.</div>`;
