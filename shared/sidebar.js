@@ -488,12 +488,20 @@ function bindDemoSwitcher(root) {
     demoToast('Tour reiniciado — se mostrará en tu próxima visita.');
   });
 
-  /* Reiniciar demo (full reset → vuelve a modo libre + selector). */
+  /* Reiniciar demo (full reset → borra TODO el state de la demo y vuelve al selector).
+     Antes solo limpiaba modo+tour, por eso los eventos/usuarios/cargues creados
+     seguían apareciendo. Ahora barre todas las claves 'naowee-eventos-*' en ambos
+     storages (drafts, overrides, cargue-deltas/history/files, users, calendario,
+     events-view, modo, tour, sidebar-collapsed). */
   root.querySelector('#demoResetBtn')?.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (window.confirm('¿Reiniciar la demo? Se restablecen el modo y el tour.')) {
-      localStorage.removeItem(MODE_KEY);
-      localStorage.removeItem(TOUR_KEY);
+    if (window.confirm('¿Reiniciar la demo? Se borran los eventos, usuarios y cargues que creaste y se restablecen el modo y el tour.')) {
+      [sessionStorage, localStorage].forEach((store) => {
+        for (let i = store.length - 1; i >= 0; i--) {
+          const k = store.key(i);
+          if (k && k.startsWith('naowee-eventos-')) store.removeItem(k);
+        }
+      });
       window.location.href = 'index.html';
     }
   });
