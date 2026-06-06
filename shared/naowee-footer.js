@@ -12,7 +12,7 @@ const MODULE_NAME = 'Eventos';
    subirla aquí en cada release (no se deriva sola — por eso se mantenía en 0.3.0).
    v0.4.0 = vista Calendario (estilo Google Calendar) + eventos del organismo
    reflejados + refinamientos de formularios/modales. */
-const MODULE_VERSION = 'v0.4.0';
+const MODULE_VERSION = 'v0.5.0';
 
 (function () {
   function mount() {
