@@ -61,22 +61,8 @@
   /* Pila de cards del modo activo (form + cola "Deportistas por inscribir") con gap */
   #modeBody { display: flex; flex-direction: column; gap: 18px; }
 
-  /* ── Gate por estado (borrador / finalizado) ── */
-  .carg-gate {
-    display: flex; align-items: flex-start; gap: 12px; padding: 16px 18px;
-    border-radius: var(--radius-lg); font-size: 13px; line-height: 1.5; margin-bottom: 18px;
-    position: relative; overflow: hidden;
-  }
-  .carg-gate::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
-  .carg-gate__ico { flex-shrink: 0; margin-top: 1px; }
-  .carg-gate__ico svg { width: 18px; height: 18px; }
-  .carg-gate strong { font-weight: 700; }
-  .carg-gate--borrador { background: var(--orange-bg); color: #7a3d04; }
-  .carg-gate--borrador::before { background: var(--naranja); }
-  .carg-gate--borrador .carg-gate__ico { color: #d97706; }
-  .carg-gate--final { background: var(--blue-bg); color: #134a86; }
-  .carg-gate--final::before { background: var(--blue-info); }
-  .carg-gate--final .carg-gate__ico { color: var(--blue-info); }
+  /* Los avisos de estado (borrador/finalizado) usan el componente canónico del
+     DS .naowee-message (--caution / --informative) de forms.css. */
 
   /* ── Card de cargue (sin sombra, borde 1px) ── */
   .carg-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px 22px; }
@@ -736,9 +722,11 @@
        (Borrador NO bloquea: el gestor puede adelantar la operación — feedback Danna.) */
     if (!gateOpen) {
       panel.innerHTML = `
-        <div class="carg-gate carg-gate--final">
-          <span class="carg-gate__ico">${I.lock}</span>
-          <span>Evento <strong>finalizado</strong> · los cargues están cerrados (solo lectura). Puedes consultar los archivos ya cargados.</span>
+        <div class="naowee-message naowee-message--informative" style="margin-bottom:18px">
+          <div class="naowee-message__header">
+            <span class="naowee-message__icon"><svg viewBox="0 0 16 16" fill="none"><path d="M7 7h2v4H7z" fill="#fff"/><circle cx="8" cy="5" r="1" fill="#fff"/></svg></span>
+            <span class="naowee-message__body">Evento <strong>finalizado</strong> · los cargues están cerrados (solo lectura). Puedes consultar los archivos ya cargados.</span>
+          </div>
         </div>
         ${filesHTML()}
       `;
@@ -749,9 +737,11 @@
     /* Aviso informativo (no bloquea): el evento aún está en borrador pero el gestor
        puede adelantar los cargues; se activará en su fecha de inicio. */
     const borradorNote = ev.status === 'borrador'
-      ? `<div class="carg-gate carg-gate--borrador">
-           <span class="carg-gate__ico">${I.info}</span>
-           <span>Evento en <strong>borrador</strong>. Puedes adelantar los cargues de <strong>${esc(cfg.label.toLowerCase())}</strong>; el evento se activará automáticamente el <strong>${esc(ev.start)}</strong>.</span>
+      ? `<div class="naowee-message naowee-message--caution" style="margin-bottom:18px">
+           <div class="naowee-message__header">
+             <span class="naowee-message__icon"><svg viewBox="0 0 16 16" fill="none"><path d="M7 5h2v4H7z" fill="#fff"/><circle cx="8" cy="11" r="1" fill="#fff"/></svg></span>
+             <span class="naowee-message__body">Evento en <strong>borrador</strong>. Puedes adelantar los cargues de <strong>${esc(cfg.label.toLowerCase())}</strong>; el evento se activará automáticamente el <strong>${esc(ev.start)}</strong>.</span>
+           </div>
          </div>`
       : '';
     panel.innerHTML = `
