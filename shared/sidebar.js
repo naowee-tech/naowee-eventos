@@ -77,7 +77,7 @@ const ITEMS = {
   seguMedalleria:   { id: 'medalleria',       label: 'Medallería',               icon: 'medal',    route: 'cargue.html?tipo=medalleria' },
   perfil:           { id: 'perfil',           label: 'Perfil del deportista',    icon: 'athlete',  route: 'perfil.html' },
   calendarioOrg:    { id: 'calendario',       label: 'Calendario de eventos',    icon: 'calendar', route: 'calendario.html' },
-  reporteria:       { id: 'reporteria',       label: 'Reportería',               icon: 'chart',    route: '#reporteria', badge: 'Diego' },
+  reporteria:       { id: 'reporteria',       label: 'Reportería',               icon: 'chart',    route: '#reporteria' },
   usuarios:         { id: 'usuarios',         label: 'Usuarios',                 icon: 'user',     route: 'usuarios.html' }
 };
 
