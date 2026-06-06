@@ -121,9 +121,10 @@
   /* Divider de borde a borde del container: el borde vive en el wrap (full-width
      del panel); a las .naowee-tabs se les quita su borde y quedan alineadas con
      el contenido (24px). Las tabs llevan icono + label compactos. */
-  .pf-tabs-wrap { padding: 14px 24px 0; border-bottom: 1px solid var(--border-dark); }
+  .pf-tabs-wrap { padding: 14px 0 0; border-bottom: 1px solid var(--border-dark); }
   .pf-tabs-wrap .naowee-tabs { border-bottom: none; }
-  .pf-tabs-wrap .naowee-tab { padding: 0 8px; font-size: 13px; height: 44px; gap: 5px; }
+  /* flex:1 → las tabs ocupan todo el ancho del container, repartidas por igual. */
+  .pf-tabs-wrap .naowee-tab { flex: 1; padding: 0 6px; font-size: 13px; height: 44px; gap: 6px; }
   .pf-tabs-wrap .naowee-tab svg { width: 14px; height: 14px; flex-shrink: 0; }
   .pf-body { padding: 22px 24px 26px; animation: fadeIn .25s ease both; }
 
@@ -167,17 +168,20 @@
   .st-pendiente { background: var(--orange-bg); color: #b45309; }
 
   /* Eventos / inscripciones */
-  .pf-ev { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); transition: border-color var(--duration-fast), box-shadow var(--duration-fast); }
-  .pf-ev + .pf-ev { margin-top: 10px; }
+  .pf-ev { display: flex; align-items: center; gap: 13px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); transition: border-color var(--duration-fast); }
+  .pf-ev + .pf-ev { margin-top: 9px; }
   .pf-ev:hover { border-color: var(--border-dark); }
   .pf-ev-group + .pf-ev-group { margin-top: 22px; }
   .pf-ev-group__h { display: flex; align-items: center; gap: 8px; margin-bottom: 11px; font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--text-muted); }
   .pf-ev-group__h span { padding: 1px 8px; border-radius: var(--radius-full); background: var(--bg-soft); color: var(--text-secondary); font-size: 10.5px; }
   .pf-ev-group__h.is-active { color: var(--green); }
   .pf-ev-group__h.is-active span { background: var(--green-bg); color: var(--green); }
-  .pf-ev__emoji { font-size: 22px; flex-shrink: 0; }
-  .pf-ev__nm { font-size: 14px; font-weight: 700; color: var(--text-primary); }
-  .pf-ev__sub { font-size: 12.5px; color: var(--text-secondary); margin-top: 2px; }
+  .pf-ev__tile { width: 42px; height: 42px; border-radius: var(--radius-md); background: var(--bg-soft); display: flex; align-items: center; justify-content: center; font-size: 21px; flex-shrink: 0; }
+  .pf-ev__tile.is-active { background: var(--green-bg); }
+  .pf-ev__body { flex: 1; min-width: 0; }
+  .pf-ev__nm { font-size: 13.5px; font-weight: 700; color: var(--text-primary); line-height: 1.3; }
+  .pf-ev__sub { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--text-muted); margin-top: 3px; }
+  .pf-ev__dot { width: 3px; height: 3px; border-radius: 50%; background: var(--border-dark); flex-shrink: 0; }
   .pf-ev__st { margin-left: auto; padding: 4px 11px; border-radius: var(--radius-full); font-size: 11px; font-weight: 700; flex-shrink: 0; }
   .pf-ev__st.s-activo { background: var(--green-bg); color: var(--green); }
   .pf-ev__st.s-finalizado { background: #eef0f7; color: var(--text-secondary); }
@@ -447,7 +451,7 @@ function documentosHTML() {
 function eventosHTML() {
   const activos = ATLETA.inscripciones.filter(e => e.estado === 'activo');
   const finalizados = ATLETA.inscripciones.filter(e => e.estado === 'finalizado');
-  const row = (e) => `<div class="pf-ev"><span class="pf-ev__emoji">${ATLETA.deporteEmoji}</span><span style="flex:1;min-width:0"><span class="pf-ev__nm">${e.evento}</span><span class="pf-ev__sub">${e.prueba} · ${e.fecha}</span></span><span class="pf-ev__st s-${e.estado}">${e.estado==='activo'?'Activo':'Finalizado'}</span></div>`;
+  const row = (e) => { const act = e.estado === 'activo'; const prueba = e.prueba.split(' · ').pop(); return `<div class="pf-ev"><span class="pf-ev__tile ${act?'is-active':''}">${ATLETA.deporteEmoji}</span><span class="pf-ev__body"><span class="pf-ev__nm">${e.evento}</span><span class="pf-ev__sub">${prueba}<span class="pf-ev__dot"></span>${e.fecha}</span></span><span class="pf-ev__st s-${e.estado}">${act?'Activo':'Finalizado'}</span></div>`; };
   const group = (label, list, active) => list.length ? `<div class="pf-ev-group"><div class="pf-ev-group__h ${active?'is-active':''}">${label} <span>${list.length}</span></div>${list.map(row).join('')}</div>` : '';
   return `${head('Eventos e inscripciones', false)}<div class="pf-body">${group('Activos · próximos', activos, true)}${group('Finalizados', finalizados, false)}</div>`;
 }
