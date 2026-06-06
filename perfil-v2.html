@@ -140,12 +140,28 @@
   .pf-aside { display: flex; flex-direction: column; gap: 18px; position: sticky; top: 18px; }
   .pf-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 20px 22px; }
   .pf-card__title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0 0 16px; }
-  .pf-bio-row { display: flex; align-items: center; gap: 13px; padding: 11px 0; border-top: 1px solid var(--border); }
-  .pf-bio-row:first-of-type { border-top: none; padding-top: 0; }
-  .pf-bio-row__ico { width: 34px; height: 34px; border-radius: var(--radius-md); background: var(--bg-soft); display: flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0; }
-  .pf-bio-row__ico svg { width: 18px; height: 18px; }
-  .pf-bio-row__l { font-size: 11.5px; color: var(--text-muted); font-weight: 600; }
-  .pf-bio-row__v { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-top: 1px; }
+  .pf-bio-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .pf-bio-tile { padding: 13px; border: 1px solid var(--border); border-radius: var(--radius-lg); display: flex; flex-direction: column; }
+  .pf-bio-tile__ico { width: 30px; height: 30px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; margin-bottom: 9px; }
+  .pf-bio-tile__ico svg { width: 16px; height: 16px; }
+  .pf-bio-tile__v { font-size: 18px; font-weight: 800; color: var(--text-primary); line-height: 1; }
+  .pf-bio-tile__l { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 4px; }
+  .pf-bio-tile--accent .pf-bio-tile__ico { background: var(--accent-bg); color: var(--accent); }
+  .pf-bio-tile--blue .pf-bio-tile__ico { background: var(--blue-bg); color: var(--blue-info); }
+  .pf-bio-tile--red .pf-bio-tile__ico { background: var(--red-bg); color: #c0392b; }
+  .pf-bio-tile--green .pf-bio-tile__ico { background: var(--green-bg); color: var(--green); }
+  /* Resultados — disco de posición tipo podio */
+  .pf-res { display: flex; align-items: center; gap: 13px; padding: 12px 0; border-top: 1px solid var(--border); }
+  .pf-res:first-of-type { border-top: none; padding-top: 2px; }
+  .pf-res__pos { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; flex-shrink: 0; border: 2.5px solid var(--surface); }
+  .pf-res__pos--1 { background: radial-gradient(circle at 35% 28%, #fff7d6, #f5b400 72%, #d99400); color: #7a4e00; box-shadow: 0 0 0 1px #e3ab00; }
+  .pf-res__pos--2 { background: radial-gradient(circle at 35% 28%, #ffffff, #b6bdca 72%, #99a0b0); color: #39414f; box-shadow: 0 0 0 1px #aeb6c4; }
+  .pf-res__pos--3 { background: radial-gradient(circle at 35% 28%, #f7dcc0, #b87333 72%, #9a5d28); color: #5b3517; box-shadow: 0 0 0 1px #b0703a; }
+  .pf-res__pos--n { background: var(--bg-soft); color: var(--text-secondary); box-shadow: 0 0 0 1px var(--border); }
+  .pf-res__body { flex: 1; min-width: 0; }
+  .pf-res__nm { display: block; font-size: 13.5px; font-weight: 700; color: var(--text-primary); }
+  .pf-res__sub { display: block; font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+  .pf-res__tag { margin-left: auto; padding: 3px 10px; border-radius: var(--radius-full); font-size: 10.5px; font-weight: 700; flex-shrink: 0; background: var(--green-bg); color: var(--green); }
   /* Pares etiqueta/valor apilados (biometría, docs, eventos, historial, ajustes). */
   .pf-bio-row__l, .pf-bio-row__v, .pf-doc__nm, .pf-doc__sub, .pf-ev__nm, .pf-ev__sub, .pf-tr__nm, .pf-tr__sub, .pf-set__nm, .pf-set__d { display: block; }
 
@@ -417,17 +433,19 @@ function asideHTML() {
   return `
     <div class="pf-card">
       <h3 class="pf-card__title">Biometría</h3>
-      ${bioRow(I.ruler,'Altura',b.altura)}
-      ${bioRow(I.weight,'Peso',b.peso)}
-      ${bioRow(I.blood,'Tipo de sangre',b.sangre)}
-      ${bioRow(I.medal,'IMC',b.imc)}
+      <div class="pf-bio-grid">
+        ${bioTile(I.ruler,'Altura',b.altura,'accent')}
+        ${bioTile(I.weight,'Peso',b.peso,'blue')}
+        ${bioTile(I.blood,'Tipo de sangre',b.sangre,'red')}
+        ${bioTile(I.medal,'IMC',b.imc,'green')}
+      </div>
     </div>
     <div class="pf-card pf-ring-card">
       <div class="pf-ring" style="background:conic-gradient(var(--accent) ${deg}deg, var(--border) ${deg}deg)"><div class="pf-ring__inner">${ATLETA.completitud}%</div></div>
       <div class="pf-ring-card__txt"><strong>Completitud del perfil</strong><span>2 datos pendientes por completar</span></div>
     </div>`;
 }
-function bioRow(ico,l,v){ return `<div class="pf-bio-row"><span class="pf-bio-row__ico">${ico}</span><span><span class="pf-bio-row__l">${l}</span><span class="pf-bio-row__v">${v}</span></span></div>`; }
+function bioTile(ico,l,v,c){ return `<div class="pf-bio-tile pf-bio-tile--${c}"><span class="pf-bio-tile__ico">${ico}</span><span class="pf-bio-tile__v">${v}</span><span class="pf-bio-tile__l">${l}</span></div>`; }
 
 /* ── Panel central por sección ── */
 function renderPanel() {
@@ -553,7 +571,7 @@ function historialHTML() {
   } else if (activeHist === 'medalleria') {
     body = ATLETA.medalleria.length ? ATLETA.medalleria.map(m => `<div class="pf-tr"><span class="pf-tr__medal m-${m.medalla.toLowerCase()}">${MEDAL_EMOJI[m.medalla]}</span><span><span class="pf-tr__nm">${m.evento}</span><span class="pf-tr__sub">${m.prueba} · ${m.fecha}</span></span><span class="pf-tr__rk is-podio">${m.medalla}</span></div>`).join('') : `<div class="pf-empty">Sin medallas registradas.</div>`;
   } else {
-    body = ATLETA.resultados.length ? ATLETA.resultados.map(r => `<div class="pf-tr"><span class="pf-tr__medal" style="background:var(--bg-soft)">${I.medal}</span><span><span class="pf-tr__nm">${r.evento}</span><span class="pf-tr__sub">${r.prueba} · ${r.fecha}</span></span><span class="pf-tr__rk ${r.ranking<=3?'is-podio':''}">Puesto ${r.ranking}°</span></div>`).join('') : `<div class="pf-empty">Sin resultados registrados.</div>`;
+    body = ATLETA.resultados.length ? ATLETA.resultados.map(r => { const cls = r.ranking <= 3 ? r.ranking : 'n'; const tag = r.ranking <= 3 ? '<span class="pf-res__tag">Podio</span>' : ''; return `<div class="pf-res"><span class="pf-res__pos pf-res__pos--${cls}">${r.ranking}°</span><span class="pf-res__body"><span class="pf-res__nm">${r.evento}</span><span class="pf-res__sub">${r.prueba} · ${r.fecha}</span></span>${tag}</div>`; }).join('') : `<div class="pf-empty">Sin resultados registrados.</div>`;
   }
   return `${head('Historial deportivo', false)}${tabsBar}<div class="pf-body">${body}</div>`;
 }
