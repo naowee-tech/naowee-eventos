@@ -27,63 +27,68 @@
   .page { background: var(--surface); }
   .pf-wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
 
-  /* ── HERO ── */
+  /* ── HERO (encabezado general del deportista) ── */
   .pf-hero {
-    position: relative; overflow: hidden;
-    display: flex; align-items: center; gap: 22px; flex-wrap: wrap;
+    display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-xl); padding: 24px 28px;
+    border-radius: var(--radius-xl); padding: 22px 28px;
     animation: fadeInUp .44s var(--easing-smoothout) both;
   }
-  .pf-hero::before {
-    content: ''; position: absolute; inset: 0 0 auto 0; height: 4px;
-    background: linear-gradient(90deg, var(--naranja), var(--accent));
-  }
-  .pf-ava-wrap { position: relative; flex-shrink: 0; }
+  .pf-ava-wrap { position: relative; flex-shrink: 0; padding-bottom: 12px; }
   .pf-ava {
-    width: 78px; height: 78px; border-radius: var(--radius-full);
+    width: 84px; height: 84px; border-radius: var(--radius-full);
     display: flex; align-items: center; justify-content: center;
-    color: #fff; font-size: 26px; font-weight: 800; letter-spacing: .5px;
-    box-shadow: 0 8px 20px -6px rgba(var(--ava-glow, 100,116,139), .55);
+    color: #fff; font-size: 28px; font-weight: 800; letter-spacing: .5px;
+    border: 3px solid var(--surface); text-shadow: 0 1px 2px rgba(0,0,0,.18);
+    box-shadow: 0 0 0 1px var(--border), 0 10px 24px -8px rgba(var(--ava-glow, 100,116,139), .5);
   }
   .pf-ava--olimpico    { background: linear-gradient(135deg,#f59e0b,#d97706); --ava-glow: 217,119,6; }
   .pf-ava--profesional { background: linear-gradient(135deg,#3b82f6,#1d4ed8); --ava-glow: 29,78,216; }
   .pf-ava--juvenil     { background: linear-gradient(135deg,#a855f7,#7c3aed); --ava-glow: 124,58,237; }
   .pf-ava--amateur     { background: linear-gradient(135deg,#94a3b8,#64748b); --ava-glow: 100,116,139; }
-  /* Bandera de nacionalidad (overlay) — escalable a otros países */
-  .pf-flag {
-    position: absolute; right: -2px; bottom: -2px;
-    width: 26px; height: 26px; border-radius: var(--radius-full);
-    border: 2.5px solid var(--surface); overflow: hidden;
-    box-shadow: var(--shadow-sm);
-  }
+  /* Bandera de nacionalidad — esquina superior derecha (escalable a otros países) */
+  .pf-flag { position: absolute; right: -2px; top: -1px; width: 25px; height: 25px; border-radius: var(--radius-full); border: 2.5px solid var(--surface); overflow: hidden; }
   .pf-flag--co { background: linear-gradient(#FCD116 0 50%, #003893 50% 75%, #CE1126 75% 100%); }
-
-  .pf-id { flex: 1; min-width: 240px; }
-  .pf-id__top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .pf-name { font-size: 24px; font-weight: 800; letter-spacing: -.5px; color: var(--text-primary); margin: 0; }
-  .pf-role-badge {
-    display: inline-flex; align-items: center; padding: 3px 10px; border-radius: var(--radius-full);
-    background: var(--blue-bg); color: var(--blue-info); font-size: 11px; font-weight: 700; letter-spacing: .2px;
+  /* Tier ribbon en la base del avatar (categoría de reconocimiento) */
+  .pf-tier-ribbon {
+    position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
+    display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+    padding: 3px 9px; border-radius: var(--radius-full);
+    font-size: 9.5px; font-weight: 800; letter-spacing: .3px; text-transform: uppercase; line-height: 1;
+    box-shadow: 0 0 0 3px var(--surface);
   }
-  .pf-meta { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: 8px; }
-  .pf-meta span { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); font-weight: 500; }
-  .pf-meta svg { width: 15px; height: 15px; color: var(--text-muted); }
-
-  /* Tier pill (categoría de reconocimiento) */
-  .pf-tier { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: var(--radius-full); font-size: 11px; font-weight: 700; letter-spacing: .15px; }
-  .pf-tier svg { width: 11px; height: 11px; }
+  .pf-tier-ribbon svg { width: 10px; height: 10px; }
   .pf-tier--olimpico    { background: linear-gradient(135deg,#fff8d6,#ffe082); color: #8a5a00; }
   .pf-tier--profesional { background: linear-gradient(135deg,#eef5ff,#c3dcff); color: #1d4ed8; }
   .pf-tier--juvenil     { background: linear-gradient(135deg,#f6edff,#e0c9ff); color: #7c3aed; }
   .pf-tier--amateur     { background: linear-gradient(135deg,#f8f9fc,#e3e6f1); color: #646587; }
 
-  /* Stats chips */
-  .pf-stats { display: flex; gap: 10px; flex-wrap: wrap; }
-  .pf-stat { display: flex; flex-direction: column; align-items: center; min-width: 64px; padding: 10px 14px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius-lg); }
-  .pf-stat__n { font-size: 19px; font-weight: 800; line-height: 1; }
-  .pf-stat__l { font-size: 10.5px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase; color: var(--text-muted); margin-top: 5px; }
-  .pf-stat--oro .pf-stat__n { color: #d4a017; } .pf-stat--plata .pf-stat__n { color: #8a93a6; } .pf-stat--bronce .pf-stat__n { color: #b06a3b; }
+  .pf-id { flex: 1; min-width: 240px; }
+  .pf-name { font-size: 23px; font-weight: 800; letter-spacing: -.4px; color: var(--text-primary); margin: 0; }
+  .pf-doc { font-size: 13px; color: var(--text-secondary); margin: 4px 0 12px; }
+  .pf-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pf-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: var(--radius-full); font-size: 11.5px; font-weight: 700; letter-spacing: .25px; line-height: 1; }
+  .pf-badge--deporte    { color: var(--text-secondary); background: #eceef4; }
+  .pf-badge--club       { color: #1d4ed8; background: #eef5ff; }
+  .pf-badge--liga       { color: #1f8923; background: #e6f4e7; }
+  .pf-badge--federacion { color: #d74009; background: #fff3e6; }
+
+  /* Lado derecho: contadores + medal-strip */
+  .pf-side { display: flex; flex-direction: column; align-items: flex-end; gap: 11px; margin-left: auto; flex-shrink: 0; }
+  .pf-counts { display: flex; gap: 10px; }
+  .pf-stat { text-align: center; min-width: 72px; padding: 9px 16px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+  .pf-stat__n { font-size: 20px; font-weight: 800; color: var(--text-primary); line-height: 1; }
+  .pf-stat__l { font-size: 10px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--text-muted); margin-top: 5px; }
+  .pf-medal-strip { display: inline-flex; align-items: center; gap: 9px; padding: 5px 13px 5px 7px; background: linear-gradient(180deg,#fff,#fafbfd); border: 1px solid var(--border); border-radius: var(--radius-full); }
+  .pf-medal-strip__items { display: flex; }
+  .pf-mchip { width: 26px; height: 26px; border-radius: var(--radius-full); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; border: 2px solid #fff; margin-left: -9px; }
+  .pf-mchip:first-child { margin-left: 0; }
+  .pf-mchip--oro    { background: linear-gradient(135deg,#fff8d6,#f5b400); }
+  .pf-mchip--plata  { background: linear-gradient(135deg,#f1f3f7,#9aa0b0); }
+  .pf-mchip--bronce { background: linear-gradient(135deg,#f6d4a8,#b06b2f); }
+  .pf-medal-strip__count { font-size: 11px; font-weight: 700; color: var(--text-secondary); letter-spacing: .3px; text-transform: uppercase; }
+  .pf-medal-strip__count strong { color: var(--text-primary); }
+  .pf-medal-strip__empty { font-size: 11.5px; color: var(--text-muted); font-style: italic; padding: 3px 6px; }
 
   /* ── GRID 3 col ── */
   .pf-grid { display: grid; grid-template-columns: 232px 1fr 280px; gap: 18px; align-items: start; }
@@ -200,6 +205,7 @@
     .pf-nav__item { width: auto; white-space: nowrap; }
     .pf-fields { grid-template-columns: 1fr; gap: 16px; }
     .pf-hero { padding: 20px; }
+    .pf-side { margin-left: 0; align-items: flex-start; }
   }
   @media (prefers-reduced-motion: reduce) { .pf-hero, .pf-banner, .pf-body, .pf-sw::after { animation: none !important; transition: none !important; } }
 </style>
@@ -285,6 +291,15 @@ const TIER = { olimpico:{label:'Olímpico',ico:I.olimpico}, profesional:{label:'
 const MEDAL_EMOJI = { Oro:'🥇', Plata:'🥈', Bronce:'🥉' };
 const nombreCompleto = `${ATLETA.nombre} ${ATLETA.segundoNombre} ${ATLETA.apellido} ${ATLETA.segundoApellido}`;
 const cuenta = (k) => ATLETA.medalleria.filter(m => m.medalla === k).length;
+function medalStripHTML() {
+  const meds = ATLETA.medalleria;
+  if (!meds.length) return `<div class="pf-medal-strip"><span class="pf-medal-strip__empty">Sin medallas aún</span></div>`;
+  // Orden de prestigio: oro → plata → bronce; chips superpuestos (máx 5 visibles).
+  const orden = { Oro:0, Plata:1, Bronce:2 };
+  const sorted = [...meds].sort((a,b) => orden[a.medalla] - orden[b.medalla]);
+  const chips = sorted.slice(0,5).map(m => `<span class="pf-mchip pf-mchip--${m.medalla.toLowerCase()}" title="${m.medalla} · ${m.evento}">${MEDAL_EMOJI[m.medalla]}</span>`).join('');
+  return `<div class="pf-medal-strip"><div class="pf-medal-strip__items">${chips}</div><span class="pf-medal-strip__count"><strong>${meds.length}</strong> medallas</span></div>`;
+}
 
 const NAV_GROUPS = [
   { label: 'Perfil', items: [
@@ -314,25 +329,24 @@ function render() {
       <div class="pf-ava-wrap">
         <div class="pf-ava pf-ava--${ATLETA.tier}">${ATLETA.avatar}</div>
         <span class="pf-flag pf-flag--${ATLETA.nacionalidad.iso}" title="${ATLETA.nacionalidad.pais}"></span>
+        <span class="pf-tier-ribbon pf-tier--${ATLETA.tier}">${t.ico} ${t.label}</span>
       </div>
       <div class="pf-id">
-        <div class="pf-id__top">
-          <h1 class="pf-name">${ATLETA.nombre} ${ATLETA.apellido}</h1>
-          <span class="pf-role-badge">Deportista</span>
-          <span class="pf-tier pf-tier--${ATLETA.tier}">${t.ico} ${t.label}</span>
-        </div>
-        <div class="pf-meta">
-          <span>${I.id} ${ATLETA.doc.numero}</span>
-          <span>${I.cake} ${ATLETA.nacimiento}</span>
-          <span>${I.pin} ${ATLETA.ubicacion.municipio}, ${ATLETA.ubicacion.depto}</span>
-          <span>${ATLETA.deporteEmoji} ${ATLETA.deporte}</span>
+        <h1 class="pf-name">${ATLETA.nombre} ${ATLETA.apellido} ${ATLETA.segundoApellido}</h1>
+        <p class="pf-doc">CC ${ATLETA.doc.numero}</p>
+        <div class="pf-badges">
+          <span class="pf-badge pf-badge--deporte">${ATLETA.deporteEmoji} ${ATLETA.deporte}</span>
+          <span class="pf-badge pf-badge--club">🏛️ ${ATLETA.club}</span>
+          <span class="pf-badge pf-badge--liga">🏆 ${ATLETA.liga}</span>
+          <span class="pf-badge pf-badge--federacion">🎖️ ${ATLETA.federacion}</span>
         </div>
       </div>
-      <div class="pf-stats">
-        <div class="pf-stat"><span class="pf-stat__n">${ATLETA.inscripciones.length}</span><span class="pf-stat__l">Eventos</span></div>
-        <div class="pf-stat pf-stat--oro"><span class="pf-stat__n">${cuenta('Oro')}</span><span class="pf-stat__l">Oro</span></div>
-        <div class="pf-stat pf-stat--plata"><span class="pf-stat__n">${cuenta('Plata')}</span><span class="pf-stat__l">Plata</span></div>
-        <div class="pf-stat pf-stat--bronce"><span class="pf-stat__n">${cuenta('Bronce')}</span><span class="pf-stat__l">Bronce</span></div>
+      <div class="pf-side">
+        <div class="pf-counts">
+          <div class="pf-stat"><div class="pf-stat__n">${ATLETA.inscripciones.length}</div><div class="pf-stat__l">Inscrip.</div></div>
+          <div class="pf-stat"><div class="pf-stat__n">${ATLETA.resultados.length}</div><div class="pf-stat__l">Resultados</div></div>
+        </div>
+        ${medalStripHTML()}
       </div>
     </section>
 
