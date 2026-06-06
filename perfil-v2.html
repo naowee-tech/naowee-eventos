@@ -24,11 +24,8 @@
      vida del deportista: datos, ubicación, contacto, biometría, documentos,
      eventos e historial (inscripciones · resultados · medallería). */
 
-  .page { background: var(--bg-soft); }
+  .page { background: var(--surface); }
   .pf-wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
-
-  /* ── Banner perfil incompleto (naowee-message canónico) ── */
-  .pf-banner { animation: fadeInUp .4s var(--easing-smoothout) both; }
 
   /* ── HERO ── */
   .pf-hero {
@@ -94,6 +91,8 @@
 
   /* Nav de secciones */
   .pf-nav { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 8px; box-shadow: var(--shadow-sm); position: sticky; top: 18px; }
+  .pf-nav__group { font-size: 10.5px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--text-muted); padding: 13px 13px 6px; }
+  .pf-nav__group:first-child { padding-top: 6px; }
   .pf-nav__item {
     display: flex; align-items: center; gap: 11px; width: 100%;
     padding: 11px 13px; border: none; background: transparent; border-radius: var(--radius-md);
@@ -116,6 +115,9 @@
   .pf-edit svg { width: 14px; height: 14px; }
   .pf-edit:hover { text-decoration: underline; }
   .pf-tabs-wrap { padding: 14px 24px 0; }
+  /* Sub-tabs compactas para que las 4 (Datos·Ubicación·Adicionales·Contacto) entren
+     en la columna central sin recortarse; en pantallas chicas la fila hace scroll. */
+  .pf-tabs-wrap .naowee-tab { padding: 0 13px; font-size: 13px; height: 44px; }
   .pf-body { padding: 22px 24px 26px; animation: fadeIn .25s ease both; }
 
   /* Field grid */
@@ -285,14 +287,20 @@ const MEDAL_EMOJI = { Oro:'🥇', Plata:'🥈', Bronce:'🥉' };
 const nombreCompleto = `${ATLETA.nombre} ${ATLETA.segundoNombre} ${ATLETA.apellido} ${ATLETA.segundoApellido}`;
 const cuenta = (k) => ATLETA.medalleria.filter(m => m.medalla === k).length;
 
-const SECCIONES = [
-  { id:'resumen', label:'Resumen', icon:I.id },
-  { id:'documentos', label:'Documentos', icon:I.doc, badge:'1' },
-  { id:'eventos', label:'Eventos', icon:I.cal, badge:'Nuevos' },
-  { id:'historial', label:'Historial', icon:I.medal },
-  { id:'config', label:'Configuraciones', icon:I.gear },
-  { id:'notif', label:'Notificaciones', icon:I.bell },
-  { id:'seguridad', label:'Seguridad', icon:I.shield, alert:true }
+const NAV_GROUPS = [
+  { label: 'Perfil', items: [
+    { id:'resumen', label:'Resumen', icon:I.id },
+    { id:'documentos', label:'Documentos', icon:I.doc, badge:'1' }
+  ]},
+  { label: 'Deportivo', items: [
+    { id:'eventos', label:'Eventos', icon:I.cal, badge:'Nuevos' },
+    { id:'historial', label:'Historial', icon:I.medal }
+  ]},
+  { label: 'Cuenta', items: [
+    { id:'config', label:'Configuraciones', icon:I.gear },
+    { id:'notif', label:'Notificaciones', icon:I.bell },
+    { id:'seguridad', label:'Seguridad', icon:I.shield, alert:true }
+  ]}
 ];
 
 let activeSec = 'resumen';
@@ -303,14 +311,6 @@ let activeHist = 'medalleria';
 function render() {
   const t = TIER[ATLETA.tier];
   document.getElementById('pfRoot').innerHTML = `
-    <div class="pf-banner naowee-message naowee-message--caution">
-      <div class="naowee-message__header">
-        <span class="naowee-message__icon"><svg viewBox="0 0 16 16" fill="none"><path d="M7 5h2v4H7z" fill="#fff"/><circle cx="8" cy="11" r="1" fill="#fff"/></svg></span>
-        <span class="naowee-message__title">Perfil incompleto</span>
-      </div>
-      <div class="naowee-message__text">Faltan datos de <strong>contacto de emergencia</strong> y la <strong>firma del consentimiento</strong>. Completarlos mejora las recomendaciones deportivas y la trazabilidad de tus eventos.</div>
-    </div>
-
     <section class="pf-hero">
       <div class="pf-ava-wrap">
         <div class="pf-ava pf-ava--${ATLETA.tier}">${ATLETA.avatar}</div>
@@ -338,7 +338,7 @@ function render() {
     </section>
 
     <div class="pf-grid">
-      <nav class="pf-nav" id="pfNav">${SECCIONES.map(navItem).join('')}</nav>
+      <nav class="pf-nav" id="pfNav">${NAV_GROUPS.map(g => `<div class="pf-nav__group">${g.label}</div>${g.items.map(navItem).join('')}`).join('')}</nav>
       <div class="pf-panel" id="pfPanel"></div>
       <aside class="pf-aside">${asideHTML()}</aside>
     </div>
