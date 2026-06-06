@@ -91,7 +91,7 @@
   .pf-medal-strip__empty { font-size: 11.5px; color: var(--text-muted); font-style: italic; padding: 3px 6px; }
 
   /* ── GRID 3 col ── */
-  .pf-grid { display: grid; grid-template-columns: 232px 1fr 280px; gap: 18px; align-items: start; }
+  .pf-grid { display: grid; grid-template-columns: 212px 1fr 264px; gap: 18px; align-items: start; }
 
   /* Nav de secciones */
   .pf-nav { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 8px; position: sticky; top: 18px; }
@@ -118,10 +118,13 @@
   .pf-edit { display: inline-flex; align-items: center; gap: 6px; border: none; background: none; color: var(--accent); font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
   .pf-edit svg { width: 14px; height: 14px; }
   .pf-edit:hover { text-decoration: underline; }
-  .pf-tabs-wrap { padding: 14px 24px 0; }
-  /* Sub-tabs compactas para que las 4 (Datos·Ubicación·Adicionales·Contacto) entren
-     en la columna central sin recortarse; en pantallas chicas la fila hace scroll. */
-  .pf-tabs-wrap .naowee-tab { padding: 0 13px; font-size: 13px; height: 44px; }
+  /* Divider de borde a borde del container: el borde vive en el wrap (full-width
+     del panel); a las .naowee-tabs se les quita su borde y quedan alineadas con
+     el contenido (24px). Las tabs llevan icono + label compactos. */
+  .pf-tabs-wrap { padding: 14px 24px 0; border-bottom: 1px solid var(--border-dark); }
+  .pf-tabs-wrap .naowee-tabs { border-bottom: none; }
+  .pf-tabs-wrap .naowee-tab { padding: 0 8px; font-size: 13px; height: 44px; gap: 5px; }
+  .pf-tabs-wrap .naowee-tab svg { width: 14px; height: 14px; flex-shrink: 0; }
   .pf-body { padding: 22px 24px 26px; animation: fadeIn .25s ease both; }
 
   /* Field grid */
@@ -411,8 +414,8 @@ const fld = (l,v,full) => `<div class="pf-field ${full?'pf-field--full':''}"><di
 const head = (title, edit=true) => `<div class="pf-panel__head"><h2 class="pf-panel__title">${title}</h2>${edit?`<button class="pf-edit">${I.pencil} Editar datos</button>`:''}</div>`;
 
 function resumenHTML() {
-  const TABS = [['datos','Datos'],['ubicacion','Ubicación'],['adicionales','Adicionales'],['contacto','Contacto']];
-  const tabsBar = `<div class="pf-tabs-wrap"><div class="naowee-tabs" id="pfTabs" role="tablist">${TABS.map(([id,l])=>`<button class="naowee-tab ${id===activeTab?'naowee-tab--selected':''}" data-tab="${id}" role="tab">${l}</button>`).join('')}</div></div>`;
+  const TABS = [['datos','Datos',I.id],['ubicacion','Ubicación',I.pin],['adicionales','Adicionales',I.medal],['contacto','Contacto',I.phone]];
+  const tabsBar = `<div class="pf-tabs-wrap"><div class="naowee-tabs" id="pfTabs" role="tablist">${TABS.map(([id,l,ic])=>`<button class="naowee-tab ${id===activeTab?'naowee-tab--selected':''}" data-tab="${id}" role="tab">${ic}${l}</button>`).join('')}</div></div>`;
   let body = '';
   if (activeTab === 'datos') body = `
     ${fld('Nombre', ATLETA.nombre)} ${fld('Segundo nombre', ATLETA.segundoNombre)}
@@ -450,8 +453,9 @@ function eventosHTML() {
 }
 
 function historialHTML() {
-  const TABS = [['medalleria','Medallería'],['resultados','Resultados']];
-  const tabsBar = `<div class="pf-tabs-wrap"><div class="naowee-tabs" id="pfHistTabs" role="tablist">${TABS.map(([id,l])=>`<button class="naowee-tab ${id===activeHist?'naowee-tab--selected':''}" data-tab="${id}" role="tab">${l}</button>`).join('')}</div></div>`;
+  const RANK_ICO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>';
+  const TABS = [['medalleria','Medallería',I.medal],['resultados','Resultados',RANK_ICO]];
+  const tabsBar = `<div class="pf-tabs-wrap"><div class="naowee-tabs" id="pfHistTabs" role="tablist">${TABS.map(([id,l,ic])=>`<button class="naowee-tab ${id===activeHist?'naowee-tab--selected':''}" data-tab="${id}" role="tab">${ic}${l}</button>`).join('')}</div></div>`;
   let body;
   if (activeHist === 'medalleria') {
     body = ATLETA.medalleria.length ? ATLETA.medalleria.map(m => `<div class="pf-tr"><span class="pf-tr__medal m-${m.medalla.toLowerCase()}">${MEDAL_EMOJI[m.medalla]}</span><span><span class="pf-tr__nm">${m.evento}</span><span class="pf-tr__sub">${m.prueba} · ${m.fecha}</span></span><span class="pf-tr__rk is-podio">${m.medalla}</span></div>`).join('') : `<div class="pf-empty">Sin medallas registradas.</div>`;
