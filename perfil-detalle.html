@@ -111,7 +111,9 @@
   .pf-nav__item.is-active { background: var(--accent-bg); color: var(--accent); font-weight: 700; }
   .pf-nav__item.is-active svg { color: var(--accent); }
   .pf-nav__item .pf-nav__sp { margin-left: auto; }
-  .pf-nav__badge { margin-left: auto; padding: 2px 8px; border-radius: var(--radius-full); background: var(--azul); color: #fff; font-size: 10px; font-weight: 700; }
+  .pf-nav__badge { margin-left: auto; padding: 2px 8px; border-radius: var(--radius-full); font-size: 10px; font-weight: 700; }
+  .pf-nav__badge--new { background: var(--green-bg); color: var(--green); }     /* "Nuevos" — verde bajo contraste */
+  .pf-nav__badge--count { background: var(--orange-bg); color: #b45309; }       /* "N" pendientes — ámbar */
   .pf-nav__alert { margin-left: auto; width: 18px; height: 18px; border-radius: var(--radius-full); background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; }
 
   /* Panel central */
@@ -428,7 +430,7 @@ function render() {
 }
 
 function navItem(s) {
-  const end = s.badge ? `<span class="pf-nav__badge">${s.badge}</span>` : s.alert ? `<span class="pf-nav__alert">!</span>` : '';
+  const end = s.badge ? `<span class="pf-nav__badge pf-nav__badge--${/^\d+$/.test(s.badge) ? 'count' : 'new'}">${s.badge}</span>` : s.alert ? `<span class="pf-nav__alert">!</span>` : '';
   return `<button type="button" class="pf-nav__item ${s.id===activeSec?'is-active':''}" data-sec="${s.id}">${s.icon}<span>${s.label}</span>${end}</button>`;
 }
 function syncNav() { document.querySelectorAll('.pf-nav__item').forEach(b => b.classList.toggle('is-active', b.dataset.sec===activeSec)); }
