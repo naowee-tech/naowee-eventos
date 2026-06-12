@@ -338,7 +338,7 @@
 </div>
 
 <script type="module">
-  import { mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher, getRoleFromQuery, getIcon, ROLES } from './shared/sidebar.js';
+  import { mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher, getRoleFromQuery, getIcon, ROLES, homeForRole } from './shared/sidebar.js';
   import { allEvents, STATUS_LABEL, applyUpload, addUploadRecord, getFileVersions, addFileVersion, GESTOR_MAP, resolveGestorId, eventsForGestor, gestorIdForRole } from './shared/events-data.js';
   import { GESTORES, DEPORTES_POR_TIPO, DEPARTAMENTOS } from './shared/catalogo.js';
 
@@ -1488,17 +1488,25 @@
   }
 
   /* ─── Bootstrap ─── */
-  mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: roleCode === 'ADMIN' ? (TIPOS.includes(tipoParam) ? tipoParam : 'inscripciones') : 'eventos' });
-  mountHeader({ headerEl: document.getElementById('topHeader'), role });
-  mountBackdrop();
-  mountDemoSwitcher({ roleCode });
-
-  if (roleCode === 'ADMIN') {
-    renderOversight();
-    document.title = `Naowee Eventos — ${TIPO_CFG[TIPOS.includes(tipoParam) ? tipoParam : 'inscripciones'].label} · seguimiento`;
+  /* Guard RBAC (feedback Danna 2026-06): los cargues los realiza SOLO el Gestor;
+     ADMIN entra en modo oversight (lectura). Cualquier otro rol (Usuario del
+     módulo, Organismo) NO accede a esta página → redirect a su home. */
+  const CAN_ENTER_CARGUE = roleCode === 'GESTOR' || roleCode === 'ADMIN';
+  if (!CAN_ENTER_CARGUE) {
+    window.location.replace(`${homeForRole(roleCode)}?role=${roleCode}`);
   } else {
-    render();
-    document.title = ev ? `Naowee Eventos — ${ev.name}` : 'Naowee Eventos — Cargues';
+    mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: roleCode === 'ADMIN' ? (TIPOS.includes(tipoParam) ? tipoParam : 'inscripciones') : 'eventos' });
+    mountHeader({ headerEl: document.getElementById('topHeader'), role });
+    mountBackdrop();
+    mountDemoSwitcher({ roleCode });
+
+    if (roleCode === 'ADMIN') {
+      renderOversight();
+      document.title = `Naowee Eventos — ${TIPO_CFG[TIPOS.includes(tipoParam) ? tipoParam : 'inscripciones'].label} · seguimiento`;
+    } else {
+      render();
+      document.title = ev ? `Naowee Eventos — ${ev.name}` : 'Naowee Eventos — Cargues';
+    }
   }
 </script>
 

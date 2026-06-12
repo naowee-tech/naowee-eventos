@@ -334,14 +334,17 @@
      hover naranja claro, con ícono). Role-aware:
        • "Editar evento" → SOLO Administrador (el Usuario del módulo y el
          Gestor son de lectura para los datos del evento → no la ven).
-       • "Ir a cargues" → mantiene su gate por estado Activo (gateOpen). ─── */
+       • "Ir a cargues" → SOLO Gestor (opera) y Admin (oversight lectura);
+         feedback Danna 2026-06: el Usuario del módulo NO carga — el botón no
+         se le muestra. Mantiene además su gate por estado Activo (gateOpen). ─── */
   const canEdit = roleCode === 'ADMIN';
+  const canCargue = roleCode === 'GESTOR' || roleCode === 'ADMIN';
   function headActions() {
     const btns = [];
     if (canEdit) {
       btns.push(`<button type="button" class="naowee-btn naowee-btn--ghost naowee-btn--sm" data-action="editar">${I.edit} Editar evento</button>`);
     }
-    if (gateOpen) {
+    if (gateOpen && canCargue) {
       btns.push(`<button type="button" class="naowee-btn naowee-btn--loud naowee-btn--sm" data-gate="inscripciones">${I.ticket} Ir a cargues</button>`);
     }
     return btns.join('');
