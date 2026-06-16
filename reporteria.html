@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Naowee Eventos — Reportería</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="shared/tokens.css?v=0.4.0">
+<link rel="stylesheet" href="shared/shell.css?v=0.4.5">
+<link rel="stylesheet" href="shared/list-components.css?v=0.4.2">
+<link rel="stylesheet" href="shared/event-detail.css?v=0.4.0">
+<link rel="stylesheet" href="shared/forms.css?v=0.4.3">
+<link rel="stylesheet" href="shared/reporteria.css?v=0.6.0">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
+<script src="shared/naowee-footer.js?v=0.6.0" defer></script>
+
+<style>
+  /* Back link liviano (no amerita token nuevo) + header de acciones. */
+  .rep-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+  .rep-back { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; color: var(--text-secondary); padding: 7px 12px; border-radius: var(--radius-md); transition: background .13s, color .13s; }
+  .rep-back:hover { background: var(--surface); color: var(--text-primary); }
+  .rep-back svg { width: 15px; height: 15px; }
+</style>
+</head>
+
+<body>
+<div class="shell" id="shellRoot">
+  <div id="sidebarRoot"></div>
+  <div class="main">
+    <div class="top-header" id="topHeader"></div>
+    <div class="page" id="pageRep">
+      <div class="page-inner" id="repApp"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher, getRoleFromQuery, getIcon, ROLES, homeForRole } from './shared/sidebar.js';
+  import { allEvents, STATUS_LABEL } from './shared/events-data.js';
+  import { buildReporteria } from './shared/reporteria-data.js';
+  import { dailyChart, hbars, donut, progress, podio, stackedBars, animateBars } from './shared/reporteria-charts.js';
+
+  const params = new URLSearchParams(location.search);
+  const roleCode = getRoleFromQuery();
+  const role = ROLES[roleCode] || ROLES.USER;
+  const CAN_VIEW = roleCode === 'ADMIN' || roleCode === 'USER';
+
+  /* ─── Iconos ─── */
+  const I = {
+    chart: getIcon('chart'), ticket: getIcon('ticket'), ranking: getIcon('ranking'),
+    medal: getIcon('medal'), chevL: getIcon('chevron'), athlete: getIcon('athlete')
+  };
+  const cal = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+  const pin = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+  const bld = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+
+  const PALETTE = ['#1f78d1', '#d74009', '#7c3aed', '#1f8923', '#0891b2', '#9333ea', '#c2410c', '#065f46'];
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  /* ─── Estado ─── */
+  let events = [];
+  let ev = null;
+  let activeTab = 'inscripciones';
+  let chartMode = 'd';
+
+  const TABS = [
+    { id: 'inscripciones', label: 'Inscripciones', icon: I.ticket },
+    { id: 'resultados',    label: 'Resultados',    icon: I.ranking },
+    { id: 'medalleria',    label: 'Medallería',    icon: I.medal }
+  ];
+
+  function boot() {
+    mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: 'reporteria' });
+    mountHeader({ headerEl: document.getElementById('topHeader'), role });
+    mountBackdrop();
+    mountDemoSwitcher({ roleCode });
+
+    events = allEvents();
+    const wanted = params.get('id');
+    ev = events.find((e) => e.id === wanted) || events.find((e) => e.status === 'activo') || events[0];
+    activeTab = ['inscripciones', 'resultados', 'medalleria'].includes(params.get('tab')) ? params.get('tab') : 'inscripciones';
+    render();
+    document.title = ev ? `Naowee Eventos — Reportería · ${ev.name}` : 'Naowee Eventos — Reportería';
+  }
+
+  /* ─── Shell de la página (contexto + filtros + tabs + panel) ─── */
+  function render() {
+    const backHref = `dashboard.html?role=${roleCode}`;
+    const evOptions = events.map((e) => `<option value="${e.id}" ${e.id === ev.id ? 'selected' : ''}>${e.emoji} ${esc(e.name)} · ${STATUS_LABEL[e.status]}</option>`).join('');
+    const cargueCta = roleCode === 'ADMIN'
+      ? `<a class="naowee-btn naowee-btn--ghost naowee-btn--sm" href="cargue.html?tipo=inscripciones&id=${ev.id}&role=${roleCode}">${I.ticket} Ver cargues</a>`
+      : '';
+
+    document.getElementById('repApp').innerHTML = `
+      <div class="rep-topbar">
+        <a class="rep-back" href="${backHref}">${I.chevL} Volver al dashboard</a>
+        ${cargueCta}
+      </div>
+
+      <!-- Contexto del evento + selector -->
+      <div class="rep-ctx">
+        <div class="rep-ctx__main">
+          <div class="rep-ctx__title">
+            <span class="rep-ctx__name">${ev.emoji} ${esc(ev.name)}</span>
+            <span class="badge s-${ev.status}">${STATUS_LABEL[ev.status]}</span>
+          </div>
+          <div class="rep-ctx__meta">
+            <span class="rep-chip">${cal} ${esc(ev.start)} — ${esc(ev.end)}</span>
+            <span class="rep-chip">${pin} ${esc(ev.place)}</span>
+            <span class="rep-chip">${bld} ${esc(ev.org)}</span>
+          </div>
+        </div>
+        <div class="rep-ev-switch">
+          <label for="evSwitch">Evento</label>
+          <select class="rep-select" id="evSwitch" aria-label="Cambiar de evento">${evOptions}</select>
+        </div>
+      </div>
+
+      <!-- Tabs canónicos -->
+      <div class="naowee-tabs naowee-tabs--proportional" id="repTabs" role="tablist" aria-label="Tableros de reportería">
+        ${TABS.map((t) => `
+          <button class="naowee-tab${t.id === activeTab ? ' naowee-tab--selected' : ''}" data-tab="${t.id}" type="button" role="tab" aria-selected="${t.id === activeTab}">
+            ${t.icon}<span>${t.label}</span>
+          </button>`).join('')}
+      </div>
+
+      <!-- Barra de filtros -->
+      ${filterBar()}
+
+      <!-- Panel -->
+      <div id="repPanel"></div>
+    `;
+
+    document.getElementById('evSwitch').addEventListener('change', (e) => {
+      ev = events.find((x) => x.id === e.target.value) || ev;
+      syncUrl();
+      render();
+    });
+    document.querySelectorAll('#repTabs .naowee-tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        if (tab.dataset.tab === activeTab) return;
+        activeTab = tab.dataset.tab;
+        chartMode = 'd';
+        document.querySelectorAll('#repTabs .naowee-tab').forEach((t) => {
+          const on = t.dataset.tab === activeTab;
+          t.classList.toggle('naowee-tab--selected', on);
+          t.setAttribute('aria-selected', on);
+        });
+        syncUrl();
+        renderPanel();
+      });
+    });
+    bindFilters();
+    renderPanel();
+  }
+
+  function syncUrl() {
+    const u = new URLSearchParams(location.search);
+    u.set('id', ev.id); u.set('tab', activeTab); u.set('role', roleCode);
+    history.replaceState(null, '', `?${u.toString()}`);
+  }
+
+  /* ─── Barra de filtros (cosmética en demo: muestra dimensiones reales) ─── */
+  function filterBar() {
+    return `
+      <div class="rep-filter">
+        <span class="rep-filter__label">Filtrar por</span>
+        <select class="rep-select" id="fOrg"><option value="">Todos los organismos</option></select>
+        <select class="rep-select" id="fDep"><option value="">Todos los deportes</option></select>
+        <select class="rep-select" id="fPru" disabled><option value="">Todas las pruebas</option></select>
+        <div class="rep-filter__sep"></div>
+        <button class="naowee-btn naowee-btn--outline naowee-btn--sm" id="fClear" type="button">Limpiar</button>
+        <button class="naowee-btn naowee-btn--loud naowee-btn--sm" id="fApply" type="button">Aplicar filtros</button>
+      </div>`;
+  }
+  function bindFilters() {
+    const D = buildReporteria(ev);
+    const fOrg = document.getElementById('fOrg'), fDep = document.getElementById('fDep'), fPru = document.getElementById('fPru');
+    D.insc.porOrganismo.forEach((o) => fOrg.insertAdjacentHTML('beforeend', `<option>${esc(o.name)}</option>`));
+    D.insc.porDeporte.forEach((d) => fDep.insertAdjacentHTML('beforeend', `<option>${esc(d.lbl)}</option>`));
+    fDep.addEventListener('change', function () {
+      fPru.disabled = !this.value; fPru.innerHTML = '<option value="">Todas las pruebas</option>';
+    });
+    document.getElementById('fClear').addEventListener('click', () => {
+      [fOrg, fDep, fPru].forEach((s) => { s.value = ''; }); fPru.disabled = true;
+    });
+    document.getElementById('fApply').addEventListener('click', (e) => {
+      const b = e.currentTarget; const t = b.textContent;
+      b.textContent = '✓ Filtros aplicados'; setTimeout(() => { b.textContent = t; }, 1400);
+    });
+  }
+
+  /* ─── Panel por tab ─── */
+  function renderPanel() {
+    const D = buildReporteria(ev);
+    const el = document.getElementById('repPanel');
+    if (activeTab === 'inscripciones') el.innerHTML = panelInsc(D);
+    else if (activeTab === 'resultados') el.innerHTML = panelRes(D);
+    else el.innerHTML = panelMed(D);
+    animateBars(el);
+    bindChartToggle(D);
+  }
+
+  function emptyState(msg) {
+    return `<div class="rep-panel"><div class="rep-empty">
+      <div class="rep-empty__icon">${I.chart}</div>
+      <div class="rep-empty__title">Aún no hay datos para este tablero</div>
+      <div class="rep-empty__text">${msg}</div>
+    </div></div>`;
+  }
+
+  function kpi(icon, cls, tag, tagUp, num, lbl) {
+    return `<div class="rep-kpi">
+      <div class="rep-kpi__top"><div class="rep-kpi__icon ${cls}">${icon}</div><span class="rep-kpi__tag${tagUp ? ' up' : ''}">${tag}</span></div>
+      <div class="rep-kpi__num">${num}</div><div class="rep-kpi__lbl">${lbl}</div>
+    </div>`;
+  }
+
+  /* ── INSCRIPCIONES ── */
+  function panelInsc(D) {
+    const d = D.insc;
+    if (!d.hasData) return emptyState(`<strong>${esc(ev.name)}</strong> está en preparación. Las inscripciones aparecerán aquí en cuanto el gestor cargue el primer registro.`);
+    return `<div class="rep-panel">
+      <div class="rep-kpis">
+        ${kpi(I.athlete, 'blue', `${d.pctCupo}% del cupo`, false, D.num(d.inscritos), 'Deportistas inscritos')}
+        ${kpi(bld, 'green', 'participando', false, d.organismosCount, 'Organismos')}
+        ${kpi(I.ranking, 'orange', 'en disputa', false, d.deportesCount, d.deportesCount === 1 ? 'Deporte' : 'Deportes')}
+        ${kpi(I.ticket, 'purple', `${d.pruebasConInscritos} con inscritos`, false, d.pruebasCount, 'Pruebas')}
+      </div>
+      <div class="rep-widgets">
+        <div class="rep-w rep-w--4">
+          <div class="rep-w__hd"><div><div class="rep-w__title">Inscripciones registradas</div><div class="rep-w__sub">Registros diarios · línea de promedio</div></div>
+            <div class="rep-toggle"><button class="rep-tgl on" data-mode="d" type="button">Diario</button><button class="rep-tgl" data-mode="a" type="button">Acumulado</button></div>
+          </div>
+          <div class="rep-chart" id="dailyChart">${dailyChart(d.daily, chartMode)}</div>
+        </div>
+        <div class="rep-w rep-w--2" style="display:flex;flex-direction:column">
+          <div class="rep-w__title">Tipo de deporte</div><div class="rep-w__sub">Distribución por categoría</div>
+          <div style="flex:1;display:flex;align-items:center;justify-content:center">${donut(d.tipo)}</div>
+        </div>
+        <div class="rep-w rep-w--3"><div class="rep-w__title">Por organismo</div><div class="rep-w__sub">Inscritos por liga · top ${d.porOrganismo.length}</div>
+          <div class="rep-hbars">${hbars(d.porOrganismo.map((o) => ({ lbl: o.name, v: o.v, c: 'var(--blue-info)' })))}</div></div>
+        <div class="rep-w rep-w--3"><div class="rep-w__title">${d.porDeporteLabel}</div><div class="rep-w__sub">Inscritos por disciplina</div>
+          <div class="rep-hbars">${hbars(d.porDeporte.map((x) => ({ lbl: x.lbl, v: x.v, c: 'var(--accent)' })))}</div></div>
+        <div class="rep-w rep-w--6"><div class="rep-w__title">Progreso de inscripción</div><div class="rep-w__sub">Avance frente al cupo y cobertura de pruebas</div>
+          <div class="rep-prog">${progress([
+            { title: 'Inscripción vs cupo', done: d.inscritos, total: d.cupo, c: 'var(--blue-info)' },
+            { title: 'Pruebas con inscritos', done: d.pruebasConInscritos, total: d.pruebasCount, c: 'var(--accent)' }
+          ])}</div></div>
+      </div>
+    </div>`;
+  }
+  function bindChartToggle(D) {
+    document.querySelectorAll('.rep-tgl').forEach((b) => b.addEventListener('click', () => {
+      chartMode = b.dataset.mode;
+      document.querySelectorAll('.rep-tgl').forEach((x) => x.classList.toggle('on', x.dataset.mode === chartMode));
+      const box = document.getElementById('dailyChart');
+      if (box) box.innerHTML = dailyChart(D.insc.daily, chartMode);
+    }));
+  }
+
+  /* ── RESULTADOS ── */
+  function panelRes(D) {
+    const r = D.res;
+    if (!r.hasData) return emptyState(`Todavía no hay resultados cargados para <strong>${esc(ev.name)}</strong>. El gestor los sube por inscripción o de forma masiva.`);
+    return `<div class="rep-panel">
+      <div class="rep-kpis rep-kpis--3">
+        ${kpi(I.ranking, 'blue', `${r.cargados} de ${D.num(r.total)} pruebas`, false, D.num(r.cargados), 'Resultados cargados')}
+        ${kpi(I.athlete, 'green', `↑ ${r.pctCargado}%`, true, D.num(r.deportistasConRes), 'Deportistas con resultado')}
+        ${kpi(I.medal, 'orange', `${esc(r.deporteCtx)} · ${esc(r.pruebaLbl)}`, false, `<span style="font-size:22px">${esc(r.mejorMarca)}</span>`, 'Mejor marca registrada')}
+      </div>
+      <div class="rep-podio-card">
+        <div class="rep-podio-card__title">Podio — ${esc(r.deporteCtx)} · ${esc(r.pruebaLbl)}</div>
+        <div class="rep-podio-card__sub">Top 3 posiciones registradas en esta prueba</div>
+        <div class="rep-podio">${podio(r.podio, PALETTE)}</div>
+      </div>
+      <div class="rep-table-card">
+        <div class="rep-table-hd"><div><div class="rep-table-hd__title">Tabla de resultados</div><div class="rep-table-hd__sub">${esc(r.deporteCtx)} · ${esc(r.pruebaLbl)}</div></div>
+          <span class="rep-table-count">${r.tabla.length} resultados</span></div>
+        <div class="rep-table-scroll"><table class="rep-table"><thead><tr>
+          <th class="num">#</th><th>Deportista</th><th>Organismo</th><th>Prueba</th><th style="text-align:right">Marca / Resultado</th>
+        </tr></thead><tbody>
+          ${r.tabla.map((row, i) => `<tr class="${i < 3 ? 'top' + (i + 1) : ''}">
+            <td class="num"><span class="rep-pos-chip ${i < 3 ? 'pc-' + (i + 1) : 'pc-n'}">${row.pos}</span></td>
+            <td><div class="rep-org"><div class="rep-org__av" style="background:${PALETTE[i % PALETTE.length]}">${row.av}</div><span class="rep-org__name">${esc(row.dep)}</span></div></td>
+            <td style="color:var(--text-secondary)">${esc(row.org)}</td>
+            <td><span class="rep-chip-prueba">${esc(r.deporteCtx)} · ${esc(row.marca ? r.pruebaLbl : r.pruebaLbl)}</span></td>
+            <td style="text-align:right;font-weight:700">${esc(row.marca)}</td>
+          </tr>`).join('')}
+        </tbody></table></div>
+      </div>
+    </div>`;
+  }
+
+  /* ── MEDALLERÍA ── */
+  function panelMed(D) {
+    const m = D.med;
+    if (!m.hasData) return emptyState(`El medallero de <strong>${esc(ev.name)}</strong> se llena a medida que se cierran las pruebas. Aún no hay medallas otorgadas.`);
+    const rowsTop = m.porOrganismo.slice(0, 5);
+    return `<div class="rep-panel">
+      <div class="rep-med-summary">
+        <div class="rep-med-kpi oro"><span class="rep-med-kpi__emoji">🥇</span><div class="rep-med-kpi__num">${m.oro}</div><div class="rep-med-kpi__lbl">Medallas de oro</div><div class="rep-med-kpi__sub">en ${m.pruebas} pruebas</div></div>
+        <div class="rep-med-kpi plata"><span class="rep-med-kpi__emoji">🥈</span><div class="rep-med-kpi__num">${m.plata}</div><div class="rep-med-kpi__lbl">Medallas de plata</div><div class="rep-med-kpi__sub">en ${m.pruebas} pruebas</div></div>
+        <div class="rep-med-kpi bronce"><span class="rep-med-kpi__emoji">🥉</span><div class="rep-med-kpi__num">${m.bronce}</div><div class="rep-med-kpi__lbl">Medallas de bronce</div><div class="rep-med-kpi__sub">en ${m.pruebas} pruebas</div></div>
+        <div class="rep-med-kpi total"><span class="rep-med-kpi__emoji">🏅</span><div class="rep-med-kpi__num">${m.total}</div><div class="rep-med-kpi__lbl">Total de medallas</div><div class="rep-med-kpi__sub">${m.porOrganismo.length} organismos en el medallero</div></div>
+      </div>
+      <div class="rep-two">
+        <div class="rep-card">
+          <div class="rep-table-hd__title">Medallero por organismo</div>
+          <div class="rep-table-hd__sub" style="margin-bottom:14px">Distribución apilada · top ${m.porOrganismo.length}</div>
+          <div class="rep-leyenda">
+            <div class="rep-leg-item"><div class="rep-leg-item__dot" style="background:var(--rep-gold-fill)"></div>Oro</div>
+            <div class="rep-leg-item"><div class="rep-leg-item__dot" style="background:var(--rep-silver-fill)"></div>Plata</div>
+            <div class="rep-leg-item"><div class="rep-leg-item__dot" style="background:var(--rep-bronze-fill)"></div>Bronce</div>
+          </div>
+          <div class="rep-shbars">${stackedBars(m.porOrganismo)}</div>
+        </div>
+        <div class="rep-table-card">
+          <div class="rep-table-hd"><div><div class="rep-table-hd__title">Top organismos</div><div class="rep-table-hd__sub">Por medallas de oro</div></div></div>
+          <div class="rep-table-scroll"><table class="rep-table"><thead><tr><th class="num">#</th><th>Organismo</th><th class="num">🥇</th><th class="num">🥈</th><th class="num">🥉</th></tr></thead><tbody>
+            ${rowsTop.map((d, i) => `<tr class="${i < 3 ? 'top' + (i + 1) : ''}">
+              <td class="num"><span class="rep-pos-chip ${i < 3 ? 'pc-' + (i + 1) : 'pc-n'}">${i + 1}</span></td>
+              <td><div class="rep-org"><div class="rep-org__av" style="background:${d.c}">${d.av}</div><span style="font-weight:600">${esc(d.name.replace('Liga ', ''))}</span></div></td>
+              <td class="num col-oro">${d.oro}</td><td class="num col-plata">${d.plata}</td><td class="num col-bronce">${d.bronce}</td>
+            </tr>`).join('')}
+          </tbody></table></div>
+        </div>
+      </div>
+      <div class="rep-table-card">
+        <div class="rep-table-hd"><div><div class="rep-table-hd__title">Medallero completo</div><div class="rep-table-hd__sub">Ordenado por medallas de oro · todos los deportes</div></div>
+          <span class="rep-table-count">${m.porOrganismo.length} organismos</span></div>
+        <div class="rep-table-scroll"><table class="rep-table"><thead><tr><th class="num">#</th><th>Organismo</th><th class="num">🥇 Oro</th><th class="num">🥈 Plata</th><th class="num">🥉 Bronce</th><th class="num">Total</th></tr></thead><tbody>
+          ${m.porOrganismo.map((d, i) => `<tr class="${i < 3 ? 'top' + (i + 1) : ''}">
+            <td class="num"><span class="rep-pos-chip ${i < 3 ? 'pc-' + (i + 1) : 'pc-n'}">${i + 1}</span></td>
+            <td><div class="rep-org"><div class="rep-org__av" style="background:${d.c}">${d.av}</div><span class="rep-org__name">${esc(d.name)}</span></div></td>
+            <td class="num col-oro">${d.oro}</td><td class="num col-plata">${d.plata}</td><td class="num col-bronce">${d.bronce}</td>
+            <td class="num col-total">${d.oro + d.plata + d.bronce}</td>
+          </tr>`).join('')}
+        </tbody></table></div>
+      </div>
+    </div>`;
+  }
+
+  /* ─── Arranque (al final: evita TDZ con const/let de arriba) ───
+       Guard RBAC: la Reportería es consumo de lectura → ADMIN y Usuario.
+       Gestor (operativo) y Organismo (calendario) no la ven. */
+  if (!CAN_VIEW) {
+    window.location.replace(`${homeForRole(roleCode)}?role=${roleCode}`);
+  } else {
+    boot();
+  }
+</script>
+
+</body>
+</html>

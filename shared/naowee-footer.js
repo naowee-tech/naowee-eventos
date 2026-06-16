@@ -11,8 +11,10 @@ const MODULE_NAME = 'Eventos';
 /* Versión del módulo mostrada en la pill del footer. Es una CONSTANTE: hay que
    subirla aquí en cada release (no se deriva sola — por eso se mantenía en 0.3.0).
    v0.4.0 = vista Calendario (estilo Google Calendar) + eventos del organismo
-   reflejados + refinamientos de formularios/modales. */
-const MODULE_VERSION = 'v0.5.0';
+   reflejados + refinamientos de formularios/modales.
+   v0.6.0 = Reportería por evento (3 tableros de Diego: Inscripciones · Resultados
+   · Medallería) + dashboard adelgazado a vista ejecutiva + RBAC del cargue. */
+const MODULE_VERSION = 'v0.6.0';
 
 (function () {
   function mount() {

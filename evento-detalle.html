@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="shared/event-detail.css?v=0.4.0">
 <link rel="stylesheet" href="shared/forms.css?v=0.4.3">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.5.0" defer></script>
+<script src="shared/naowee-footer.js?v=0.6.0" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -206,7 +206,8 @@
     chevL: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
     edit:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
     ticket:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9a3 3 0 0 0 0 6v2a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z"/><line x1="13" y1="5" x2="13" y2="19" stroke-dasharray="2 3"/></svg>',
-    activity: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'
+    activity: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+    chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>'
   };
 
   const roleCode = getRoleFromQuery();
@@ -339,10 +340,16 @@
          se le muestra. Mantiene además su gate por estado Activo (gateOpen). ─── */
   const canEdit = roleCode === 'ADMIN';
   const canCargue = roleCode === 'GESTOR' || roleCode === 'ADMIN';
+  /* Reportería (analítica de Diego) = consumo de lectura → ADMIN y Usuario.
+     Es el drill-down por evento: lleva al tablero de ESTE evento. */
+  const canReporteria = roleCode === 'ADMIN' || roleCode === 'USER';
   function headActions() {
     const btns = [];
     if (canEdit) {
       btns.push(`<button type="button" class="naowee-btn naowee-btn--ghost naowee-btn--sm" data-action="editar">${I.edit} Editar evento</button>`);
+    }
+    if (canReporteria) {
+      btns.push(`<button type="button" class="naowee-btn naowee-btn--ghost naowee-btn--sm" data-action="reporteria">${I.chart} Ver reportería</button>`);
     }
     if (gateOpen && canCargue) {
       btns.push(`<button type="button" class="naowee-btn naowee-btn--loud naowee-btn--sm" data-gate="inscripciones">${I.ticket} Ir a cargues</button>`);
@@ -398,6 +405,10 @@
     });
     const editBtn = document.querySelector('[data-action="editar"]');
     if (editBtn) editBtn.addEventListener('click', () => openEditModal());
+    const repBtn = document.querySelector('[data-action="reporteria"]');
+    if (repBtn) repBtn.addEventListener('click', () => {
+      window.location.href = `reporteria.html?id=${ev.id}&role=${roleCode}`;
+    });
   }
 
   /* ═══════════════════════════════════════════════════════════════

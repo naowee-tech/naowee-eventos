@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="shared/tokens.css?v=0.4.0">
 <link rel="stylesheet" href="shared/shell.css?v=0.4.5">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.5.0" defer></script>
+<script src="shared/naowee-footer.js?v=0.6.0" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -55,7 +55,7 @@
   .w-insc      { grid-column: span 2; }
   .w-resultados{ grid-column: span 2; }
   .w-medallero { grid-column: span 3; }
-  .w-inscritos-evento { grid-column: span 3; }
+  .w-inscritos-evento { grid-column: span 2; }
   .w-proximos  { grid-column: span 6; }
   .w-cargues   { grid-column: span 2; }
   .w-mes       { grid-column: span 2; }
@@ -834,7 +834,6 @@
           <div class="widget w-estado"><div class="widget__head"><div><div class="widget__title">Eventos por estado</div></div></div>${emptyWidget('Sin datos todavía. Aparecerán cuando reportería los cargue.')}</div>
           <div class="widget w-insc"><div class="widget__head"><div><div class="widget__title">Inscripciones agregadas</div></div></div>${emptyWidget('Sin inscripciones agregadas aún.')}</div>
           <div class="widget w-resultados"><div class="widget__head"><div><div class="widget__title">Resultados registrados</div></div></div>${emptyWidget('Sin resultados registrados aún.')}</div>
-          <div class="widget w-medallero"><div class="widget__head"><div><div class="widget__title">Medallero · top departamentos</div></div></div>${emptyWidget('El medallero se llena al cerrar eventos.')}</div>
           <div class="widget w-inscritos-evento"><div class="widget__head"><div><div class="widget__title">Inscripciones por evento</div></div></div>${emptyWidget('Sin inscripciones por evento aún.')}</div>
           <div class="widget w-proximos"><div class="widget__head"><div><div class="widget__title">Próximos eventos</div></div></div>${emptyWidget('No hay eventos programados.')}</div>
         </div>`;
@@ -895,11 +894,9 @@
           ], pct(resDone, resTotal) + '%', 'registrado')}
         </div>
 
-        <!-- 4. Medallero (oro/plata/bronce — top departamentos) -->
-        <div class="widget w-medallero">
-          <div class="widget__head"><div><div class="widget__title">Medallero · top departamentos</div><div class="widget__hint">medallas acumuladas en eventos finalizados</div></div></div>
-          ${medalleroBars(MEDALLERO)}
-        </div>
+        <!-- (El medallero por organismo y los breakdowns por dimensión viven
+             ahora en la Reportería por evento — tablero Medallería. El dashboard
+             se mantiene como vista ejecutiva consolidada. Decisión Diego/Doug 2026-06.) -->
 
         <!-- 5. Inscripciones por evento (event-level) -->
         <div class="widget w-inscritos-evento">
@@ -921,12 +918,6 @@
         <div class="widget w-mes">
           <div class="widget__head"><div><div class="widget__title">Eventos por mes</div><div class="widget__hint">calendario 2026 · por fecha de inicio</div></div></div>
           ${(() => { const rows = eventosPorMes(); return rows.length ? vbars(rows) : emptyWidget('Sin eventos programados.'); })()}
-        </div>
-
-        <!-- 9. Eventos por organismo -->
-        <div class="widget w-organismo">
-          <div class="widget__head"><div><div class="widget__title">Eventos por organismo</div><div class="widget__hint">quién organiza</div></div></div>
-          ${hbars(eventosPorOrganismo(), (v) => v + (v === 1 ? ' evento' : ' eventos'))}
         </div>
 
         <!-- 6. Próximos eventos (cronograma vertical) -->
