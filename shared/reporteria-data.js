@@ -54,16 +54,26 @@ const PRUEBAS_POR_DEPORTE = {
   'Tenis de Mesa': ['Individual M', 'Individual F', 'Dobles'],
   'Gimnasia':  ['All Around', 'Suelo', 'Barra de equilibrio']
 };
-/* Generadores de "marca" por familia de deporte (sembrado). */
-function marcaFor(sport, rnd) {
+/* Marcas MONÓTONAS por familia de deporte: pos 1 = la mejor. Para tiempos
+   (atletismo/natación/ciclismo) ascendente (menor = mejor); para kg/puntos
+   descendente (mayor = mejor). Devuelve un array ordenado de n marcas. */
+function genMarcas(sport, n, rnd) {
   const s = sport.toLowerCase();
-  if (s.includes('atlet')) return (10 + rnd() * 1.2).toFixed(2) + ' s';
-  if (s.includes('nataci')) return (22 + rnd() * 3).toFixed(2) + ' s';
-  if (s.includes('ciclis')) return '3h ' + (10 + Math.floor(rnd() * 40)) + 'm';
-  if (s.includes('levant') || s.includes('pesas')) return (180 + Math.floor(rnd() * 60)) + ' kg';
-  if (s.includes('boxeo') || s.includes('taekwon') || s.includes('judo') || s.includes('karate')) return (8 + Math.floor(rnd() * 8)) + ' pts';
-  return (80 + Math.floor(rnd() * 20)) + ' pts';
+  const out = [];
+  if (s.includes('atlet')) { let v = 10.0 + rnd() * 0.5; for (let i = 0; i < n; i++) { out.push(v.toFixed(2) + ' s'); v += 0.06 + rnd() * 0.16; } }
+  else if (s.includes('nataci')) { let v = 22 + rnd() * 1.5; for (let i = 0; i < n; i++) { out.push(v.toFixed(2) + ' s'); v += 0.15 + rnd() * 0.4; } }
+  else if (s.includes('ciclis')) { let m = 188 + Math.floor(rnd() * 10); for (let i = 0; i < n; i++) { out.push('3h ' + String(m % 60).padStart(2, '0') + 'm'); m += 1 + Math.floor(rnd() * 3); } }
+  else if (s.includes('levant') || s.includes('pesas')) { let v = 248 - Math.floor(rnd() * 16); for (let i = 0; i < n; i++) { out.push(v + ' kg'); v -= 3 + Math.floor(rnd() * 5); } }
+  else { let v = 96 - Math.floor(rnd() * 5); for (let i = 0; i < n; i++) { out.push(v + ' pts'); v -= 2 + Math.floor(rnd() * 4); } } // combate/jueces/default
+  return out;
 }
+/* Fisher-Yates sembrado → orden estable por evento (para nombres ÚNICOS). */
+function shuffled(arr, rnd) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+const initials = (nm) => nm.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 
 /* ── Reparto entero determinista según pesos (suma exacta al total) ──── */
 function splitTotal(total, weights) {
@@ -140,15 +150,11 @@ export function buildReporteria(ev) {
   const tabla = [];
   if (res.done > 0) {
     const n = Math.min(8, NOMBRES.length);
+    const names = shuffled(NOMBRES, rnd).slice(0, n);      // atletas ÚNICOS
+    const ligas = ORGANISMOS.slice(0, n);                 // ligas distintas por fila
+    const marcas = genMarcas(depShown, n, rnd);           // marcas MONÓTONAS (pos 1 = mejor)
     for (let i = 0; i < n; i++) {
-      const nm = NOMBRES[(i + Math.floor(rnd() * 3)) % NOMBRES.length];
-      tabla.push({
-        pos: i + 1,
-        dep: nm,
-        org: orgs[i % Math.max(1, orgs.length)]?.name || 'Liga Nacional',
-        av: nm.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase(),
-        marca: marcaFor(depShown, rnd)
-      });
+      tabla.push({ pos: i + 1, dep: names[i], org: ligas[i].name, av: initials(names[i]), marca: marcas[i] });
     }
   }
   const resData = {

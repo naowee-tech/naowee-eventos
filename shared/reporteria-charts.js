@@ -84,15 +84,20 @@ export function progress(rows) {
   }).join('');
 }
 
-/* ── Podio (top 3) ────────────────────────────────────────────────────── */
+/* ── Podio (top 3) — jerarquía: 1º con corona + avatar mayor; medalla metálica
+   con número (disco con anillo blanco); anillo del avatar por metal; pedestal
+   con gradiente metálico + brillo superior. ────────────────────────────── */
 export function podio(top3, avatars) {
   if (top3.length < 3) return '';
-  const medals = ['🥇', '🥈', '🥉'];
-  const order = [top3[1], top3[0], top3[2]];
-  const classes = ['p2', 'p1', 'p3'];
+  const order = [top3[1], top3[0], top3[2]];   // orden visual: 2º · 1º · 3º
+  const cls = ['p2', 'p1', 'p3'];
   return order.map((r, i) => `
-    <div class="rep-podio__item ${classes[i]}">
-      <div class="rep-podio__avatar" style="background:${avatars[r.pos - 1]}">${r.av}<span class="rep-podio__medal">${medals[r.pos - 1]}</span></div>
+    <div class="rep-podio__item ${cls[i]}">
+      ${cls[i] === 'p1' ? '<div class="rep-podio__crown" aria-hidden="true">👑</div>' : ''}
+      <div class="rep-podio__avatar" style="background:${avatars[r.pos - 1]}">
+        ${r.av}
+        <span class="rep-podio__medal rep-podio__medal--${r.pos}" aria-label="Puesto ${r.pos}">${r.pos}</span>
+      </div>
       <div class="rep-podio__name">${r.dep}</div>
       <div class="rep-podio__org">${r.org}</div>
       <div class="rep-podio__marca">${r.marca}</div>

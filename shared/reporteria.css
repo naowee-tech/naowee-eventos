@@ -29,8 +29,10 @@
    Container 100% blanco (sin canvas gris): las cards internas se definen por su
    borde. El .naowee-tabs ya tiene overflow-x:auto → su hover no desborda esquinas. */
 .rep-tabs-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); margin-bottom: 22px; }
-.rep-tabs-card > .naowee-tabs { border-top-left-radius: var(--radius-xl); border-top-right-radius: var(--radius-xl); }
-.rep-tabs-card__body { padding: 22px 24px 24px; }
+/* Tabs con padding horizontal (no pegados a los bordes/esquinas del container).
+   El divisor pasa al border-top full-width del body para no quedar inset. */
+.rep-tabs-card > .naowee-tabs { border-top-left-radius: var(--radius-xl); border-top-right-radius: var(--radius-xl); padding: 0 12px; border-bottom: none; }
+.rep-tabs-card__body { padding: 22px 24px 24px; border-top: 1px solid var(--border-dark); }
 
 /* ── Barra de filtros (dentro del container; dropdowns + botones CANÓNICOS del DS) ── */
 .rep-filter { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
@@ -101,43 +103,42 @@
 .rep-leg__name { font-size: 11.5px; color: var(--text-secondary); flex: 1; }
 .rep-leg__pct { font-size: 11.5px; font-weight: 700; color: var(--text-primary); }
 
-/* ── Resultados: KPIs medal-accent + podio + tabla ────────────────────── */
-.rep-podio-card, .rep-table-card, .rep-two > .rep-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); }
-.rep-podio-card { padding: 26px 24px 22px; margin-bottom: 20px; }
-.rep-podio-card__title { font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
-.rep-podio-card__sub { font-size: 12px; color: var(--text-secondary); margin-bottom: 26px; }
-.rep-podio { display: flex; align-items: flex-end; justify-content: center; }
-.rep-podio__item { display: flex; flex-direction: column; align-items: center; flex: 1; max-width: 200px; }
+/* ── Card-table canónica: header (título + pill de conteo) en una fila + .num ── */
+.rep-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.naowee-table--in-card th.num, .naowee-table--in-card td.num { text-align: center; }
+
+/* ── Podio (jerarquía 1º·2º·3º) — corona para el campeón, avatar con anillo del
+   metal, medalla metálica (disco con número y borde blanco), pedestal con
+   gradiente metálico + brillo superior. ───────────────────────────────────── */
+.rep-podio { display: flex; align-items: flex-end; justify-content: center; gap: 6px; padding-top: 16px; }
+.rep-podio__item { display: flex; flex-direction: column; align-items: center; flex: 1; max-width: 210px; }
 .rep-podio__item.p1 { order: 2; } .rep-podio__item.p2 { order: 1; } .rep-podio__item.p3 { order: 3; }
-.rep-podio__avatar { width: 52px; height: 52px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 8px; position: relative; }
-.rep-podio__item.p1 .rep-podio__avatar { width: 62px; height: 62px; font-size: 21px; }
-.rep-podio__medal { position: absolute; bottom: -6px; right: -4px; font-size: 16px; }
+.rep-podio__crown { font-size: 20px; line-height: 1; margin-bottom: 3px; }
+.rep-podio__avatar { width: 54px; height: 54px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 16px; position: relative; border: 3px solid var(--rep-silver-fill); }
+.rep-podio__item.p1 .rep-podio__avatar { width: 66px; height: 66px; font-size: 22px; border-color: var(--rep-gold-fill); }
+.rep-podio__item.p3 .rep-podio__avatar { border-color: var(--rep-bronze-fill); }
+.rep-podio__medal { position: absolute; bottom: -11px; left: 50%; transform: translateX(-50%); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; border: 2px solid var(--surface); }
+.rep-podio__item.p1 .rep-podio__medal { width: 28px; height: 28px; font-size: 13px; bottom: -13px; }
+.rep-podio__medal--1 { background: radial-gradient(circle at 35% 30%, #fde68a, #f5b700 60%, #d4920a); color: #6b4a00; }
+.rep-podio__medal--2 { background: radial-gradient(circle at 35% 30%, #f8fafc, #cbd5e1 60%, #94a3b8); color: #475569; }
+.rep-podio__medal--3 { background: radial-gradient(circle at 35% 30%, #fcd9b6, #cd7f32 60%, #9a5b1f); color: #fff; }
 .rep-podio__name { font-size: 13px; font-weight: 700; text-align: center; color: var(--text-primary); }
+.rep-podio__item.p1 .rep-podio__name { font-size: 14px; }
 .rep-podio__org { font-size: 11.5px; color: var(--text-secondary); text-align: center; margin-bottom: 6px; }
 .rep-podio__marca { font-size: 15px; font-weight: 800; text-align: center; color: var(--text-primary); }
-.rep-podio__block { width: 100%; display: flex; align-items: flex-end; justify-content: center; border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding: 12px 8px 10px; margin-top: 10px; }
-.rep-podio__pos { font-size: 21px; font-weight: 800; color: #fff; opacity: .92; }
-.p1 .rep-podio__block { background: linear-gradient(160deg, var(--rep-gold-fill), #c8960c); min-height: 104px; }
-.p2 .rep-podio__block { background: linear-gradient(160deg, #d0d0d0, #909090); min-height: 72px; }
-.p3 .rep-podio__block { background: linear-gradient(160deg, #d4956a, #915030); min-height: 52px; }
+.rep-podio__item.p1 .rep-podio__marca { font-size: 18px; color: #b8860b; }
+.rep-podio__block { position: relative; width: 100%; display: flex; align-items: flex-start; justify-content: center; border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding: 13px 8px; margin-top: 12px; overflow: hidden; }
+.rep-podio__block::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 42%; background: linear-gradient(180deg, rgba(255, 255, 255, .32), rgba(255, 255, 255, 0)); }
+.rep-podio__pos { position: relative; font-size: 22px; font-weight: 800; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .18); }
+.rep-podio__item.p1 .rep-podio__pos { font-size: 26px; }
+.p1 .rep-podio__block { background: linear-gradient(180deg, #ffd34d, #f5b700 45%, #d4920a); min-height: 120px; }
+.p2 .rep-podio__block { background: linear-gradient(180deg, #e9eef4, #cbd5e1 45%, #93a1b3); min-height: 86px; }
+.p3 .rep-podio__block { background: linear-gradient(180deg, #edc196, #cd7f32 45%, #9a5b1f); min-height: 60px; }
 
-/* ── Tablas (resultados + medallero) ──────────────────────────────────── */
-.rep-table-card { overflow: hidden; }
-.rep-table-hd { padding: 18px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
-.rep-table-hd__title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
-.rep-table-hd__sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
-.rep-table-count { font-size: 12.5px; color: var(--text-secondary); background: var(--bg); padding: 4px 10px; border-radius: var(--radius-full); border: 1px solid var(--border); }
-.rep-table-scroll { overflow-x: auto; }
-.rep-table { width: 100%; border-collapse: collapse; }
-.rep-table thead th { padding: 11px 16px; text-align: left; font-size: 11.5px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .06em; background: var(--bg); border-bottom: 1px solid var(--border); white-space: nowrap; }
-.rep-table th.num, .rep-table td.num { text-align: center; }
-.rep-table tbody tr { border-bottom: 1px solid var(--border); transition: background .12s; }
-.rep-table tbody tr:last-child { border-bottom: none; }
-.rep-table tbody tr:hover { background: var(--bg); }
-.rep-table tbody tr.top1 { background: var(--rep-gold-bg); }
-.rep-table tbody tr.top2 { background: var(--rep-silver-bg); }
-.rep-table tbody tr.top3 { background: var(--rep-bronze-bg); }
-.rep-table tbody td { padding: 13px 16px; font-size: 13.5px; color: var(--text-primary); }
+/* ── Tablas: usan la card-table CANÓNICA del DS (.naowee-table-card +
+   .naowee-table--in-card, en list-components.css). Aquí solo viven las clases
+   de DOMINIO que van DENTRO de las celdas (chip de posición, organismo con
+   avatar, columnas de medallas). ──────────────────────────────────────────── */
 .rep-pos-chip { width: 28px; height: 28px; border-radius: var(--radius-full); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; }
 .pc-1 { background: var(--rep-gold-bg); color: var(--rep-gold); border: 1.5px solid var(--rep-gold-bd); }
 .pc-2 { background: var(--rep-silver-bg); color: var(--rep-silver); border: 1.5px solid var(--rep-silver-bd); }

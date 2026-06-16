@@ -14,9 +14,9 @@
 <link rel="stylesheet" href="shared/list-components.css?v=0.4.2">
 <link rel="stylesheet" href="shared/event-detail.css?v=0.4.0">
 <link rel="stylesheet" href="shared/forms.css?v=0.4.3">
-<link rel="stylesheet" href="shared/reporteria.css?v=0.6.2">
+<link rel="stylesheet" href="shared/reporteria.css?v=0.6.3">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.6.2" defer></script>
+<script src="shared/naowee-footer.js?v=0.6.3" defer></script>
 
 <style>
   /* Topbar: back (ghost canónico) a la izquierda, CTA a la derecha. */
@@ -382,6 +382,26 @@
     }));
   }
 
+  /* Card-table CANÓNICA del DS: .naowee-table-card + .naowee-table--in-card
+     (table-layout:fixed + colgroup, thead pill gris, td 16px). Reusada por las
+     3 tablas de reportería. Las clases de medalla (pos-chip, col-*, rep-org)
+     son de dominio y viven DENTRO de la tabla canónica. */
+  function tableCard({ title, sub, count, cols, head, body }) {
+    return `<div class="naowee-table-card">
+      <div class="rep-card-head">
+        <div class="tc-head"><h3 class="tc-head__title">${esc(title)}</h3>${sub ? `<p class="tc-head__sub">${esc(sub)}</p>` : ''}</div>
+        ${count != null ? `<span class="toolbar__count">${esc(count)}</span>` : ''}
+      </div>
+      <div class="naowee-table-card__table-wrap">
+        <table class="naowee-table--in-card">
+          ${cols ? `<colgroup>${cols.map((w) => `<col style="width:${w}">`).join('')}</colgroup>` : ''}
+          <thead><tr>${head}</tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+
   /* ── RESULTADOS ── */
   function panelRes(D) {
     const r = D.res;
@@ -392,26 +412,24 @@
         ${kpi(I.athlete, 'green', `↑ ${r.pctCargado}%`, true, D.num(r.deportistasConRes), 'Deportistas con resultado')}
         ${kpi(I.medal, 'orange', `${esc(r.deporteCtx)} · ${esc(r.pruebaLbl)}`, false, `<span style="font-size:22px">${esc(r.mejorMarca)}</span>`, 'Mejor marca registrada')}
       </div>
-      <div class="rep-podio-card">
-        <div class="rep-podio-card__title">Podio — ${esc(r.deporteCtx)} · ${esc(r.pruebaLbl)}</div>
-        <div class="rep-podio-card__sub">Top 3 posiciones registradas en esta prueba</div>
+      <div class="naowee-table-card">
+        <div class="tc-head"><h3 class="tc-head__title">Podio — ${esc(r.deporteCtx)} · ${esc(r.pruebaLbl)}</h3><p class="tc-head__sub">Top 3 posiciones registradas en esta prueba</p></div>
         <div class="rep-podio">${podio(r.podio, PALETTE)}</div>
       </div>
-      <div class="rep-table-card">
-        <div class="rep-table-hd"><div><div class="rep-table-hd__title">Tabla de resultados</div><div class="rep-table-hd__sub">${esc(r.deporteCtx)} · ${esc(r.pruebaLbl)}</div></div>
-          <span class="rep-table-count">${r.tabla.length} resultados</span></div>
-        <div class="rep-table-scroll"><table class="rep-table"><thead><tr>
-          <th class="num">#</th><th>Deportista</th><th>Organismo</th><th>Prueba</th><th style="text-align:right">Marca / Resultado</th>
-        </tr></thead><tbody>
-          ${r.tabla.map((row, i) => `<tr class="${i < 3 ? 'top' + (i + 1) : ''}">
+      ${tableCard({
+        title: 'Tabla de resultados',
+        sub: `${r.deporteCtx} · ${r.pruebaLbl}`,
+        count: `${r.tabla.length} resultados`,
+        cols: ['8%', '30%', '24%', '23%', '15%'],
+        head: `<th class="num">#</th><th>Deportista</th><th>Organismo</th><th>Prueba</th><th style="text-align:right">Marca</th>`,
+        body: r.tabla.map((row, i) => `<tr>
             <td class="num"><span class="rep-pos-chip ${i < 3 ? 'pc-' + (i + 1) : 'pc-n'}">${row.pos}</span></td>
             <td><div class="rep-org"><div class="rep-org__av" style="background:${PALETTE[i % PALETTE.length]}">${row.av}</div><span class="rep-org__name">${esc(row.dep)}</span></div></td>
             <td style="color:var(--text-secondary)">${esc(row.org)}</td>
-            <td><span class="rep-chip-prueba">${esc(r.deporteCtx)} · ${esc(row.marca ? r.pruebaLbl : r.pruebaLbl)}</span></td>
+            <td><span class="rep-chip-prueba">${esc(r.deporteCtx)} · ${esc(r.pruebaLbl)}</span></td>
             <td style="text-align:right;font-weight:700">${esc(row.marca)}</td>
-          </tr>`).join('')}
-        </tbody></table></div>
-      </div>
+          </tr>`).join('')
+      })}
     </div>`;
   }
 
@@ -428,39 +446,40 @@
         <div class="rep-med-kpi total"><span class="rep-med-kpi__emoji">🏅</span><div class="rep-med-kpi__num">${m.total}</div><div class="rep-med-kpi__lbl">Total de medallas</div><div class="rep-med-kpi__sub">${m.porOrganismo.length} organismos en el medallero</div></div>
       </div>
       <div class="rep-two">
-        <div class="rep-card">
-          <div class="rep-table-hd__title">Medallero por organismo</div>
-          <div class="rep-table-hd__sub" style="margin-bottom:14px">Distribución apilada · top ${m.porOrganismo.length}</div>
-          <div class="rep-leyenda">
-            <div class="rep-leg-item"><div class="rep-leg-item__dot" style="background:var(--rep-gold-fill)"></div>Oro</div>
-            <div class="rep-leg-item"><div class="rep-leg-item__dot" style="background:var(--rep-silver-fill)"></div>Plata</div>
-            <div class="rep-leg-item"><div class="rep-leg-item__dot" style="background:var(--rep-bronze-fill)"></div>Bronce</div>
+        <div class="naowee-table-card">
+          <div class="tc-head"><h3 class="tc-head__title">Medallero por organismo</h3><p class="tc-head__sub">Distribución apilada · top ${m.porOrganismo.length}</p></div>
+          <div>
+            <div class="rep-leyenda">
+              <div class="rep-leg-item"><div class="rep-leg-item__dot" style="background:var(--rep-gold-fill)"></div>Oro</div>
+              <div class="rep-leg-item"><div class="rep-leg-item__dot" style="background:var(--rep-silver-fill)"></div>Plata</div>
+              <div class="rep-leg-item"><div class="rep-leg-item__dot" style="background:var(--rep-bronze-fill)"></div>Bronce</div>
+            </div>
+            <div class="rep-shbars">${stackedBars(m.porOrganismo)}</div>
           </div>
-          <div class="rep-shbars">${stackedBars(m.porOrganismo)}</div>
         </div>
-        <div class="rep-table-card">
-          <div class="rep-table-hd"><div><div class="rep-table-hd__title">Top organismos</div><div class="rep-table-hd__sub">Por medallas de oro</div></div></div>
-          <div class="rep-table-scroll"><table class="rep-table"><thead><tr><th class="num">#</th><th>Organismo</th><th class="num">🥇</th><th class="num">🥈</th><th class="num">🥉</th></tr></thead><tbody>
-            ${rowsTop.map((d, i) => `<tr class="${i < 3 ? 'top' + (i + 1) : ''}">
+        ${tableCard({
+          title: 'Top organismos', sub: 'Por medallas de oro',
+          cols: ['16%', '40%', '15%', '15%', '14%'],
+          head: `<th class="num">#</th><th>Organismo</th><th class="num">🥇</th><th class="num">🥈</th><th class="num">🥉</th>`,
+          body: rowsTop.map((d, i) => `<tr>
               <td class="num"><span class="rep-pos-chip ${i < 3 ? 'pc-' + (i + 1) : 'pc-n'}">${i + 1}</span></td>
-              <td><div class="rep-org"><div class="rep-org__av" style="background:${d.c}">${d.av}</div><span style="font-weight:600">${esc(d.name.replace('Liga ', ''))}</span></div></td>
+              <td><div class="rep-org"><div class="rep-org__av" style="background:${d.c}">${d.av}</div><span class="rep-org__name">${esc(d.name.replace('Liga ', ''))}</span></div></td>
               <td class="num col-oro">${d.oro}</td><td class="num col-plata">${d.plata}</td><td class="num col-bronce">${d.bronce}</td>
-            </tr>`).join('')}
-          </tbody></table></div>
-        </div>
+            </tr>`).join('')
+        })}
       </div>
-      <div class="rep-table-card">
-        <div class="rep-table-hd"><div><div class="rep-table-hd__title">Medallero completo</div><div class="rep-table-hd__sub">Ordenado por medallas de oro · todos los deportes</div></div>
-          <span class="rep-table-count">${m.porOrganismo.length} organismos</span></div>
-        <div class="rep-table-scroll"><table class="rep-table"><thead><tr><th class="num">#</th><th>Organismo</th><th class="num">🥇 Oro</th><th class="num">🥈 Plata</th><th class="num">🥉 Bronce</th><th class="num">Total</th></tr></thead><tbody>
-          ${m.porOrganismo.map((d, i) => `<tr class="${i < 3 ? 'top' + (i + 1) : ''}">
+      ${tableCard({
+        title: 'Medallero completo', sub: 'Ordenado por medallas de oro · todos los deportes',
+        count: `${m.porOrganismo.length} organismos`,
+        cols: ['8%', '36%', '13%', '13%', '14%', '16%'],
+        head: `<th class="num">#</th><th>Organismo</th><th class="num">🥇 Oro</th><th class="num">🥈 Plata</th><th class="num">🥉 Bronce</th><th class="num">Total</th>`,
+        body: m.porOrganismo.map((d, i) => `<tr>
             <td class="num"><span class="rep-pos-chip ${i < 3 ? 'pc-' + (i + 1) : 'pc-n'}">${i + 1}</span></td>
             <td><div class="rep-org"><div class="rep-org__av" style="background:${d.c}">${d.av}</div><span class="rep-org__name">${esc(d.name)}</span></div></td>
             <td class="num col-oro">${d.oro}</td><td class="num col-plata">${d.plata}</td><td class="num col-bronce">${d.bronce}</td>
             <td class="num col-total">${d.oro + d.plata + d.bronce}</td>
-          </tr>`).join('')}
-        </tbody></table></div>
-      </div>
+          </tr>`).join('')
+      })}
     </div>`;
   }
 

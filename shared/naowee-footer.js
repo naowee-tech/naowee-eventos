@@ -17,8 +17,11 @@ const MODULE_NAME = 'Eventos';
    v0.6.1 = refinamiento UI Reportería: cards planas (sin sombra), tabs+filtros en
    gran container canónico, dropdowns .naowee-dropdown + botones DS en filtros.
    v0.6.2 = container sin canvas gris, "Limpiar" --ghost (disabled hasta filtrar),
-   back canónico --ghost con chevron izquierdo. */
-const MODULE_VERSION = 'v0.6.2';
+   back canónico --ghost con chevron izquierdo.
+   v0.6.3 = tabs con padding (no pegados), podio rediseñado (corona/medallas
+   metálicas/pedestal con brillo), tablas → card-table canónica (.naowee-table-card),
+   fix datos (atletas únicos + marcas monótonas). */
+const MODULE_VERSION = 'v0.6.3';
 
 (function () {
   function mount() {
