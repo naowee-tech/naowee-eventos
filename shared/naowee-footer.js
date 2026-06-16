@@ -20,8 +20,10 @@ const MODULE_NAME = 'Eventos';
    back canónico --ghost con chevron izquierdo.
    v0.6.3 = tabs con padding (no pegados), podio rediseñado (corona/medallas
    metálicas/pedestal con brillo), tablas → card-table canónica (.naowee-table-card),
-   fix datos (atletas únicos + marcas monótonas). */
-const MODULE_VERSION = 'v0.6.3';
+   fix datos (atletas únicos + marcas monótonas).
+   v0.6.4 = padding-top en tabs, GAP entre cards del panel (.rep-panel flex/gap),
+   podio 3D (cara superior con perspective) + números sin sombra. */
+const MODULE_VERSION = 'v0.6.4';
 
 (function () {
   function mount() {

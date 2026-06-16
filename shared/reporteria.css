@@ -31,7 +31,7 @@
 .rep-tabs-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); margin-bottom: 22px; }
 /* Tabs con padding horizontal (no pegados a los bordes/esquinas del container).
    El divisor pasa al border-top full-width del body para no quedar inset. */
-.rep-tabs-card > .naowee-tabs { border-top-left-radius: var(--radius-xl); border-top-right-radius: var(--radius-xl); padding: 0 12px; border-bottom: none; }
+.rep-tabs-card > .naowee-tabs { border-top-left-radius: var(--radius-xl); border-top-right-radius: var(--radius-xl); padding: 10px 12px 0; border-bottom: none; }
 .rep-tabs-card__body { padding: 22px 24px 24px; border-top: 1px solid var(--border-dark); }
 
 /* ── Barra de filtros (dentro del container; dropdowns + botones CANÓNICOS del DS) ── */
@@ -42,7 +42,7 @@
 .rep-ev-switch .naowee-dropdown { width: 340px; max-width: 100%; }
 
 /* ── KPI grid ─────────────────────────────────────────────────────────── */
-.rep-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 18px; }
+.rep-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 .rep-kpis--3 { grid-template-columns: repeat(3, 1fr); }
 .rep-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 20px; }
 .rep-kpi__top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
@@ -127,13 +127,19 @@
 .rep-podio__org { font-size: 11.5px; color: var(--text-secondary); text-align: center; margin-bottom: 6px; }
 .rep-podio__marca { font-size: 15px; font-weight: 800; text-align: center; color: var(--text-primary); }
 .rep-podio__item.p1 .rep-podio__marca { font-size: 18px; color: #b8860b; }
-.rep-podio__block { position: relative; width: 100%; display: flex; align-items: flex-start; justify-content: center; border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding: 13px 8px; margin-top: 12px; overflow: hidden; }
-.rep-podio__block::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 42%; background: linear-gradient(180deg, rgba(255, 255, 255, .32), rgba(255, 255, 255, 0)); }
-.rep-podio__pos { position: relative; font-size: 22px; font-weight: 800; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .18); }
-.rep-podio__item.p1 .rep-podio__pos { font-size: 26px; }
-.p1 .rep-podio__block { background: linear-gradient(180deg, #ffd34d, #f5b700 45%, #d4920a); min-height: 120px; }
-.p2 .rep-podio__block { background: linear-gradient(180deg, #e9eef4, #cbd5e1 45%, #93a1b3); min-height: 86px; }
-.p3 .rep-podio__block { background: linear-gradient(180deg, #edc196, #cd7f32 45%, #9a5b1f); min-height: 60px; }
+/* Pedestal 3D: cara frontal (gradiente metálico) + cara superior (::before, más
+   clara, inclinada con perspective → look 3D visto desde arriba, estilo Dribbble).
+   Números PLANOS, sin sombra (feedback Doug). */
+.rep-podio__block { position: relative; width: 100%; display: flex; align-items: center; justify-content: center; padding: 16px 8px; margin-top: 22px; border-radius: 0 0 3px 3px; }
+.rep-podio__block::before { content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 17px; border-radius: 4px 4px 0 0; transform: perspective(44px) rotateX(30deg); transform-origin: bottom; }
+.rep-podio__pos { font-size: 23px; font-weight: 800; color: #fff; letter-spacing: .5px; }
+.rep-podio__item.p1 .rep-podio__pos { font-size: 28px; }
+.p1 .rep-podio__block { background: linear-gradient(180deg, #f7c130, #cf8d08); min-height: 116px; }
+.p1 .rep-podio__block::before { background: #ffd964; }
+.p2 .rep-podio__block { background: linear-gradient(180deg, #c5d0dc, #8fa0b2); min-height: 84px; }
+.p2 .rep-podio__block::before { background: #e9eef4; }
+.p3 .rep-podio__block { background: linear-gradient(180deg, #c47e3e, #93571d); min-height: 58px; }
+.p3 .rep-podio__block::before { background: #e3a672; }
 
 /* ── Tablas: usan la card-table CANÓNICA del DS (.naowee-table-card +
    .naowee-table--in-card, en list-components.css). Aquí solo viven las clases
@@ -154,7 +160,7 @@
 .rep-chip-prueba { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: var(--radius-full); background: var(--blue-bg); color: var(--blue-info); }
 
 /* ── Medallería: resumen + stacked + two-col ──────────────────────────── */
-.rep-med-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 22px; }
+.rep-med-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 .rep-med-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 20px 22px; display: flex; flex-direction: column; gap: 5px; }
 .rep-med-kpi__emoji { font-size: 26px; line-height: 1; }
 .rep-med-kpi__num { font-size: 32px; font-weight: 800; line-height: 1; }
@@ -164,7 +170,7 @@
 .rep-med-kpi.total .rep-med-kpi__num { color: var(--text-primary); }
 .rep-med-kpi__lbl { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
 .rep-med-kpi__sub { font-size: 11.5px; color: var(--text-secondary); }
-.rep-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.rep-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .rep-card { padding: 22px 24px; }
 .rep-leyenda { display: flex; gap: 16px; margin-bottom: 14px; }
 .rep-leg-item { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
@@ -187,7 +193,7 @@
 .rep-empty__text { font-size: 13px; color: var(--text-secondary); max-width: 380px; margin: 0 auto; }
 
 /* ── Tab panels ───────────────────────────────────────────────────────── */
-.rep-panel { animation: repFade .32s cubic-bezier(.32,.72,0,1); }
+.rep-panel { display: flex; flex-direction: column; gap: 18px; animation: repFade .32s cubic-bezier(.32,.72,0,1); }
 @keyframes repFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .rep-panel, .rep-hb__fill, .rep-prog__fill, .rep-shb__seg { animation: none !important; transition: none !important; } }
 
