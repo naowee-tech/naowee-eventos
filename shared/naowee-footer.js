@@ -22,8 +22,10 @@ const MODULE_NAME = 'Eventos';
    metálicas/pedestal con brillo), tablas → card-table canónica (.naowee-table-card),
    fix datos (atletas únicos + marcas monótonas).
    v0.6.4 = padding-top en tabs, GAP entre cards del panel (.rep-panel flex/gap),
-   podio 3D (cara superior con perspective) + números sin sombra. */
-const MODULE_VERSION = 'v0.6.4';
+   podio 3D (cara superior con perspective) + números sin sombra.
+   v0.6.5 = podio ISOMÉTRICO completo (3 caras planas: frontal + superior + lateral,
+   skew) estilo low-poly. */
+const MODULE_VERSION = 'v0.6.5';
 
 (function () {
   function mount() {

@@ -110,7 +110,7 @@
 /* ── Podio (jerarquía 1º·2º·3º) — corona para el campeón, avatar con anillo del
    metal, medalla metálica (disco con número y borde blanco), pedestal con
    gradiente metálico + brillo superior. ───────────────────────────────────── */
-.rep-podio { display: flex; align-items: flex-end; justify-content: center; gap: 6px; padding-top: 16px; }
+.rep-podio { display: flex; align-items: flex-end; justify-content: center; gap: 22px; padding-top: 16px; }
 .rep-podio__item { display: flex; flex-direction: column; align-items: center; flex: 1; max-width: 210px; }
 .rep-podio__item.p1 { order: 2; } .rep-podio__item.p2 { order: 1; } .rep-podio__item.p3 { order: 3; }
 .rep-podio__crown { font-size: 20px; line-height: 1; margin-bottom: 3px; }
@@ -130,16 +130,26 @@
 /* Pedestal 3D: cara frontal (gradiente metálico) + cara superior (::before, más
    clara, inclinada con perspective → look 3D visto desde arriba, estilo Dribbble).
    Números PLANOS, sin sombra (feedback Doug). */
-.rep-podio__block { position: relative; width: 100%; display: flex; align-items: center; justify-content: center; padding: 16px 8px; margin-top: 22px; border-radius: 0 0 3px 3px; }
-.rep-podio__block::before { content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 17px; border-radius: 4px 4px 0 0; transform: perspective(44px) rotateX(30deg); transform-origin: bottom; }
-.rep-podio__pos { font-size: 23px; font-weight: 800; color: #fff; letter-spacing: .5px; }
+/* Pedestal ISOMÉTRICO completo: 3 caras planas — frontal (.block) + superior
+   (::before, skewX, la más clara) + lateral derecha (::after, skewY, la más
+   oscura) → bloque 3D estilo low-poly Dribbble. Depth = 14px. Números planos. */
+.rep-podio__block { position: relative; width: 100%; display: flex; align-items: center; justify-content: center; padding: 16px 8px; margin-top: 28px; }
+.rep-podio__block::before { content: ''; position: absolute; left: 0; bottom: 100%; width: 100%; height: 14px; transform: skewX(-45deg); transform-origin: bottom left; }
+.rep-podio__block::after { content: ''; position: absolute; top: 0; left: 100%; width: 14px; height: 100%; transform: skewY(-45deg); transform-origin: top left; }
+.rep-podio__pos { position: relative; z-index: 1; font-size: 23px; font-weight: 800; color: #fff; letter-spacing: .5px; }
 .rep-podio__item.p1 .rep-podio__pos { font-size: 28px; }
-.p1 .rep-podio__block { background: linear-gradient(180deg, #f7c130, #cf8d08); min-height: 116px; }
-.p1 .rep-podio__block::before { background: #ffd964; }
-.p2 .rep-podio__block { background: linear-gradient(180deg, #c5d0dc, #8fa0b2); min-height: 84px; }
-.p2 .rep-podio__block::before { background: #e9eef4; }
-.p3 .rep-podio__block { background: linear-gradient(180deg, #c47e3e, #93571d); min-height: 58px; }
-.p3 .rep-podio__block::before { background: #e3a672; }
+/* Oro */
+.p1 .rep-podio__block { background: #f3b50a; min-height: 116px; }
+.p1 .rep-podio__block::before { background: #ffd35e; }
+.p1 .rep-podio__block::after { background: #c5880a; }
+/* Plata */
+.p2 .rep-podio__block { background: #b6c2d0; min-height: 84px; }
+.p2 .rep-podio__block::before { background: #e7edf4; }
+.p2 .rep-podio__block::after { background: #8b9cae; }
+/* Bronce */
+.p3 .rep-podio__block { background: #bf7837; min-height: 58px; }
+.p3 .rep-podio__block::before { background: #e2a36d; }
+.p3 .rep-podio__block::after { background: #97591d; }
 
 /* ── Tablas: usan la card-table CANÓNICA del DS (.naowee-table-card +
    .naowee-table--in-card, en list-components.css). Aquí solo viven las clases
