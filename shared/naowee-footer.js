@@ -13,8 +13,10 @@ const MODULE_NAME = 'Eventos';
    v0.4.0 = vista Calendario (estilo Google Calendar) + eventos del organismo
    reflejados + refinamientos de formularios/modales.
    v0.6.0 = Reportería por evento (3 tableros de Diego: Inscripciones · Resultados
-   · Medallería) + dashboard adelgazado a vista ejecutiva + RBAC del cargue. */
-const MODULE_VERSION = 'v0.6.0';
+   · Medallería) + dashboard adelgazado a vista ejecutiva + RBAC del cargue.
+   v0.6.1 = refinamiento UI Reportería: cards planas (sin sombra), tabs+filtros en
+   gran container canónico, dropdowns .naowee-dropdown + botones DS en filtros. */
+const MODULE_VERSION = 'v0.6.1';
 
 (function () {
   function mount() {

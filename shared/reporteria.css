@@ -21,18 +21,28 @@
 .rep-ev-switch { display: flex; flex-direction: column; gap: 4px; }
 .rep-ev-switch label { font-size: 10.5px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .06em; }
 
-/* ── Barra de filtros (organismo / deporte / prueba) ──────────────────── */
-.rep-filter { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 14px 20px; margin: 18px 0 22px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+/* ── Gran container: tabs + filtros + paneles (patrón canónico .carg-tabs-card) ──
+   Container plano (border + radius, SIN sombra). Tabs flush arriba (divider
+   border-bottom del .naowee-tabs); cuerpo sobre canvas gris-soft para que las
+   cards internas blancas resalten sin necesidad de sombra. */
+/* overflow: visible → los popovers/dropdowns flotantes ESCAPAN el container (canon).
+   Las esquinas se redondean a mano: tabs (blanco) arriba, body (gris-soft) abajo.
+   El .naowee-tabs ya tiene overflow-x:auto, así que su hover no desborda las esquinas. */
+.rep-tabs-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); margin-bottom: 22px; }
+.rep-tabs-card > .naowee-tabs { border-top-left-radius: var(--radius-xl); border-top-right-radius: var(--radius-xl); }
+.rep-tabs-card__body { padding: 22px 24px 24px; background: var(--bg-soft); border-radius: 0 0 var(--radius-xl) var(--radius-xl); }
+
+/* ── Barra de filtros (dentro del container; dropdowns + botones CANÓNICOS del DS) ── */
+.rep-filter { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
 .rep-filter__label { font-size: 11.5px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .06em; margin-right: 2px; }
-.rep-select { height: 38px; padding: 0 30px 0 12px; border: 1px solid var(--border-dark); border-radius: var(--radius-md); font-size: 13px; color: var(--text-primary); background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23646587' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center; appearance: none; min-width: 160px; cursor: pointer; font-family: inherit; transition: border-color .13s, box-shadow .13s; }
-.rep-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(215,64,9,.14); }
-.rep-select:disabled { opacity: .55; cursor: not-allowed; }
-.rep-filter__sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+.rep-filter .naowee-dropdown { width: 188px; flex: 0 0 auto; }
+.rep-filter__actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.rep-ev-switch .naowee-dropdown { width: 340px; max-width: 100%; }
 
 /* ── KPI grid ─────────────────────────────────────────────────────────── */
 .rep-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 18px; }
 .rep-kpis--3 { grid-template-columns: repeat(3, 1fr); }
-.rep-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 20px; box-shadow: var(--shadow-card); }
+.rep-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 20px; }
 .rep-kpi__top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
 .rep-kpi__icon { width: 42px; height: 42px; border-radius: 11px; display: flex; align-items: center; justify-content: center; }
 .rep-kpi__icon svg { width: 22px; height: 22px; }
@@ -47,7 +57,7 @@
 
 /* ── Widgets (grid 6-col) ─────────────────────────────────────────────── */
 .rep-widgets { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
-.rep-w { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 22px 24px; box-shadow: var(--shadow-card); }
+.rep-w { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 22px 24px; }
 .rep-w--2 { grid-column: span 2; } .rep-w--3 { grid-column: span 3; } .rep-w--4 { grid-column: span 4; } .rep-w--6 { grid-column: span 6; }
 .rep-w__hd { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 2px; }
 .rep-w__title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
@@ -92,7 +102,7 @@
 .rep-leg__pct { font-size: 11.5px; font-weight: 700; color: var(--text-primary); }
 
 /* ── Resultados: KPIs medal-accent + podio + tabla ────────────────────── */
-.rep-podio-card, .rep-table-card, .rep-two > .rep-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); box-shadow: var(--shadow-card); }
+.rep-podio-card, .rep-table-card, .rep-two > .rep-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); }
 .rep-podio-card { padding: 26px 24px 22px; margin-bottom: 20px; }
 .rep-podio-card__title { font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
 .rep-podio-card__sub { font-size: 12px; color: var(--text-secondary); margin-bottom: 26px; }
@@ -144,7 +154,7 @@
 
 /* ── Medallería: resumen + stacked + two-col ──────────────────────────── */
 .rep-med-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 22px; }
-.rep-med-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 20px 22px; box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 5px; }
+.rep-med-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 20px 22px; display: flex; flex-direction: column; gap: 5px; }
 .rep-med-kpi__emoji { font-size: 26px; line-height: 1; }
 .rep-med-kpi__num { font-size: 32px; font-weight: 800; line-height: 1; }
 .rep-med-kpi.oro .rep-med-kpi__num { color: var(--rep-gold); }
@@ -193,4 +203,9 @@
   .rep-widgets { grid-template-columns: 1fr; }
   .rep-w--2, .rep-w--3, .rep-w--4, .rep-w--6 { grid-column: span 1; }
   .rep-kpis, .rep-kpis--3, .rep-med-summary { grid-template-columns: 1fr; }
+  .rep-tabs-card__body { padding: 16px; }
+  .rep-filter { gap: 8px; }
+  .rep-filter .naowee-dropdown, .rep-ev-switch .naowee-dropdown { width: 100%; }
+  .rep-filter__actions { width: 100%; }
+  .rep-filter__actions .naowee-btn { flex: 1; }
 }
