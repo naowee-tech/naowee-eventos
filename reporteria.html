@@ -14,16 +14,13 @@
 <link rel="stylesheet" href="shared/list-components.css?v=0.4.2">
 <link rel="stylesheet" href="shared/event-detail.css?v=0.4.0">
 <link rel="stylesheet" href="shared/forms.css?v=0.4.3">
-<link rel="stylesheet" href="shared/reporteria.css?v=0.6.1">
+<link rel="stylesheet" href="shared/reporteria.css?v=0.6.2">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.6.1" defer></script>
+<script src="shared/naowee-footer.js?v=0.6.2" defer></script>
 
 <style>
-  /* Back link liviano (no amerita token nuevo) + header de acciones. */
+  /* Topbar: back (ghost canónico) a la izquierda, CTA a la derecha. */
   .rep-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
-  .rep-back { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; color: var(--text-secondary); padding: 7px 12px; border-radius: var(--radius-md); transition: background .13s, color .13s; }
-  .rep-back:hover { background: var(--surface); color: var(--text-primary); }
-  .rep-back svg { width: 15px; height: 15px; }
 </style>
 </head>
 
@@ -52,7 +49,9 @@
   /* ─── Iconos ─── */
   const I = {
     chart: getIcon('chart'), ticket: getIcon('ticket'), ranking: getIcon('ranking'),
-    medal: getIcon('medal'), chevL: getIcon('chevron'), athlete: getIcon('athlete')
+    medal: getIcon('medal'), athlete: getIcon('athlete'),
+    /* Chevron IZQUIERDO para "volver" (getIcon('chevron') apunta hacia abajo). */
+    chevL: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>'
   };
   const cal = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
   const pin = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
@@ -189,7 +188,7 @@
 
     document.getElementById('repApp').innerHTML = `
       <div class="rep-topbar">
-        <a class="rep-back" href="${backHref}">${I.chevL} Volver al dashboard</a>
+        <a class="naowee-btn naowee-btn--ghost naowee-btn--sm" href="${backHref}">${I.chevL} Volver al dashboard</a>
         ${cargueCta}
       </div>
 
@@ -260,7 +259,7 @@
         ${ddMarkup('fDep', 'Deporte', 'Todos los deportes', true, false)}
         ${ddMarkup('fPru', 'Prueba', 'Todas las pruebas', true, true)}
         <div class="rep-filter__actions">
-          <button class="naowee-btn naowee-btn--outline naowee-btn--sm" id="fClear" type="button">Limpiar</button>
+          <button class="naowee-btn naowee-btn--ghost naowee-btn--sm" id="fClear" type="button" disabled>Limpiar</button>
           <button class="naowee-btn naowee-btn--loud naowee-btn--sm" id="fApply" type="button">Aplicar filtros</button>
         </div>
       </div>`;
@@ -270,6 +269,10 @@
      cascada deporte→prueba, Limpiar resetea, Aplicar da feedback. */
   function bindFilters() {
     const D = buildReporteria(ev);
+    /* "Limpiar" (--ghost) arranca disabled; se habilita en cuanto hay algún
+       filtro seleccionado, y vuelve a disabled al limpiar. */
+    const fClearBtn = document.getElementById('fClear');
+    const updateClearBtn = () => { fClearBtn.disabled = !(filterState.org || filterState.dep || filterState.pru); };
 
     setupDropdown('evSwitch',
       events.map((e) => ({ value: e.id, label: `${e.emoji} ${e.name} · ${STATUS_LABEL[e.status]}` })),
@@ -279,7 +282,7 @@
 
     const orgOpts = [{ value: '', label: 'Todos los organismos' }, ...D.insc.porOrganismo.map((o) => ({ value: o.name, label: o.name }))];
     const ddOrg = setupDropdown('fOrg', orgOpts,
-      (c) => { filterState.org = c.value; ddOrg.setLabel(c.value || 'Todos los organismos', !c.value); },
+      (c) => { filterState.org = c.value; ddOrg.setLabel(c.value || 'Todos los organismos', !c.value); updateClearBtn(); },
       () => filterState.org);
 
     let ddPru;
@@ -288,11 +291,12 @@
       (c) => {
         filterState.dep = c.value; ddDep.setLabel(c.value || 'Todos los deportes', !c.value);
         filterState.pru = ''; ddPru.setLabel('Todas las pruebas', true); ddPru.setDisabled(!c.value);
+        updateClearBtn();
       },
       () => filterState.dep);
 
     ddPru = setupDropdown('fPru', [{ value: '', label: 'Todas las pruebas' }],
-      (c) => { filterState.pru = c.value; ddPru.setLabel(c.value || 'Todas las pruebas', !c.value); },
+      (c) => { filterState.pru = c.value; ddPru.setLabel(c.value || 'Todas las pruebas', !c.value); updateClearBtn(); },
       () => filterState.pru);
     ddPru.setDisabled(!filterState.dep);
 
@@ -301,6 +305,7 @@
       ddOrg.setLabel('Todos los organismos', true);
       ddDep.setLabel('Todos los deportes', true);
       ddPru.setLabel('Todas las pruebas', true); ddPru.setDisabled(true);
+      updateClearBtn();
     });
     document.getElementById('fApply').addEventListener('click', (e) => {
       const b = e.currentTarget; const t = b.textContent;

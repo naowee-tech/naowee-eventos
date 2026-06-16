@@ -26,11 +26,11 @@
    border-bottom del .naowee-tabs); cuerpo sobre canvas gris-soft para que las
    cards internas blancas resalten sin necesidad de sombra. */
 /* overflow: visible → los popovers/dropdowns flotantes ESCAPAN el container (canon).
-   Las esquinas se redondean a mano: tabs (blanco) arriba, body (gris-soft) abajo.
-   El .naowee-tabs ya tiene overflow-x:auto, así que su hover no desborda las esquinas. */
+   Container 100% blanco (sin canvas gris): las cards internas se definen por su
+   borde. El .naowee-tabs ya tiene overflow-x:auto → su hover no desborda esquinas. */
 .rep-tabs-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); margin-bottom: 22px; }
 .rep-tabs-card > .naowee-tabs { border-top-left-radius: var(--radius-xl); border-top-right-radius: var(--radius-xl); }
-.rep-tabs-card__body { padding: 22px 24px 24px; background: var(--bg-soft); border-radius: 0 0 var(--radius-xl) var(--radius-xl); }
+.rep-tabs-card__body { padding: 22px 24px 24px; }
 
 /* ── Barra de filtros (dentro del container; dropdowns + botones CANÓNICOS del DS) ── */
 .rep-filter { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
