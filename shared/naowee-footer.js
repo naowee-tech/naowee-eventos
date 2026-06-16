@@ -24,8 +24,11 @@ const MODULE_NAME = 'Eventos';
    v0.6.4 = padding-top en tabs, GAP entre cards del panel (.rep-panel flex/gap),
    podio 3D (cara superior con perspective) + números sin sombra.
    v0.6.5 = podio ISOMÉTRICO completo (3 caras planas: frontal + superior + lateral,
-   skew) estilo low-poly. */
-const MODULE_VERSION = 'v0.6.5';
+   skew) estilo low-poly.
+   v0.6.6 = podio look premium Dribbble: caras en gradiente (glossy), esquinas
+   redondeadas, profundidad 16px y sombra de contacto suave (en el bloque, no en
+   el número). */
+const MODULE_VERSION = 'v0.6.6';
 
 (function () {
   function mount() {

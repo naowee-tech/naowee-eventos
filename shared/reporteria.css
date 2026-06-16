@@ -130,26 +130,28 @@
 /* Pedestal 3D: cara frontal (gradiente metálico) + cara superior (::before, más
    clara, inclinada con perspective → look 3D visto desde arriba, estilo Dribbble).
    Números PLANOS, sin sombra (feedback Doug). */
-/* Pedestal ISOMÉTRICO completo: 3 caras planas — frontal (.block) + superior
-   (::before, skewX, la más clara) + lateral derecha (::after, skewY, la más
-   oscura) → bloque 3D estilo low-poly Dribbble. Depth = 14px. Números planos. */
-.rep-podio__block { position: relative; width: 100%; display: flex; align-items: center; justify-content: center; padding: 16px 8px; margin-top: 28px; }
-.rep-podio__block::before { content: ''; position: absolute; left: 0; bottom: 100%; width: 100%; height: 14px; transform: skewX(-45deg); transform-origin: bottom left; }
-.rep-podio__block::after { content: ''; position: absolute; top: 0; left: 100%; width: 14px; height: 100%; transform: skewY(-45deg); transform-origin: top left; }
+/* Pedestal 3D estilo Dribbble: isométrico con 3 caras en GRADIENTE (glossy),
+   esquinas redondeadas, profundidad 16px y sombra de CONTACTO suave que aterriza
+   el bloque. La sombra va en el bloque (front), NO en el número (es hijo → no se
+   ve afectado por box-shadow del padre). Superior = ::before (skewX, más clara),
+   lateral derecha = ::after (skewY, más oscura). */
+.rep-podio__block { position: relative; width: 100%; display: flex; align-items: center; justify-content: center; padding: 16px 8px; margin-top: 32px; border-radius: 8px 8px 3px 3px; box-shadow: 0 16px 22px -10px rgba(38, 40, 68, .26); }
+.rep-podio__block::before { content: ''; position: absolute; left: 0; bottom: 100%; width: 100%; height: 16px; transform: skewX(-45deg); transform-origin: bottom left; border-radius: 6px 6px 0 0; }
+.rep-podio__block::after { content: ''; position: absolute; top: 0; left: 100%; width: 16px; height: 100%; transform: skewY(-45deg); transform-origin: top left; border-radius: 0 6px 3px 0; }
 .rep-podio__pos { position: relative; z-index: 1; font-size: 23px; font-weight: 800; color: #fff; letter-spacing: .5px; }
 .rep-podio__item.p1 .rep-podio__pos { font-size: 28px; }
 /* Oro */
-.p1 .rep-podio__block { background: #f3b50a; min-height: 116px; }
-.p1 .rep-podio__block::before { background: #ffd35e; }
-.p1 .rep-podio__block::after { background: #c5880a; }
+.p1 .rep-podio__block { background: linear-gradient(180deg, #ffc62e, #e0980a); min-height: 118px; }
+.p1 .rep-podio__block::before { background: linear-gradient(125deg, #ffe79a, #ffce4d); }
+.p1 .rep-podio__block::after { background: linear-gradient(180deg, #cf9408, #a3720a); }
 /* Plata */
-.p2 .rep-podio__block { background: #b6c2d0; min-height: 84px; }
-.p2 .rep-podio__block::before { background: #e7edf4; }
-.p2 .rep-podio__block::after { background: #8b9cae; }
+.p2 .rep-podio__block { background: linear-gradient(180deg, #cfd8e2, #9dacbd); min-height: 86px; }
+.p2 .rep-podio__block::before { background: linear-gradient(125deg, #f3f7fb, #dee5ed); }
+.p2 .rep-podio__block::after { background: linear-gradient(180deg, #95a5b6, #7c8c9d); }
 /* Bronce */
-.p3 .rep-podio__block { background: #bf7837; min-height: 58px; }
-.p3 .rep-podio__block::before { background: #e2a36d; }
-.p3 .rep-podio__block::after { background: #97591d; }
+.p3 .rep-podio__block { background: linear-gradient(180deg, #d08a46, #a4621f); min-height: 60px; }
+.p3 .rep-podio__block::before { background: linear-gradient(125deg, #edb888, #dd9c66); }
+.p3 .rep-podio__block::after { background: linear-gradient(180deg, #a4641f, #834e16); }
 
 /* ── Tablas: usan la card-table CANÓNICA del DS (.naowee-table-card +
    .naowee-table--in-card, en list-components.css). Aquí solo viven las clases
