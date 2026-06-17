@@ -94,10 +94,7 @@ export function podio(top3, avatars) {
   return order.map((r, i) => `
     <div class="rep-podio__item ${cls[i]}">
       ${cls[i] === 'p1' ? '<div class="rep-podio__crown" aria-hidden="true">👑</div>' : ''}
-      <div class="rep-podio__avatar" style="background:${avatars[r.pos - 1]}">
-        ${r.av}
-        <span class="rep-podio__medal rep-podio__medal--${r.pos}" aria-label="Puesto ${r.pos}">${r.pos}</span>
-      </div>
+      <div class="rep-podio__avatar" style="background:${avatars[r.pos - 1]}">${r.av}</div>
       <div class="rep-podio__name">${r.dep}</div>
       <div class="rep-podio__org">${r.org}</div>
       <div class="rep-podio__marca">${r.marca}</div>

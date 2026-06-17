@@ -114,14 +114,9 @@
 .rep-podio__item { display: flex; flex-direction: column; align-items: center; flex: 1; max-width: 210px; }
 .rep-podio__item.p1 { order: 2; } .rep-podio__item.p2 { order: 1; } .rep-podio__item.p3 { order: 3; }
 .rep-podio__crown { font-size: 20px; line-height: 1; margin-bottom: 3px; }
-.rep-podio__avatar { width: 54px; height: 54px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 16px; position: relative; border: 3px solid var(--rep-silver-fill); }
+.rep-podio__avatar { width: 54px; height: 54px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 8px; position: relative; border: 3px solid var(--rep-silver-fill); }
 .rep-podio__item.p1 .rep-podio__avatar { width: 66px; height: 66px; font-size: 22px; border-color: var(--rep-gold-fill); }
 .rep-podio__item.p3 .rep-podio__avatar { border-color: var(--rep-bronze-fill); }
-.rep-podio__medal { position: absolute; bottom: -11px; left: 50%; transform: translateX(-50%); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; border: 2px solid var(--surface); }
-.rep-podio__item.p1 .rep-podio__medal { width: 28px; height: 28px; font-size: 13px; bottom: -13px; }
-.rep-podio__medal--1 { background: radial-gradient(circle at 35% 30%, #fde68a, #f5b700 60%, #d4920a); color: #6b4a00; }
-.rep-podio__medal--2 { background: radial-gradient(circle at 35% 30%, #f8fafc, #cbd5e1 60%, #94a3b8); color: #475569; }
-.rep-podio__medal--3 { background: radial-gradient(circle at 35% 30%, #fcd9b6, #cd7f32 60%, #9a5b1f); color: #fff; }
 .rep-podio__name { font-size: 13px; font-weight: 700; text-align: center; color: var(--text-primary); }
 .rep-podio__item.p1 .rep-podio__name { font-size: 14px; }
 .rep-podio__org { font-size: 11.5px; color: var(--text-secondary); text-align: center; margin-bottom: 6px; }
@@ -135,9 +130,9 @@
    el bloque. La sombra va en el bloque (front), NO en el número (es hijo → no se
    ve afectado por box-shadow del padre). Superior = ::before (skewX, más clara),
    lateral derecha = ::after (skewY, más oscura). */
-.rep-podio__block { position: relative; width: 100%; display: flex; align-items: center; justify-content: center; padding: 16px 8px; margin-top: 32px; border-radius: 8px 8px 3px 3px; box-shadow: 0 16px 22px -10px rgba(38, 40, 68, .26); }
-.rep-podio__block::before { content: ''; position: absolute; left: 0; bottom: 100%; width: 100%; height: 16px; transform: skewX(-45deg); transform-origin: bottom left; border-radius: 6px 6px 0 0; }
-.rep-podio__block::after { content: ''; position: absolute; top: 0; left: 100%; width: 16px; height: 100%; transform: skewY(-45deg); transform-origin: top left; border-radius: 0 6px 3px 0; }
+.rep-podio__block { position: relative; width: 100%; display: flex; align-items: center; justify-content: center; padding: 16px 8px; margin-top: 32px; box-shadow: 0 16px 22px -10px rgba(38, 40, 68, .26); }
+.rep-podio__block::before { content: ''; position: absolute; left: 0; bottom: 100%; width: 100%; height: 16px; transform: skewX(-45deg); transform-origin: bottom left; }
+.rep-podio__block::after { content: ''; position: absolute; top: 0; left: 100%; width: 16px; height: 100%; transform: skewY(-45deg); transform-origin: top left; }
 .rep-podio__pos { position: relative; z-index: 1; font-size: 23px; font-weight: 800; color: #fff; letter-spacing: .5px; }
 .rep-podio__item.p1 .rep-podio__pos { font-size: 28px; }
 /* Oro */

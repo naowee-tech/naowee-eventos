@@ -27,8 +27,10 @@ const MODULE_NAME = 'Eventos';
    skew) estilo low-poly.
    v0.6.6 = podio look premium Dribbble: caras en gradiente (glossy), esquinas
    redondeadas, profundidad 16px y sombra de contacto suave (en el bloque, no en
-   el número). */
-const MODULE_VERSION = 'v0.6.6';
+   el número).
+   v0.6.7 = podio: esquinas crispas (sin radius en caras skew → quita el artefacto)
+   + se quita el disco/medalla sobre el avatar (redundante con el nº del pedestal). */
+const MODULE_VERSION = 'v0.6.7';
 
 (function () {
   function mount() {
