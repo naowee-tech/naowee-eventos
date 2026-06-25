@@ -29,8 +29,10 @@ const MODULE_NAME = 'Eventos';
    redondeadas, profundidad 16px y sombra de contacto suave (en el bloque, no en
    el número).
    v0.6.7 = podio: esquinas crispas (sin radius en caras skew → quita el artefacto)
-   + se quita el disco/medalla sobre el avatar (redundante con el nº del pedestal). */
-const MODULE_VERSION = 'v0.6.7';
+   + se quita el disco/medalla sobre el avatar (redundante con el nº del pedestal).
+   v0.6.8 = modal editar evento: notes (caution lock + finalizado) → .naowee-message
+   canónico del DS (antes era .ev-modal__note bespoke). */
+const MODULE_VERSION = 'v0.6.8';
 
 (function () {
   function mount() {
