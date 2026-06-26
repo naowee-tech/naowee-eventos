@@ -75,7 +75,7 @@ const ITEMS = {
   seguInscripciones:{ id: 'inscripciones',    label: 'Inscripciones',            icon: 'ticket',   route: 'cargue.html?tipo=inscripciones' },
   seguRanking:      { id: 'ranking',          label: 'Ranking / Resultados',     icon: 'ranking',  route: 'cargue.html?tipo=ranking' },
   seguMedalleria:   { id: 'medalleria',       label: 'Medallería',               icon: 'medal',    route: 'cargue.html?tipo=medalleria' },
-  perfil:           { id: 'perfil',           label: 'Perfil del deportista',    icon: 'athlete',  route: 'perfil.html' },
+  perfil:           { id: 'perfil',           label: 'Consulta deportistas',     icon: 'athlete',  route: 'perfil.html' },
   calendarioOrg:    { id: 'calendario',       label: 'Calendario de eventos',    icon: 'calendar', route: 'calendario.html' },
   reporteria:       { id: 'reporteria',       label: 'Reportería',               icon: 'chart',    route: 'reporteria.html' },
   usuarios:         { id: 'usuarios',         label: 'Usuarios',                 icon: 'user',     route: 'usuarios.html' }

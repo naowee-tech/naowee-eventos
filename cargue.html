@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="shared/event-detail.css?v=0.4.0">
 <link rel="stylesheet" href="shared/forms.css?v=0.4.3">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.5.0" defer></script>
+<script src="shared/naowee-footer.js?v=0.7.0" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -127,11 +127,11 @@
   /* ── Modo Manual Ranking / Medallería (grid) ── */
   .carg-manual-grid { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: var(--radius-xl); overflow: hidden; }
   .carg-manual-grid__header { display: grid; column-gap: 12px; padding: 10px 16px; background: #f4f5f9; font-size: 11px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase; color: var(--text-secondary); border-bottom: 1px solid var(--border); }
-  .carg-manual-grid__header.g-ranking { grid-template-columns: 1fr 120px 120px 110px; }
+  .carg-manual-grid__header.g-ranking { grid-template-columns: 1fr 150px 150px; }
   .carg-manual-grid__header.g-medalleria { grid-template-columns: 1fr 80px 80px 80px 90px; }
   .carg-manual-row { display: grid; column-gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface); align-items: center; }
   .carg-manual-row:last-child { border-bottom: 0; }
-  .carg-manual-row.g-ranking { grid-template-columns: 1fr 120px 120px 110px; }
+  .carg-manual-row.g-ranking { grid-template-columns: 1fr 150px 150px; }
   .carg-manual-row.g-medalleria { grid-template-columns: 1fr 80px 80px 80px 90px; }
   .carg-manual-row__name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
   .carg-manual-row__doc { font-size: 11px; color: var(--text-secondary); margin-top: 1px; }
@@ -395,11 +395,11 @@
     ranking: {
       label: 'Ranking / Resultados', tabLabel: 'Ranking / Resultados', labelShort: 'Resultado',
       icon: 'ranking', plantilla: 'plantilla_resultados.xlsx', storeTipo: 'res', manualMode: 'grid',
-      hint: 'Columnas: deporte · categoría · modalidad · prueba · tipo doc · nro doc · primer nombre · segundo nombre · primer apellido · segundo apellido · sexo · departamento · ciudad · posición · marca/tiempo/puntaje · fase',
+      hint: 'Columnas: deporte · categoría · modalidad · prueba · tipo doc · nro doc · primer nombre · segundo nombre · primer apellido · segundo apellido · sexo · departamento · ciudad · posición · marca/tiempo/puntaje',
       columns: [
         { k: 'deporte', l: 'Deporte' }, { k: 'prueba', l: 'Prueba' },
         { k: 'nombre', l: 'Deportista' }, { k: 'nroDoc', l: 'Nro documento' },
-        { k: 'posicion', l: 'Posición', num: true }, { k: 'marca', l: 'Marca / Tiempo', num: true }, { k: 'fase', l: 'Fase' }
+        { k: 'posicion', l: 'Posición', num: true }, { k: 'marca', l: 'Marca / Tiempo', num: true }
       ]
     },
     medalleria: {
@@ -1230,7 +1230,7 @@
     const isRanking = activeTipo === 'ranking';
     const rows = MOCK_INSCRITOS;
     const headerCols = isRanking
-      ? `<span>Deportista</span><span>Posición</span><span>Marca/Tiempo</span><span>Fase</span>`
+      ? `<span>Deportista</span><span>Posición</span><span>Marca/Tiempo</span>`
       : `<span>Departamento</span><span>🥇 Oro</span><span>🥈 Plata</span><span>🥉 Bronce</span><span>Total</span>`;
     const headerClass = isRanking ? 'g-ranking' : 'g-medalleria';
     const rowsHTML = isRanking
@@ -1239,7 +1239,6 @@
             <div><div class="carg-manual-row__name">${esc(r.nombre)}</div><div class="carg-manual-row__doc">${esc(r.doc)} · ${esc(r.deporte)} · ${esc(r.prueba)}</div></div>
             <input class="carg-manual-input" type="number" min="1" placeholder="—" data-field="posicion">
             <input class="carg-manual-input" type="text" placeholder="ej: 10.45s" data-field="marca">
-            <input class="carg-manual-input" type="text" placeholder="Final" data-field="fase">
           </div>`).join('')
       : [
           { depto: 'Bogotá D.C.', deporte: 'Atletismo' },
@@ -1259,7 +1258,7 @@
         <div class="carg-card__head">
           <div>
             <h3 class="carg-card__title">Captura manual — ${esc(cfg.label)}</h3>
-            <p class="carg-card__sub">${isRanking ? 'Registra posición, marca/tiempo y fase para cada deportista inscrito.' : 'Ingresa el medallero por departamento y disciplina.'}</p>
+            <p class="carg-card__sub">${isRanking ? 'Registra posición y marca/tiempo para cada deportista inscrito.' : 'Ingresa el medallero por departamento y disciplina.'}</p>
           </div>
         </div>
         <div class="carg-manual-grid">

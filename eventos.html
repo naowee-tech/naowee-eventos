@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="shared/list-components.css?v=0.4.2">
 <link rel="stylesheet" href="shared/forms.css?v=0.4.3">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.5.0" defer></script>
+<script src="shared/naowee-footer.js?v=0.7.0" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -168,6 +168,21 @@
   @media (prefers-reduced-motion: reduce) {
     .cal-ev { transition: none; }
   }
+
+  /* ── Cargues = conteos numéricos (v0.7.0, feedback Juanma: no % sino valores) ── */
+  /* Card: label + número (sin barra) */
+  .prog-item--count { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .prog-item--count .prog-item__num { font-size: 15px; font-weight: 800; color: var(--text-primary); font-feature-settings: 'tnum'; }
+  .prog-item--count .prog-item__num.is-empty { color: var(--text-muted); font-weight: 600; }
+  /* Tabla: 3 conteos inline */
+  .ev-row__counts { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+  .ev-cnt { font-size: 12px; color: var(--text-secondary); white-space: nowrap; line-height: 1.35; }
+  .ev-cnt b { font-weight: 800; color: var(--text-primary); font-feature-settings: 'tnum'; }
+  /* Tabla: acción analítica por fila + acción principal */
+  .ev-row__actions { display: inline-flex; align-items: center; gap: 2px; justify-content: flex-end; }
+  .ev-row__icon-act { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: var(--radius-md); color: var(--text-secondary); transition: background var(--duration-fast), color var(--duration-fast); }
+  .ev-row__icon-act svg { width: 16px; height: 16px; }
+  .ev-row__icon-act:hover { background: var(--accent-bg); color: var(--accent); }
 </style>
 </head>
 <body>
@@ -195,6 +210,7 @@
     pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
     org: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg>',
     arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>',
+    chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
     search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
     clear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
@@ -208,6 +224,9 @@
   const role = ROLES[roleCode];
   /* CTA "Crear evento" solo para Administrador. */
   const canCreate = roleCode === 'ADMIN';
+  /* Reportería (analítica) = consumo de lectura → ADMIN y Usuario (acción por fila). */
+  const canReporteria = roleCode === 'ADMIN' || roleCode === 'USER';
+  const num = (n) => (n || 0).toLocaleString('es-CO');
   /* Para el GESTOR: su gestorId propio y si está en la vista "Mis eventos". */
   const isGestor = roleCode === 'GESTOR';
   const myGestorId = gestorIdForRole(roleCode);
@@ -217,14 +236,14 @@
   /* Pool de eventos — se recarga en cada render para reflejar overrides/drafts. */
   function getPool() { return allEvents(); }
 
+  /* Conteo numérico (no % — Juanma 25-jun: el progreso no es real porque no
+     conocemos el total esperado del archivo; sí conocemos lo CARGADO). */
   function progItem(lbl, fill, o) {
-    const p = pct(o.done, o.total);
-    const empty = o.total === 0;
+    const empty = o.done === 0;
     return `
-      <div class="prog-item">
+      <div class="prog-item prog-item--count">
         <span class="prog-item__lbl">${lbl}</span>
-        <div class="prog-track"><div class="prog-fill ${fill}" style="width:${p}%"></div></div>
-        <span class="prog-item__val ${empty ? 'is-empty' : ''}">${empty ? '—' : p + '%'}</span>
+        <span class="prog-item__num ${empty ? 'is-empty' : ''}">${empty ? '—' : num(o.done)}</span>
       </div>`;
   }
 
@@ -274,8 +293,6 @@
   }
 
   function eventRow(ev) {
-    const p = pct(ev.insc.done, ev.insc.total);
-    const empty = ev.insc.total === 0;
     const act = actionForEv(ev);
     return `
       <tr data-id="${ev.id}" data-href="${act.href}" role="button" tabindex="0" aria-label="${act.label}: ${ev.name}">
@@ -295,13 +312,17 @@
         <td class="ev-row__place">${ev.place}</td>
         <td><span class="badge s-${ev.status}">${STATUS_LABEL[ev.status]}</span></td>
         <td>
-          <div class="ev-row__prog">
-            <div class="prog-track"><div class="prog-fill f-insc" style="width:${p}%"></div></div>
-            <span class="ev-row__pct ${empty ? 'is-empty' : ''}">${empty ? '—' : p + '%'}</span>
+          <div class="ev-row__counts">
+            <span class="ev-cnt" title="Deportistas inscritos"><b>${num(ev.insc.done)}</b> insc.</span>
+            <span class="ev-cnt" title="Resultados cargados"><b>${num(ev.res.done)}</b> res.</span>
+            <span class="ev-cnt" title="Medallas otorgadas"><b>${num(ev.med.done)}</b> med.</span>
           </div>
         </td>
         <td style="text-align:right">
-          <button type="button" class="ev-row__action" data-action data-id="${ev.id}" title="${act.label}"><span class="ev-row__action-lbl">${act.label}</span> ${I.arrow}</button>
+          <div class="ev-row__actions">
+            ${canReporteria ? `<a class="ev-row__icon-act" href="reporteria.html?id=${encodeURIComponent(ev.id)}&role=${roleCode}" title="Ver analítica" aria-label="Ver analítica de ${ev.name}">${I.chart}</a>` : ''}
+            <button type="button" class="ev-row__action" data-action data-id="${ev.id}" title="${act.label}"><span class="ev-row__action-lbl">${act.label}</span> ${I.arrow}</button>
+          </div>
         </td>
       </tr>`;
   }
@@ -698,7 +719,7 @@
               <col class="col-estado"><col class="col-prog"><col class="col-accion">
             </colgroup>
             <thead><tr>
-              <th>Evento</th><th>Fechas</th><th>Lugar</th><th>Estado</th><th>Progreso inscr.</th><th style="text-align:right">Acción</th>
+              <th>Evento</th><th>Fechas</th><th>Lugar</th><th>Estado</th><th>Cargues</th><th style="text-align:right">Acción</th>
             </tr></thead>
             <tbody>${rows.map((ev) => eventRow(ev)).join('')}</tbody>
           </table>

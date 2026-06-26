@@ -31,8 +31,12 @@ const MODULE_NAME = 'Eventos';
    v0.6.7 = podio: esquinas crispas (sin radius en caras skew → quita el artefacto)
    + se quita el disco/medalla sobre el avatar (redundante con el nº del pedestal).
    v0.6.8 = modal editar evento: notes (caution lock + finalizado) → .naowee-message
-   canónico del DS (antes era .ev-modal__note bespoke). */
-const MODULE_VERSION = 'v0.6.8';
+   canónico del DS (antes era .ev-modal__note bespoke).
+   ── v0.7.x: feedback sesión de entrega a desarrollo (25-jun) ──
+   v0.7.0 = progreso → conteos numéricos (insc·res·med, no %); "Ver analítica" por
+   fila en eventos; "Perfil del deportista" → "Consulta deportistas"; ranking manual
+   sin columna FASE. */
+const MODULE_VERSION = 'v0.7.0';
 
 (function () {
   function mount() {
