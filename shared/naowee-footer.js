@@ -35,8 +35,11 @@ const MODULE_NAME = 'Eventos';
    ── v0.7.x: feedback sesión de entrega a desarrollo (25-jun) ──
    v0.7.0 = progreso → conteos numéricos (insc·res·med, no %); "Ver analítica" por
    fila en eventos; "Perfil del deportista" → "Consulta deportistas"; ranking manual
-   sin columna FASE. */
-const MODULE_VERSION = 'v0.7.0';
+   sin columna FASE.
+   v0.7.1 = evento Nacional/Internacional: toggle (segmento) en crear evento — en
+   internacional el lugar (depto/municipio) no aplica + nota; alcance persistido y
+   mostrado como chip en el detalle (no editable). */
+const MODULE_VERSION = 'v0.7.1';
 
 (function () {
   function mount() {

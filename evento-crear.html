@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="shared/shell.css?v=0.4.5">
 <link rel="stylesheet" href="shared/forms.css?v=0.4.3">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.5.0" defer></script>
+<script src="shared/naowee-footer.js?v=0.7.1" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -51,6 +51,18 @@
   .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
   .field-grid .col-2 { grid-column: span 2; }
   @media (max-width: 760px) { .field-grid { grid-template-columns: 1fr; gap: 16px; } .field-grid .col-2 { grid-column: span 1; } }
+
+  /* ── Segmento canónico .naowee-segment (Nacional/Internacional) — inline porque
+     evento-crear no carga list-components.css. Copiado verbatim del DS. ── */
+  .naowee-segment { position: relative; display: inline-flex; background: var(--surface); border: 1px solid var(--border-dark); border-radius: var(--radius-lg); padding: 4px; gap: 0; height: 40px; overflow: clip; font-feature-settings: 'case' 1; }
+  .naowee-segment__pill { box-sizing: border-box; position: absolute; top: 4px; bottom: 4px; left: 0; width: 0; background: var(--surface); border: 2px solid var(--accent); border-radius: var(--radius-md); box-shadow: 0 0 0 3px rgba(215, 64, 9, .08); pointer-events: none; z-index: 0; transform: translate3d(var(--seg-x, 0), 0, 0); transition: transform 380ms var(--easing-smoothout), width 380ms var(--easing-smoothout); }
+  .naowee-segment__pill--no-anim { transition: none; }
+  .naowee-segment__item { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; align-self: stretch; padding: 0 16px; border: 2px solid transparent; background: transparent; border-radius: var(--radius-md); cursor: pointer; white-space: nowrap; flex-shrink: 0; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); transition: color 220ms var(--easing-smoothout); }
+  .naowee-segment__item:hover { color: var(--text-primary); }
+  .naowee-segment__item--active { color: var(--accent); font-weight: 700; }
+  /* Nota informativa del alcance internacional */
+  .alcance-note { display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; }
+  .alcance-note svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px; color: var(--blue-info); }
 
   /* ── Sección 2: gestor seleccionado (preview card) ── */
   .gestor-preview { display: flex; align-items: center; gap: 12px; margin-top: 14px; padding: 13px 15px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-soft); animation: fadeInUp .26s var(--easing-smoothout) both; }
@@ -116,6 +128,20 @@
             </div>
             <div class="form-card__body">
               <div class="field-grid">
+                <!-- Alcance: Nacional / Internacional (no editable después de crear) -->
+                <div class="col-2" data-field="alcance">
+                  <label class="naowee-textfield__label">Alcance del evento</label>
+                  <div class="naowee-segment" id="alcanceSeg" role="tablist" aria-label="Alcance del evento">
+                    <span class="naowee-segment__pill naowee-segment__pill--no-anim" data-pill></span>
+                    <button type="button" class="naowee-segment__item naowee-segment__item--active" data-val="nacional" role="tab" aria-selected="true">Nacional</button>
+                    <button type="button" class="naowee-segment__item" data-val="internacional" role="tab" aria-selected="false">Internacional</button>
+                  </div>
+                  <div class="alcance-note" id="alcanceNote" hidden>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    <span>Evento <strong>internacional</strong>: se hace seguimiento a los deportistas de Colombia. El lugar (departamento/municipio) no aplica; los rivales se registran como participantes de otros países en los resultados.</span>
+                  </div>
+                </div>
+
                 <!-- Nombre* -->
                 <div class="naowee-textfield col-2" data-field="nombre">
                   <label class="naowee-textfield__label naowee-textfield__label--required" for="f-nombre">Nombre del evento</label>
@@ -260,6 +286,7 @@
 
   /* ─── Estado del form ─── */
   const state = {
+    alcance: 'nacional',
     nombre: '', inicio: null, fin: null,
     departamento: '', municipio: '', descripcion: '',
     gestorId: null
@@ -604,11 +631,51 @@
     }, () => state.municipio);
   }
 
+  /* ── Alcance Nacional / Internacional (segmento canónico). En internacional el
+     lugar no aplica → se ocultan Departamento/Municipio. No editable tras crear
+     (regla Juanma): solo se fija aquí, en la creación. ── */
+  function applyAlcance() {
+    const intl = state.alcance === 'internacional';
+    const deptoField = document.querySelector('[data-field="departamento"]');
+    const muniField = document.getElementById('municipioField');
+    const note = document.getElementById('alcanceNote');
+    if (deptoField) deptoField.hidden = intl;
+    if (muniField) muniField.hidden = intl || !state.departamento;
+    if (note) note.hidden = !intl;
+    if (intl) {
+      state.departamento = ''; state.municipio = '';
+      if (ddDepto) { ddDepto.setLabel('Selecciona un departamento…', true); ddDepto.setError(false); }
+      if (ddMunicipio) { ddMunicipio.setLabel('Selecciona un municipio…', true); ddMunicipio.setError(false); }
+      clearFieldError('departamento'); clearFieldError('municipio');
+    }
+  }
+  function initAlcance() {
+    const seg = document.getElementById('alcanceSeg');
+    const pill = seg.querySelector('[data-pill]');
+    const items = [...seg.querySelectorAll('.naowee-segment__item')];
+    const position = (animate) => {
+      const active = seg.querySelector('.naowee-segment__item--active');
+      if (!active) return;
+      if (animate) pill.classList.remove('naowee-segment__pill--no-anim');
+      pill.style.setProperty('--seg-x', active.offsetLeft + 'px');
+      pill.style.width = active.offsetWidth + 'px';
+    };
+    items.forEach((it) => it.addEventListener('click', () => {
+      if (it.classList.contains('naowee-segment__item--active')) return;
+      items.forEach((x) => { const on = x === it; x.classList.toggle('naowee-segment__item--active', on); x.setAttribute('aria-selected', String(on)); });
+      state.alcance = it.dataset.val;
+      position(true);
+      applyAlcance();
+    }));
+    requestAnimationFrame(() => position(false));
+  }
+
   function initSection1() {
     const nombre = document.getElementById('f-nombre');
     nombre.addEventListener('input', () => { state.nombre = nombre.value; if (nombre.value.trim()) clearFieldError('nombre'); syncSaveEnabled(); });
     document.getElementById('f-desc').addEventListener('input', (e) => { state.descripcion = e.target.value; });
     initLugarCascade();
+    initAlcance();
 
     dpInicio = setupDatepicker('inicio', (d) => {
       state.inicio = d; dpInicio.setValue(d); clearFieldError('inicio');
@@ -645,8 +712,11 @@
     if (!state.inicio) fail('inicio', 'Selecciona la fecha de inicio.');
     if (!state.fin) fail('fin', 'Selecciona la fecha de fin.');
     if (state.inicio && state.fin && state.fin < state.inicio) fail('fin', 'La fecha de fin debe ser igual o posterior al inicio.');
-    if (!state.departamento) fail('departamento', 'Selecciona el departamento.');
-    if (state.departamento && !state.municipio) fail('municipio', 'Selecciona el municipio.');
+    /* En internacional el lugar no aplica → no se exige depto/municipio. */
+    if (state.alcance === 'nacional') {
+      if (!state.departamento) fail('departamento', 'Selecciona el departamento.');
+      if (state.departamento && !state.municipio) fail('municipio', 'Selecciona el municipio.');
+    }
 
     if (firstErrName) {
       const f = fieldEl(firstErrName);
@@ -661,10 +731,12 @@
   function buildDraft() {
     /* Módulo LIGHT: el evento no asocia catálogo deportivo al crearse; los
        deportes/pruebas llegan luego en las columnas de los archivos de cargue. */
-    /* Lugar = "Municipio, Departamento" (cascada). */
-    const place = state.municipio && state.departamento
-      ? `${state.municipio}, ${state.departamento}`
-      : (state.departamento || 'Por definir');
+    /* Lugar = "Municipio, Departamento" (cascada). En internacional no aplica. */
+    const place = state.alcance === 'internacional'
+      ? 'Internacional'
+      : (state.municipio && state.departamento
+          ? `${state.municipio}, ${state.departamento}`
+          : (state.departamento || 'Por definir'));
     const g = (typeof PERFILES_ASIGNABLES !== 'undefined') ? PERFILES_ASIGNABLES.find((x) => x.id === state.gestorId) : null;
     return {
       id: `EV-2026-${String(Date.now()).slice(-3)}`, emoji: '📅',
@@ -672,7 +744,7 @@
       place, org: 'Ministerio del Deporte',
       start: state.inicio ? fmtDate(state.inicio) : 'Por definir',
       end: state.fin ? fmtDate(state.fin) : 'Por definir',
-      status: 'borrador',
+      status: 'borrador', alcance: state.alcance,
       insc: { done: 0, total: 0 }, res: { done: 0, total: 0 }, med: { done: 0, total: 0 },
       /* Datos completos para conectar detalle + "eventos asignados" del gestor. */
       gestorId: state.gestorId || null,
