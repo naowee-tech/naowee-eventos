@@ -63,9 +63,9 @@ export const EVENTS = [
     insc: { done: 0, total: 0 }, res: { done: 0, total: 0 }, med: { done: 0, total: 0 }
   },
   {
-    id: 'EV-2026-010', emoji: '🥊', name: 'Velada de Boxeo Amateur',
-    sport: 'Boxeo · Combate', place: 'Cartagena, Bolívar', org: 'Liga de Boxeo de Bolívar',
-    start: '18 jun 2026', end: '18 jun 2026', status: 'activo',
+    id: 'EV-2026-010', emoji: '🥊', name: 'Clasificatorio Internacional de Boxeo',
+    sport: 'Boxeo · Combate', place: 'Internacional', org: 'Federación Colombiana de Boxeo',
+    start: '18 jun 2026', end: '18 jun 2026', status: 'activo', alcance: 'internacional',
     insc: { done: 64, total: 64 }, res: { done: 0, total: 32 }, med: { done: 0, total: 18 }
   },
   {

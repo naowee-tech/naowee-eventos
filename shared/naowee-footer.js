@@ -38,8 +38,12 @@ const MODULE_NAME = 'Eventos';
    sin columna FASE.
    v0.7.1 = evento Nacional/Internacional: toggle (segmento) en crear evento — en
    internacional el lugar (depto/municipio) no aplica + nota; alcance persistido y
-   mostrado como chip en el detalle (no editable). */
-const MODULE_VERSION = 'v0.7.1';
+   mostrado como chip en el detalle (no editable).
+   v0.7.2 = ranking/resultados INTERNACIONAL: si el evento es internacional, el
+   cargue manual de ranking muestra la lista de colombianos + un drawer lateral
+   para registrar su posición/marca y crear el podio de "ficticios" (país + nombre
+   + marca). Evento demo EV-2026-010 marcado internacional. */
+const MODULE_VERSION = 'v0.7.2';
 
 (function () {
   function mount() {
