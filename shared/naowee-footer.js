@@ -45,8 +45,11 @@ const MODULE_NAME = 'Eventos';
    + marca). Evento demo EV-2026-010 marcado internacional.
    v0.7.3 = catálogo deportivo + organizaciones en la EDICIÓN (evento-detalle):
    secciones "Deportes y competencias" (deporte+competencias en chips) y
-   "Organizaciones invitadas" (solo nacional), editables por ADMIN, persistidas. */
-const MODULE_VERSION = 'v0.7.3';
+   "Organizaciones invitadas" (solo nacional), editables por ADMIN, persistidas.
+   v0.7.4 = medallería manual rediseñada: buscar deportista → asignarle medalla
+   (🥇🥈🥉) en su competencia (antes era por departamento); el medallero por
+   organismo se calcula solo. + fix ícono gigante en heads de cargue. */
+const MODULE_VERSION = 'v0.7.4';
 
 (function () {
   function mount() {
