@@ -42,8 +42,11 @@ const MODULE_NAME = 'Eventos';
    v0.7.2 = ranking/resultados INTERNACIONAL: si el evento es internacional, el
    cargue manual de ranking muestra la lista de colombianos + un drawer lateral
    para registrar su posición/marca y crear el podio de "ficticios" (país + nombre
-   + marca). Evento demo EV-2026-010 marcado internacional. */
-const MODULE_VERSION = 'v0.7.2';
+   + marca). Evento demo EV-2026-010 marcado internacional.
+   v0.7.3 = catálogo deportivo + organizaciones en la EDICIÓN (evento-detalle):
+   secciones "Deportes y competencias" (deporte+competencias en chips) y
+   "Organizaciones invitadas" (solo nacional), editables por ADMIN, persistidas. */
+const MODULE_VERSION = 'v0.7.3';
 
 (function () {
   function mount() {

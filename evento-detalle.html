@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="shared/event-detail.css?v=0.4.0">
 <link rel="stylesheet" href="shared/forms.css?v=0.4.3">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.7.1" defer></script>
+<script src="shared/naowee-footer.js?v=0.7.3" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -137,6 +137,32 @@
   @media (prefers-reduced-motion: reduce) {
     .ev-modal, .ev-modal-overlay { transition: none !important; animation: none !important; }
   }
+
+  /* ═══ Configuración del evento (catálogo deportivo + organizaciones) — se edita
+     en la EDICIÓN (no en la creación). Acta 25-jun. ═══ */
+  .cfg-addrow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .cfg-dd { width: 248px; position: relative; }
+  .cfg-dd--tipo { width: 156px; }
+  .cfg-dd .naowee-dropdown__menu { z-index: 50; }
+  .cfg-input { height: 44px; padding: 0 12px; border: 1px solid var(--border-dark); border-radius: var(--radius-md); font-family: inherit; font-size: 14px; color: var(--text-primary); flex: 1; min-width: 180px; background: var(--surface); }
+  .cfg-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(215,64,9,.12); }
+  .cfg-list { display: flex; flex-direction: column; gap: 12px; }
+  .cfg-sport { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px 14px; }
+  .cfg-sport__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .cfg-sport__name { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+  .cfg-x { width: 28px; height: 28px; border: none; background: transparent; border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .cfg-x:hover { background: var(--red-bg); color: var(--red); }
+  .cfg-x svg { width: 16px; height: 16px; }
+  .cfg-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .cfg-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px 4px 10px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius-full); font-size: 12px; color: var(--text-secondary); }
+  .cfg-chip__x { border: none; background: transparent; color: var(--text-muted); cursor: pointer; display: flex; padding: 1px; border-radius: var(--radius-full); }
+  .cfg-chip__x svg { width: 12px; height: 12px; }
+  .cfg-chip__x:hover { color: var(--red); background: var(--red-bg); }
+  .cfg-empty, .cfg-empty-inline { font-size: 13px; color: var(--text-muted); }
+  .cfg-orgs { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cfg-org { display: inline-flex; align-items: center; gap: 8px; padding: 6px 8px 6px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-full); font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .cfg-org__tipo { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--accent); background: var(--accent-bg); padding: 2px 7px; border-radius: var(--radius-full); }
+  .cfg-note { font-size: 12px; color: var(--text-secondary); margin-top: 12px; line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -174,7 +200,7 @@
   /* Módulo LIGHT: el detalle NO carga catálogo deportivo (deportes/pruebas
      viven solo como columnas de los archivos de cargue — Fase 4). Solo se
      usa el catálogo de gestores para mostrar el responsable asignado. */
-  import { PERFILES_ASIGNABLES, DEPARTAMENTOS, municipiosDeDepto } from './shared/catalogo.js?v=0.4.4';
+  import { PERFILES_ASIGNABLES, DEPARTAMENTOS, municipiosDeDepto, DEPORTES_POR_TIPO } from './shared/catalogo.js?v=0.4.4';
 
   /* ─── Iconos (stroke currentColor, paridad módulo). Solo los usados en
      el container consolidado + Seguimiento + acciones del header. ─── */
@@ -345,6 +371,113 @@
   /* ─── Render ───
      Container superior consolidado (.det-card): header + franja de metadata
      + bloque gestor/descripción. Debajo, "Seguimiento del evento". */
+  /* ════════════ Configuración del evento (catálogo deportivo + organizaciones) ════════════
+     Acta 25-jun: la creación es liviana; en la EDICIÓN se agregan deportes+competencias
+     (sencillo, sin categoría/sexo/cupos) y las organizaciones invitadas (solo nacional).
+     Editable por ADMIN; lectura para el resto. Persiste vía updateEvent → allEvents(). */
+  const DEPORTES_FLAT = Object.values(DEPORTES_POR_TIPO).flat()
+    .map((d) => ({ nombre: d.label, emoji: d.emoji || '', pruebas: d.pruebas || [] }));
+  const ORG_TIPOS = ['Liga', 'Departamento', 'Municipio', 'Club'];
+  const escH = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const ICON_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+  const ICON_CHEVD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+  const ICON_SPORT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20M2 12h20"/></svg>';
+
+  const getDeportes = (e) => Array.isArray(e.deportes) ? e.deportes : [];
+  const getOrgs = (e) => Array.isArray(e.organizaciones) ? e.organizaciones : [];
+  function persistCfg(patch) {
+    updateEvent(ev.id, patch);
+    ev = allEvents().find((e) => e.id === ev.id) || ev;
+    render();
+  }
+  function ddMarkupCfg(name, ph, cls) {
+    return `<div class="naowee-dropdown cfg-dd ${cls || ''}" data-dd="${name}">
+      <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox"><span class="naowee-dropdown__value is-placeholder" data-dd-val>${escH(ph)}</span><span class="naowee-dropdown__chevron">${ICON_CHEVD}</span></button>
+      <div class="naowee-dropdown__menu" role="listbox"></div>
+    </div>`;
+  }
+  function configHTML() {
+    const deportes = getDeportes(ev), orgs = getOrgs(ev), intl = ev.alcance === 'internacional';
+    const deportesSec = `
+      <section class="det-section cfg-section" aria-labelledby="cfg-dep-title" style="animation-delay:.12s">
+        <div class="det-section__head">${ICON_SPORT}<h3 id="cfg-dep-title">Deportes y competencias</h3></div>
+        ${canEdit ? `<div class="cfg-addrow">${ddMarkupCfg('cfgDeporte', 'Selecciona un deporte…')}<button type="button" class="naowee-btn naowee-btn--loud naowee-btn--sm" id="cfgAddDeporte">${ICON_PLUS} Agregar deporte</button></div>` : ''}
+        <div class="cfg-list">
+          ${deportes.length ? deportes.map((d, i) => `
+            <div class="cfg-sport">
+              <div class="cfg-sport__head"><span class="cfg-sport__name">${d.emoji ? d.emoji + ' ' : ''}${escH(d.deporte)}</span>${canEdit ? `<button type="button" class="cfg-x" data-rm-deporte="${i}" title="Quitar deporte">${ICON_XM}</button>` : ''}</div>
+              <div class="cfg-chips">${(d.competencias || []).length ? d.competencias.map((c, j) => `<span class="cfg-chip">${escH(c)}${canEdit ? `<button type="button" class="cfg-chip__x" data-rm-comp="${i}:${j}" aria-label="Quitar competencia">${ICON_XM}</button>` : ''}</span>`).join('') : '<span class="cfg-empty-inline">Sin competencias</span>'}</div>
+            </div>`).join('') : `<div class="cfg-empty">Aún no hay deportes asociados.${canEdit ? ' Agrega los deportes y sus competencias.' : ''}</div>`}
+        </div>
+      </section>`;
+    const orgsSec = intl ? '' : `
+      <section class="det-section cfg-section" aria-labelledby="cfg-org-title" style="animation-delay:.14s">
+        <div class="det-section__head">${I.org}<h3 id="cfg-org-title">Organizaciones invitadas</h3></div>
+        ${canEdit ? `<div class="cfg-addrow">${ddMarkupCfg('cfgTipo', 'Liga', 'cfg-dd--tipo')}<input type="text" class="cfg-input" id="cfgOrgNombre" placeholder="Ej. Liga del Valle" autocomplete="off"><button type="button" class="naowee-btn naowee-btn--loud naowee-btn--sm" id="cfgAddOrg">${ICON_PLUS} Invitar</button></div>` : ''}
+        <div class="cfg-orgs">${orgs.length ? orgs.map((o, i) => `<span class="cfg-org"><span class="cfg-org__tipo">${escH(o.tipo)}</span> ${escH(o.nombre)}${canEdit ? `<button type="button" class="cfg-chip__x" data-rm-org="${i}" aria-label="Quitar organización">${ICON_XM}</button>` : ''}</span>`).join('') : `<div class="cfg-empty">Aún no hay organizaciones invitadas.</div>`}</div>
+        ${canEdit && orgs.length ? `<p class="cfg-note">⚠️ Al quitar una organización con inscritos, resultados o medallas ya cargados, el sistema validará antes de eliminarla.</p>` : ''}
+      </section>`;
+    return deportesSec + orgsSec;
+  }
+  function cfgDropdown(dd, opts, onSelect) {
+    if (!dd) return;
+    const menu = dd.querySelector('.naowee-dropdown__menu');
+    const valEl = dd.querySelector('[data-dd-val]');
+    const trigger = dd.querySelector('.naowee-dropdown__trigger');
+    function paint() {
+      menu.innerHTML = opts.map((o) => `<button type="button" class="naowee-dropdown__opt" data-val="${escH(o.value)}"><span>${escH(o.label)}</span></button>`).join('');
+      menu.querySelectorAll('.naowee-dropdown__opt').forEach((b) => b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const o = opts.find((x) => x.value === b.dataset.val);
+        valEl.textContent = o.label; valEl.classList.remove('is-placeholder');
+        dd.classList.remove('is-open'); onSelect(o);
+      }));
+    }
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const willOpen = !dd.classList.contains('is-open');
+      document.querySelectorAll('.cfg-dd.is-open').forEach((x) => x.classList.remove('is-open'));
+      if (willOpen) { paint(); dd.classList.add('is-open'); }
+    });
+  }
+  document.addEventListener('click', (e) => { if (!e.target.closest('.cfg-dd')) document.querySelectorAll('.cfg-dd.is-open').forEach((x) => x.classList.remove('is-open')); });
+  function bindConfig() {
+    if (!canEdit) return;
+    const page = document.getElementById('detailPage');
+    let pickedDeporte = null;
+    cfgDropdown(page.querySelector('[data-dd="cfgDeporte"]'), DEPORTES_FLAT.map((d) => ({ value: d.nombre, label: `${d.emoji} ${d.nombre}`.trim() })), (o) => { pickedDeporte = o.value; });
+    page.querySelector('#cfgAddDeporte')?.addEventListener('click', () => {
+      if (!pickedDeporte) { flash('Selecciona un deporte primero.'); return; }
+      const cur = getDeportes(ev);
+      if (cur.some((d) => d.deporte === pickedDeporte)) { flash('Ese deporte ya está agregado.'); return; }
+      const src = DEPORTES_FLAT.find((d) => d.nombre === pickedDeporte);
+      persistCfg({ deportes: [...cur, { deporte: pickedDeporte, emoji: src?.emoji || '', competencias: src?.pruebas || [] }] });
+    });
+    page.querySelectorAll('[data-rm-deporte]').forEach((b) => b.addEventListener('click', () => {
+      const cur = getDeportes(ev).slice(); cur.splice(+b.dataset.rmDeporte, 1); persistCfg({ deportes: cur });
+    }));
+    page.querySelectorAll('[data-rm-comp]').forEach((b) => b.addEventListener('click', () => {
+      const [i, j] = b.dataset.rmComp.split(':').map(Number);
+      const cur = getDeportes(ev).map((d) => ({ ...d, competencias: [...(d.competencias || [])] }));
+      cur[i].competencias.splice(j, 1); persistCfg({ deportes: cur });
+    }));
+    let pickedTipo = 'Liga';
+    const phFor = (t) => t === 'Liga' ? 'Ej. Liga del Valle' : t === 'Departamento' ? 'Ej. Antioquia' : t === 'Municipio' ? 'Ej. Cali' : 'Ej. Club Aqua Valle';
+    cfgDropdown(page.querySelector('[data-dd="cfgTipo"]'), ORG_TIPOS.map((t) => ({ value: t, label: t })), (o) => {
+      pickedTipo = o.value; const inp = page.querySelector('#cfgOrgNombre'); if (inp) inp.placeholder = phFor(o.value);
+    });
+    const addOrg = () => {
+      const inp = page.querySelector('#cfgOrgNombre'); const nombre = (inp?.value || '').trim();
+      if (!nombre) { flash('Escribe el nombre de la organización.'); return; }
+      persistCfg({ organizaciones: [...getOrgs(ev), { tipo: pickedTipo, nombre }] });
+    };
+    page.querySelector('#cfgAddOrg')?.addEventListener('click', addOrg);
+    page.querySelector('#cfgOrgNombre')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addOrg(); } });
+    page.querySelectorAll('[data-rm-org]').forEach((b) => b.addEventListener('click', () => {
+      const cur = getOrgs(ev).slice(); cur.splice(+b.dataset.rmOrg, 1); persistCfg({ organizaciones: cur });
+    }));
+  }
+
   function render() {
     document.getElementById('detailPage').innerHTML = `
       <section class="det-card" aria-label="Datos del evento">
@@ -360,6 +493,7 @@
         ${footHTML()}
       </section>
 
+      ${configHTML()}
       ${trackHTML()}
     `;
     bind();
@@ -394,6 +528,7 @@
     if (repBtn) repBtn.addEventListener('click', () => {
       window.location.href = `reporteria.html?id=${ev.id}&role=${roleCode}`;
     });
+    bindConfig();
   }
 
   /* ═══════════════════════════════════════════════════════════════
