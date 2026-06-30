@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="shared/list-components.css?v=0.4.2">
 <link rel="stylesheet" href="shared/forms.css?v=0.4.3">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.5.0" defer></script>
+<script src="shared/naowee-footer.js?v=0.7.5" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -250,6 +250,14 @@
     <div class="cal-modal__body">
       <form id="calForm" novalidate>
 
+        <!-- Nota super-admin (solo ADMIN): habilita registrar eventos ya realizados -->
+        <div class="naowee-message naowee-message--informative" id="superAdminNote" style="display:none;margin-bottom:18px">
+          <div class="naowee-message__header">
+            <span class="naowee-message__icon"><svg viewBox="0 0 16 16" fill="none"><path d="M7 7h2v4H7z" fill="#fff"/><circle cx="8" cy="5" r="1" fill="#fff"/></svg></span>
+            <span class="naowee-message__body">Modo <strong>super-admin</strong>: puedes registrar eventos con fecha pasada para migrar los ya realizados. Un organismo solo programa de hoy en adelante.</span>
+          </div>
+        </div>
+
         <!-- Título -->
         <div class="form-group">
           <div class="naowee-textfield" id="fieldTitulo">
@@ -356,11 +364,15 @@ import {
   getRoleFromQuery, ROLES, homeForRole
 } from './shared/sidebar.js';
 
-/* ─── Guard de rol: solo ORGANISMO ─── */
+/* ─── Guard de rol: ORGANISMO (dueño del calendario) o ADMIN (super-admin que
+   migra eventos ya realizados). Otros roles → su home. ─── */
 const roleCode = getRoleFromQuery();
-if (roleCode !== 'ORGANISMO') {
+if (roleCode !== 'ORGANISMO' && roleCode !== 'ADMIN') {
   window.location.replace(`${homeForRole(roleCode)}?role=${roleCode}`);
 }
+/* Super-admin: puede registrar eventos con fecha pasada (migración histórica).
+   Un organismo normal solo programa de hoy en adelante (feedback Juanma 25-jun). */
+const isSuperAdmin = roleCode === 'ADMIN';
 
 /* ─── Shell ─── */
 const { role } = mountSidebar({
@@ -372,6 +384,7 @@ mountHeader({ headerEl: document.getElementById('topHeader'), role });
 mountBackdrop();
 mountDemoSwitcher({ roleCode });
 document.title = `Calendario — ${role.label}`;
+if (isSuperAdmin) document.getElementById('superAdminNote').style.display = '';
 
 /* ─── Datos mock en sessionStorage ─── */
 const SS_KEY = 'naowee-eventos-calendario';
@@ -565,7 +578,8 @@ const CHEV = {
 };
 const DOW_CANON = ['Lun','Mar','Mié','Jue','Vie','Sab','Dom'];
 
-function setupDatepicker(name, onPick) {
+function setupDatepicker(name, onPick, opts = {}) {
+  const allowPast = !!opts.allowPast;   /* super-admin → permite fechas ya pasadas */
   const dp = document.querySelector(`[data-datepicker="${name}"]`);
   const trigger = dp.querySelector('.naowee-datepicker__trigger');
   const valEl = dp.querySelector('[data-dp-val]');
@@ -628,6 +642,8 @@ function setupDatepicker(name, onPick) {
           if (cell.other) cls.push('naowee-datepicker__day--other-month');
           else {
             const date = new Date(curYear, curMonth, cell.d);
+            /* Días pasados deshabilitados salvo super-admin (migración histórica). */
+            if (!allowPast && date < startOfDay(today)) { disabled = true; cls.push('naowee-datepicker__day--disabled'); }
             if (sameDay(date, selected)) cls.push('naowee-datepicker__day--selected');
             if (sameDay(date, today)) cls.push('naowee-datepicker__day--today');
           }
@@ -751,13 +767,13 @@ const dpFecha = setupDatepicker('calFecha', (d) => {
   document.getElementById('fieldFecha').classList.remove('naowee-datepicker--error');
   document.getElementById('msgFecha').style.display = 'none';
   syncSaveEnabled();
-});
+}, { allowPast: isSuperAdmin });
 
 const dpFin = setupDatepicker('calFin', (d) => {
   formState.fin = d;
   document.getElementById('fieldFin').classList.remove('naowee-datepicker--error');
   document.getElementById('msgFin').style.display = 'none';
-});
+}, { allowPast: isSuperAdmin });
 
 const ddHora = setupDropdown('calHora', HORAS_OPTS, (o) => {
   formState.hora = o.value;

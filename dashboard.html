@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="shared/tokens.css?v=0.4.0">
 <link rel="stylesheet" href="shared/shell.css?v=0.4.5">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.6.0" defer></script>
+<script src="shared/naowee-footer.js?v=0.7.5" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -831,11 +831,11 @@
       /* Modo guiado·vacío: reportería aún no ha cargado datos. */
       return `
         <div class="widgets">
-          <div class="widget w-estado"><div class="widget__head"><div><div class="widget__title">Eventos por estado</div></div></div>${emptyWidget('Sin datos todavía. Aparecerán cuando reportería los cargue.')}</div>
-          <div class="widget w-insc"><div class="widget__head"><div><div class="widget__title">Inscripciones agregadas</div></div></div>${emptyWidget('Sin inscripciones agregadas aún.')}</div>
-          <div class="widget w-resultados"><div class="widget__head"><div><div class="widget__title">Resultados registrados</div></div></div>${emptyWidget('Sin resultados registrados aún.')}</div>
-          <div class="widget w-inscritos-evento"><div class="widget__head"><div><div class="widget__title">Inscripciones por evento</div></div></div>${emptyWidget('Sin inscripciones por evento aún.')}</div>
           <div class="widget w-proximos"><div class="widget__head"><div><div class="widget__title">Próximos eventos</div></div></div>${emptyWidget('No hay eventos programados.')}</div>
+          <div class="widget w-estado"><div class="widget__head"><div><div class="widget__title">Eventos por estado</div></div></div>${emptyWidget('Sin datos todavía. Aparecerán cuando reportería los cargue.')}</div>
+          <div class="widget w-inscritos-evento"><div class="widget__head"><div><div class="widget__title">Inscripciones por evento</div></div></div>${emptyWidget('Sin inscripciones por evento aún.')}</div>
+          <div class="widget w-resultados"><div class="widget__head"><div><div class="widget__title">Resultados registrados</div></div></div>${emptyWidget('Sin resultados registrados aún.')}</div>
+          <div class="widget w-insc"><div class="widget__head"><div><div class="widget__title">Inscripciones agregadas</div></div></div>${emptyWidget('Sin inscripciones agregadas aún.')}</div>
         </div>`;
     }
 
@@ -858,9 +858,18 @@
       .sort((a, b) => a.daysTo - b.daysTo).slice(0, 4);
     const fmtMiles = (n) => n.toLocaleString('es-CO');
 
+    /* Orden de widgets (feedback Juanma 25-jun): Próximos eventos como banner
+       superior + Eventos por estado al inicio de la fila de KPIs; Eventos por mes
+       se conserva; Inscripciones agregadas baja al final con su alcance aclarado. */
     return `
       <div class="widgets">
-        <!-- 1. Eventos por estado (donut) -->
+        <!-- 1. Próximos eventos (cronograma) — banner superior -->
+        <div class="widget w-proximos">
+          <div class="widget__head"><div><div class="widget__title">Próximos eventos</div><div class="widget__hint">activos y en preparación, por fecha de inicio</div></div><span class="widget__tag">Cronograma</span></div>
+          ${proximos.length ? timeline(proximos) : emptyWidget('No hay eventos próximos programados.')}
+        </div>
+
+        <!-- 2. Eventos por estado (donut) -->
         <div class="widget w-estado">
           <div class="widget__head"><div><div class="widget__title">Eventos por estado</div><div class="widget__hint">${EVENTS.length} eventos en total</div></div></div>
           ${donut([
@@ -870,9 +879,40 @@
           ], EVENTS.length, 'eventos')}
         </div>
 
-        <!-- 2. Inscripciones agregadas / progreso (stacked bar) -->
+        <!-- 3. Inscripciones por evento (event-level) -->
+        <div class="widget w-inscritos-evento">
+          <div class="widget__head"><div><div class="widget__title">Inscripciones por evento</div><div class="widget__hint">inscritos confirmados, top 5 eventos</div></div></div>
+          ${(() => { const rows = inscripcionesPorEvento(); return rows.length ? hbars(rows.map((e) => ({ lbl: `${e.emoji} ${e.name}`, value: e.inscritos, color: 'var(--blue-info)' })), fmtMiles) : emptyWidget('Sin inscripciones por evento aún.'); })()}
+        </div>
+
+        <!-- 4. Estado de cargues (insc/res/med · % global) -->
+        <div class="widget w-cargues">
+          <div class="widget__head"><div><div class="widget__title">Estado de cargues</div><div class="widget__hint">avance global por sección</div></div></div>
+          ${hbars([
+            { lbl: 'Inscripciones', value: pct(inscDone, inscTotal), color: 'var(--blue-info)' },
+            { lbl: 'Resultados', value: pct(resDone, resTotal), color: 'var(--naranja)' },
+            { lbl: 'Medallería', value: pct(medDone, medTotal), color: 'var(--green)' }
+          ], (v) => v + '%', 100)}
+        </div>
+
+        <!-- 5. Resultados registrados vs pendientes (donut) -->
+        <div class="widget w-resultados">
+          <div class="widget__head"><div><div class="widget__title">Resultados registrados</div><div class="widget__hint">vs. pendientes de digitar</div></div></div>
+          ${donut([
+            { label: 'Registrados', value: resDone, color: 'var(--naranja)' },
+            { label: 'Pendientes', value: resPend, color: 'var(--orange-border)' }
+          ], pct(resDone, resTotal) + '%', 'registrado')}
+        </div>
+
+        <!-- 6. Eventos por mes (barras verticales) -->
+        <div class="widget w-mes">
+          <div class="widget__head"><div><div class="widget__title">Eventos por mes</div><div class="widget__hint">calendario 2026 · por fecha de inicio</div></div></div>
+          ${(() => { const rows = eventosPorMes(); return rows.length ? vbars(rows) : emptyWidget('Sin eventos programados.'); })()}
+        </div>
+
+        <!-- 7. Inscripciones agregadas / progreso (stacked bar) — consolidado -->
         <div class="widget w-insc">
-          <div class="widget__head"><div><div class="widget__title">Inscripciones agregadas</div></div><span class="widget__tag">${pct(inscDone, inscTotal)}% cargado</span></div>
+          <div class="widget__head"><div><div class="widget__title">Inscripciones agregadas</div><div class="widget__hint">consolidado · todos los eventos activos</div></div><span class="widget__tag">${pct(inscDone, inscTotal)}% cargado</span></div>
           <div class="stat-big">${fmtMiles(inscDone)} <small>/ ${fmtMiles(inscTotal)}</small></div>
           <div class="stat-cap">inscritos confirmados frente al cupo proyectado</div>
           <div class="stack-bar">
@@ -885,46 +925,9 @@
           </div>
         </div>
 
-        <!-- 3. Resultados registrados vs pendientes (donut) -->
-        <div class="widget w-resultados">
-          <div class="widget__head"><div><div class="widget__title">Resultados registrados</div><div class="widget__hint">vs. pendientes de digitar</div></div></div>
-          ${donut([
-            { label: 'Registrados', value: resDone, color: 'var(--naranja)' },
-            { label: 'Pendientes', value: resPend, color: 'var(--orange-border)' }
-          ], pct(resDone, resTotal) + '%', 'registrado')}
-        </div>
-
         <!-- (El medallero por organismo y los breakdowns por dimensión viven
              ahora en la Reportería por evento — tablero Medallería. El dashboard
              se mantiene como vista ejecutiva consolidada. Decisión Diego/Doug 2026-06.) -->
-
-        <!-- 5. Inscripciones por evento (event-level) -->
-        <div class="widget w-inscritos-evento">
-          <div class="widget__head"><div><div class="widget__title">Inscripciones por evento</div><div class="widget__hint">inscritos confirmados, top 5 eventos</div></div></div>
-          ${(() => { const rows = inscripcionesPorEvento(); return rows.length ? hbars(rows.map((e) => ({ lbl: `${e.emoji} ${e.name}`, value: e.inscritos, color: 'var(--blue-info)' })), fmtMiles) : emptyWidget('Sin inscripciones por evento aún.'); })()}
-        </div>
-
-        <!-- 7. Estado de cargues (insc/res/med · % global) -->
-        <div class="widget w-cargues">
-          <div class="widget__head"><div><div class="widget__title">Estado de cargues</div><div class="widget__hint">avance global por sección</div></div></div>
-          ${hbars([
-            { lbl: 'Inscripciones', value: pct(inscDone, inscTotal), color: 'var(--blue-info)' },
-            { lbl: 'Resultados', value: pct(resDone, resTotal), color: 'var(--naranja)' },
-            { lbl: 'Medallería', value: pct(medDone, medTotal), color: 'var(--green)' }
-          ], (v) => v + '%', 100)}
-        </div>
-
-        <!-- 8. Eventos por mes (barras verticales) -->
-        <div class="widget w-mes">
-          <div class="widget__head"><div><div class="widget__title">Eventos por mes</div><div class="widget__hint">calendario 2026 · por fecha de inicio</div></div></div>
-          ${(() => { const rows = eventosPorMes(); return rows.length ? vbars(rows) : emptyWidget('Sin eventos programados.'); })()}
-        </div>
-
-        <!-- 6. Próximos eventos (cronograma vertical) -->
-        <div class="widget w-proximos">
-          <div class="widget__head"><div><div class="widget__title">Próximos eventos</div><div class="widget__hint">activos y en preparación, por fecha de inicio</div></div><span class="widget__tag">Cronograma</span></div>
-          ${proximos.length ? timeline(proximos) : emptyWidget('No hay eventos próximos programados.')}
-        </div>
       </div>`;
   }
 

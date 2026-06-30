@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="shared/event-detail.css?v=0.4.0">
 <link rel="stylesheet" href="shared/forms.css?v=0.4.3">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.7.4" defer></script>
+<script src="shared/naowee-footer.js?v=0.7.5" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -139,6 +139,15 @@
   .carg-manual-input:focus { outline: none; border-width: 2px; border-color: var(--accent); }
   .carg-manual-input::-webkit-outer-spin-button,
   .carg-manual-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  /* Pie del ranking manual: paginador (izq) + CTA Guardar (der). */
+  .carg-rk-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
+  .carg-rk-pager { display: flex; align-items: center; gap: 10px; }
+  .carg-pg-btn { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-dark); background: var(--surface); border-radius: var(--radius-md); color: var(--text-secondary); cursor: pointer; transition: border-color var(--duration-fast), color var(--duration-fast); }
+  .carg-pg-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .carg-pg-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .carg-pg-btn svg { width: 16px; height: 16px; }
+  .carg-pg-info { font-size: 12.5px; font-weight: 500; color: var(--text-secondary); }
 
   /* ── Registro manual de deportistas (búsqueda SUID + form + cola en tabla) ── */
   .carg-search-row { row-gap: 10px; }
@@ -435,9 +444,9 @@
     inscripciones: {
       label: 'Inscripciones', tabLabel: 'Inscripciones', labelShort: 'Inscripción',
       icon: 'ticket', plantilla: 'plantilla_persona_deportista.xlsx', storeTipo: 'insc', manualMode: 'search',
-      hint: 'Columnas: tipo doc · nro doc · primer nombre · segundo nombre · primer apellido · segundo apellido · fecha de nacimiento · edad · sexo · nacionalidad · tipo de deporte · deporte · identidad de género · orientación sexual · discapacidad · pertenencia étnica · priorización · departamento · ciudad · zona · dirección · teléfono · correo electrónico',
+      hint: 'Columnas: organización · tipo doc · nro doc · primer nombre · segundo nombre · primer apellido · segundo apellido · fecha de nacimiento · edad · sexo · nacionalidad · tipo de deporte · deporte · identidad de género · orientación sexual · discapacidad · pertenencia étnica · priorización · departamento · ciudad · zona · dirección · teléfono · correo electrónico',
       columns: [
-        { k: 'tipoDoc', l: 'Tipo doc' }, { k: 'nroDoc', l: 'Nro documento' },
+        { k: 'organizacion', l: 'Organización' }, { k: 'tipoDoc', l: 'Tipo doc' }, { k: 'nroDoc', l: 'Nro documento' },
         { k: 'nombre', l: 'Nombres y apellidos' }, { k: 'sexo', l: 'Sexo' },
         { k: 'deporte', l: 'Deporte' }, { k: 'depto', l: 'Departamento' }, { k: 'correo', l: 'Correo' }
       ]
@@ -445,9 +454,9 @@
     ranking: {
       label: 'Ranking / Resultados', tabLabel: 'Ranking / Resultados', labelShort: 'Resultado',
       icon: 'ranking', plantilla: 'plantilla_resultados.xlsx', storeTipo: 'res', manualMode: 'grid',
-      hint: 'Columnas: deporte · categoría · modalidad · prueba · tipo doc · nro doc · primer nombre · segundo nombre · primer apellido · segundo apellido · sexo · departamento · ciudad · posición · marca/tiempo/puntaje',
+      hint: 'Columnas: organización · deporte · categoría · modalidad · prueba · tipo doc · nro doc · primer nombre · segundo nombre · primer apellido · segundo apellido · sexo · departamento · ciudad · posición · marca/tiempo/puntaje',
       columns: [
-        { k: 'deporte', l: 'Deporte' }, { k: 'prueba', l: 'Prueba' },
+        { k: 'organizacion', l: 'Organización' }, { k: 'deporte', l: 'Deporte' }, { k: 'prueba', l: 'Prueba' },
         { k: 'nombre', l: 'Deportista' }, { k: 'nroDoc', l: 'Nro documento' },
         { k: 'posicion', l: 'Posición', num: true }, { k: 'marca', l: 'Marca / Tiempo', num: true }
       ]
@@ -455,9 +464,9 @@
     medalleria: {
       label: 'Medallería', tabLabel: 'Medallería', labelShort: 'Medallería',
       icon: 'medal', plantilla: 'plantilla_medalleria.xlsx', storeTipo: 'med', manualMode: 'grid',
-      hint: 'Columnas: departamento · municipio · deporte · categoría · modalidad · prueba · oro · plata · bronce · total',
+      hint: 'Columnas: organización · departamento · municipio · deporte · categoría · modalidad · prueba · oro · plata · bronce · total',
       columns: [
-        { k: 'depto', l: 'Departamento' }, { k: 'deporte', l: 'Deporte' }, { k: 'prueba', l: 'Prueba' },
+        { k: 'organizacion', l: 'Organización' }, { k: 'depto', l: 'Departamento' }, { k: 'deporte', l: 'Deporte' }, { k: 'prueba', l: 'Prueba' },
         { k: 'oro', l: '🥇 Oro', num: true }, { k: 'plata', l: '🥈 Plata', num: true },
         { k: 'bronce', l: '🥉 Bronce', num: true }, { k: 'total', l: 'Total', num: true }
       ]
@@ -524,6 +533,11 @@
       ]
     }
   };
+  /* Carga masiva POR ORGANIZACIÓN (feedback Juanma): una misma plantilla puede traer
+     varias ligas/organismos identificados por fila. Sembramos la organización en la
+     mock data para que la columna muestre valores. */
+  const LIGAS_DEMO = ['Liga del Valle', 'Liga Antioqueña', 'Liga Bogotana', 'Liga de Santander', 'Liga de Risaralda', 'Liga Atlántico', 'Liga de Cundinamarca'];
+  Object.values(MOCK_ROWS).forEach((t) => (t.valid || []).forEach((r, i) => { if (!r.organizacion) r.organizacion = LIGAS_DEMO[i % LIGAS_DEMO.length]; }));
 
   /* ─── Mock deportistas inscritos (para manual Ranking / Medallería) ─── */
   const MOCK_INSCRITOS = [
@@ -531,7 +545,16 @@
     { id: 'D02', nombre: 'Sebastián Ríos Torres', doc: 'CC 1010203040', deporte: 'Atletismo', prueba: '200 MTRS PLANOS' },
     { id: 'D03', nombre: 'María Herrera Sánchez', doc: 'TI 1064789321', deporte: 'Natación', prueba: '50 MTS LIBRE' },
     { id: 'D04', nombre: 'Daniel Mora Jiménez', doc: 'CC 1075432198', deporte: 'Natación', prueba: '100 MTS ESPALDA' },
-    { id: 'D05', nombre: 'Valeria Pinto Ortega', doc: 'TI 1023876543', deporte: 'Taekwondo', prueba: 'COMBATE -63 KG' }
+    { id: 'D05', nombre: 'Valeria Pinto Ortega', doc: 'TI 1023876543', deporte: 'Taekwondo', prueba: 'COMBATE -63 KG' },
+    { id: 'D06', nombre: 'Andrés Vargas Núñez', doc: 'CC 1012456789', deporte: 'Patinaje', prueba: '500 MTS + DISTANCIA' },
+    { id: 'D07', nombre: 'Juliana Mancera Díaz', doc: 'TI 1031987654', deporte: 'Patinaje', prueba: '1000 MTS SPRINT' },
+    { id: 'D08', nombre: 'Mateo Cárdenas Ruiz', doc: 'CC 1098765432', deporte: 'Atletismo', prueba: 'SALTO LARGO' },
+    { id: 'D09', nombre: 'Sara Quintero López', doc: 'TI 1040123456', deporte: 'Natación', prueba: '100 MTS LIBRE' },
+    { id: 'D10', nombre: 'Diego Salcedo Bejarano', doc: 'CC 1005678901', deporte: 'Levantamiento de Pesas', prueba: 'TOTAL OLÍMPICO' },
+    { id: 'D11', nombre: 'Luisa Arango Reyes', doc: 'TI 1057234890', deporte: 'Atletismo', prueba: '400 MTRS PLANOS' },
+    { id: 'D12', nombre: 'Carlos Peñaloza Castro', doc: 'CC 1083456712', deporte: 'Taekwondo', prueba: 'COMBATE -58 KG' },
+    { id: 'D13', nombre: 'Isabella Cruz Montoya', doc: 'TI 1029087654', deporte: 'Patinaje', prueba: 'CIRCUITO RUTA 200 MTS' },
+    { id: 'D14', nombre: 'Nicolás Parra Estrada', doc: 'CC 1065439870', deporte: 'Natación', prueba: '50 MTS MARIPOSA' }
   ];
 
   /* ─── Toast ─── */
@@ -1463,7 +1486,7 @@
           ${tfFieldHTML('pa', 'Primer apellido', '', true)}
           ${tfFieldHTML('sa', 'Segundo apellido', '', false)}
           ${ddFieldHTML('deporte', 'Deporte', 'Selecciona…', true)}
-          ${ddFieldHTML('depto', 'Departamento', 'Selecciona…', true)}
+          ${ddFieldHTML('depto', 'Departamento (opcional)', 'Selecciona…', false)}
           ${tfFieldHTML('correo', 'Correo electrónico', 'nombre@correo.com', false, true)}
         </div>
         <div class="carg-newform__foot">
@@ -1473,7 +1496,8 @@
       </div>`;
 
     const addBtn = formEl.querySelector('#newAdd');
-    const REQUIRED = ['tipoDoc', 'nroDoc', 'pn', 'pa', 'sexo', 'deporte', 'depto'];
+    /* Departamento OPCIONAL (feedback Juanma: por extranjeros). */
+    const REQUIRED = ['tipoDoc', 'nroDoc', 'pn', 'pa', 'sexo', 'deporte'];
     function syncAdd() { addBtn.disabled = !REQUIRED.every((k) => (newDraft[k] || '').trim() !== ''); }
 
     formEl.querySelectorAll('[data-tf]').forEach((wrap) => {
@@ -1497,70 +1521,77 @@
     });
   }
 
+  /* Ranking manual (nacional) con BUSCADOR por deporte/nombre + PAGINADOR
+     (feedback Juanma). Estado por fila para preservar posición/marca al filtrar/paginar. */
+  const ICON_CHEVR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
   function renderManualGrid(container, cfg) {
-    const isRanking = activeTipo === 'ranking';
-    const rows = MOCK_INSCRITOS;
-    const headerCols = isRanking
-      ? `<span>Deportista</span><span>Posición</span><span>Marca/Tiempo</span>`
-      : `<span>Departamento</span><span>🥇 Oro</span><span>🥈 Plata</span><span>🥉 Bronce</span><span>Total</span>`;
-    const headerClass = isRanking ? 'g-ranking' : 'g-medalleria';
-    const rowsHTML = isRanking
-      ? rows.map((r) => `
-          <div class="carg-manual-row g-ranking" data-id="${r.id}">
-            <div><div class="carg-manual-row__name">${esc(r.nombre)}</div><div class="carg-manual-row__doc">${esc(r.doc)} · ${esc(r.deporte)} · ${esc(r.prueba)}</div></div>
-            <input class="carg-manual-input" type="number" min="1" placeholder="—" data-field="posicion">
-            <input class="carg-manual-input" type="text" placeholder="ej: 10.45s" data-field="marca">
-          </div>`).join('')
-      : [
-          { depto: 'Bogotá D.C.', deporte: 'Atletismo' },
-          { depto: 'Antioquia', deporte: 'Natación' },
-          { depto: 'Valle del Cauca', deporte: 'Taekwondo' }
-        ].map((dep) => `
-          <div class="carg-manual-row g-medalleria">
-            <div><div class="carg-manual-row__name">${dep.depto}</div><div class="carg-manual-row__doc">${dep.deporte}</div></div>
-            <input class="carg-manual-input" type="number" min="0" placeholder="0" data-field="oro">
-            <input class="carg-manual-input" type="number" min="0" placeholder="0" data-field="plata">
-            <input class="carg-manual-input" type="number" min="0" placeholder="0" data-field="bronce">
-            <input class="carg-manual-input" type="number" min="0" placeholder="0" data-field="total" readonly style="background:var(--bg-soft);color:var(--text-secondary)">
-          </div>`).join('');
-
+    const all = MOCK_INSCRITOS;
+    const PAGE_SIZE = 6;
+    const state = {};   // id -> { posicion, marca }
+    let page = 1, q = '';
+    const rowHTML = (r) => {
+      const st = state[r.id] || {};
+      return `<div class="carg-manual-row g-ranking" data-id="${r.id}">
+        <div><div class="carg-manual-row__name">${esc(r.nombre)}</div><div class="carg-manual-row__doc">${esc(r.doc)} · ${esc(r.deporte)} · ${esc(r.prueba)}</div></div>
+        <input class="carg-manual-input" type="number" min="1" placeholder="—" data-field="posicion" data-id="${r.id}" value="${esc(st.posicion || '')}">
+        <input class="carg-manual-input" type="text" placeholder="ej: 10.45s" data-field="marca" data-id="${r.id}" value="${esc(st.marca || '')}">
+      </div>`;
+    };
     container.innerHTML = `
       <div class="carg-card">
-        <div class="carg-card__head">
-          <div>
-            <h3 class="carg-card__title">Captura manual — ${esc(cfg.label)}</h3>
-            <p class="carg-card__sub">${isRanking ? 'Registra posición y marca/tiempo para cada deportista inscrito.' : 'Ingresa el medallero por departamento y disciplina.'}</p>
+        <div class="carg-card__head"><div>
+          <h3 class="carg-card__title">Captura manual — ${esc(cfg.label)}</h3>
+          <p class="carg-card__sub">Filtra por deporte o nombre y registra posición y marca/tiempo para cada inscrito.</p>
+        </div></div>
+        <div class="carg-search-row" style="margin-bottom:12px">
+          <div class="naowee-searchbox" id="rkSearch" style="max-width:480px;flex:1 1 260px">
+            <div class="naowee-searchbox__input-wrap">
+              <span class="naowee-searchbox__icon">${I.search}</span>
+              <input class="naowee-searchbox__input" type="search" id="rkInput" placeholder="Buscar por deporte, prueba o nombre…" autocomplete="off">
+              <button class="naowee-searchbox__clear" id="rkClear" type="button" aria-label="Limpiar búsqueda">${I.x}</button>
+            </div>
           </div>
         </div>
         <div class="carg-manual-grid">
-          <div class="carg-manual-grid__header ${headerClass}">${headerCols}</div>
-          ${rowsHTML}
+          <div class="carg-manual-grid__header g-ranking"><span>Deportista</span><span>Posición</span><span>Marca/Tiempo</span></div>
+          <div id="rkRows"></div>
         </div>
-        <div style="display:flex;justify-content:flex-end;margin-top:18px">
+        <div class="carg-rk-foot">
+          <div class="carg-rk-pager" id="rkPager"></div>
           <button class="naowee-btn naowee-btn--loud" id="manualSaveBtn" disabled>${I.check} Guardar ${esc(cfg.labelShort.toLowerCase())}</button>
         </div>
-      </div>
-    `;
-
-    if (!isRanking) {
-      container.querySelectorAll('.carg-manual-row.g-medalleria').forEach((row) => {
-        const inputs = row.querySelectorAll('[data-field="oro"],[data-field="plata"],[data-field="bronce"]');
-        const totalInput = row.querySelector('[data-field="total"]');
-        inputs.forEach((inp) => inp.addEventListener('input', () => {
-          totalInput.value = Array.from(inputs).reduce((s, i) => s + (parseInt(i.value) || 0), 0);
-        }));
-      });
+      </div>`;
+    const rowsEl = container.querySelector('#rkRows');
+    const pagerEl = container.querySelector('#rkPager');
+    const saveBtn = container.querySelector('#manualSaveBtn');
+    const input = container.querySelector('#rkInput');
+    const searchBox = container.querySelector('#rkSearch');
+    const filtered = () => { const t = q.trim().toLowerCase(); return t ? all.filter((r) => `${r.nombre} ${r.deporte} ${r.prueba} ${r.doc}`.toLowerCase().includes(t)) : all; };
+    const entered = () => Object.values(state).filter((s) => String(s.posicion || '').trim() || String(s.marca || '').trim()).length;
+    const syncSave = () => { saveBtn.disabled = entered() === 0; };
+    function paint() {
+      const f = filtered();
+      const pages = Math.max(1, Math.ceil(f.length / PAGE_SIZE));
+      if (page > pages) page = pages;
+      const slice = f.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+      rowsEl.innerHTML = slice.length ? slice.map(rowHTML).join('') : '<div class="carg-empty-inline" style="padding:16px;color:var(--text-muted)">Sin resultados para esa búsqueda.</div>';
+      rowsEl.querySelectorAll('.carg-manual-input').forEach((inp) => inp.addEventListener('input', () => {
+        const id = inp.dataset.id, fld = inp.dataset.field;
+        state[id] = state[id] || {}; state[id][fld] = inp.value; syncSave();
+      }));
+      pagerEl.innerHTML = pages > 1
+        ? `<button class="carg-pg-btn" id="rkPrev" ${page === 1 ? 'disabled' : ''} aria-label="Anterior">${I.chevL}</button>
+           <span class="carg-pg-info">Página ${page} de ${pages} · ${f.length} deportistas</span>
+           <button class="carg-pg-btn" id="rkNext" ${page === pages ? 'disabled' : ''} aria-label="Siguiente">${ICON_CHEVR}</button>`
+        : `<span class="carg-pg-info">${f.length} deportista${f.length !== 1 ? 's' : ''}</span>`;
+      pagerEl.querySelector('#rkPrev')?.addEventListener('click', () => { if (page > 1) { page--; paint(); } });
+      pagerEl.querySelector('#rkNext')?.addEventListener('click', () => { if (page < pages) { page++; paint(); } });
     }
-
-    /* CTA "Guardar" deshabilitado hasta que se ingrese al menos un dato. */
-    const manualInputs = container.querySelectorAll('.carg-manual-input:not([readonly])');
-    const saveBtn = document.getElementById('manualSaveBtn');
-    function syncManualSave() { saveBtn.disabled = !Array.from(manualInputs).some((i) => i.value.trim() !== ''); }
-    manualInputs.forEach((i) => i.addEventListener('input', syncManualSave));
-    syncManualSave();
-
+    paint(); syncSave();
+    input.addEventListener('input', () => { q = input.value; page = 1; searchBox.classList.toggle('naowee-searchbox--has-value', q.length > 0); paint(); });
+    container.querySelector('#rkClear').addEventListener('click', () => { input.value = ''; q = ''; searchBox.classList.remove('naowee-searchbox--has-value'); paint(); input.focus(); });
     saveBtn.addEventListener('click', () => {
-      const n = isRanking ? rows.length : 3;
+      const n = entered();
       applyUpload(selectedEventId, cfg.storeTipo, n);
       addUploadRecord(selectedEventId, { tipo: cfg.label, n, modeLabel: 'Manual', timestamp: nowStamp() });
       flash(`✓ ${n} ${cfg.labelShort.toLowerCase()}${n !== 1 ? 's' : ''} guardada${n !== 1 ? 's' : ''} correctamente.`, 'success');

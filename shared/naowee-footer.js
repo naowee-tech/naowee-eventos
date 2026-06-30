@@ -48,8 +48,16 @@ const MODULE_NAME = 'Eventos';
    "Organizaciones invitadas" (solo nacional), editables por ADMIN, persistidas.
    v0.7.4 = medallería manual rediseñada: buscar deportista → asignarle medalla
    (🥇🥈🥉) en su competencia (antes era por departamento); el medallero por
-   organismo se calcula solo. + fix ícono gigante en heads de cargue. */
-const MODULE_VERSION = 'v0.7.4';
+   organismo se calcula solo. + fix ícono gigante en heads de cargue.
+   v0.7.5 = lote de quick-wins (feedback Juanma): (1) carga masiva por
+   organización — columna "Organización" en las 3 plantillas + hint; (2) ranking
+   manual con BUSCADOR (deporte/nombre) + PAGINADOR (6/pág) y estado por fila;
+   (3) departamento OPCIONAL en inscripción manual (por extranjeros); (4) reorden
+   dashboard — Próximos eventos como banner superior + Eventos por estado arriba,
+   Eventos por mes conservado, Inscripciones agregadas al final con alcance
+   aclarado; (5) calendario: super-admin (ADMIN) puede registrar eventos con
+   fecha pasada (migración) — datepicker future-only para organismo + nota. */
+const MODULE_VERSION = 'v0.7.5';
 
 (function () {
   function mount() {
