@@ -306,6 +306,61 @@ export function addFileVersion(eventId, tipo, record) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   ROSTER STORE — INSCRITOS por evento (fuente de verdad de participantes)
+   sessionStorage key: 'naowee-eventos-roster'
+   Shape: { [eventId]: [ participante, ... ] }
+   participante: { id, tipoDoc, nroDoc, nombre, sexo, deporte, prueba?, depto,
+                   organizacion?, correo?, origen ('SUID'|'Nuevo'|'Masivo') }
+
+   REGLA DE FLUJO (feedback Doug): las INSCRIPCIONES (masivo o manual) ESCRIBEN
+   aquí; RANKING/RESULTADOS y MEDALLERÍA LEEN de aquí. Solo se puede dar un
+   resultado o una medalla a un deportista que ya está inscrito en el evento.
+   Nunca un roster global/hardcodeado. Los eventos precargados del demo
+   complementan este store con un roster sintetizado COHERENTE con su deporte
+   (ver roster-data.js); un evento nuevo sin inscripciones arranca vacío.
+   ═══════════════════════════════════════════════════════════════ */
+const ROSTER_KEY = 'naowee-eventos-roster';
+
+/** Inscritos capturados EN VIVO para un evento (los que el gestor cargó en la sesión). */
+export function getRoster(eventId) {
+  try {
+    const all = JSON.parse(sessionStorage.getItem(ROSTER_KEY) || '{}');
+    return all[eventId] || [];
+  } catch { return []; }
+}
+
+/** Clave de dedup: misma persona + mismo deporte = un solo cupo en el evento. */
+function rosterKey(p) {
+  return `${String(p.tipoDoc || '').trim().toUpperCase()}·${String(p.nroDoc || '').trim()}·${String(p.deporte || '').trim().toLowerCase()}`;
+}
+
+/**
+ * Agrega inscritos al roster de un evento (dedup por persona+deporte).
+ * @param {string} eventId
+ * @param {Array<Object>} list  participantes { tipoDoc, nroDoc, nombre, sexo, deporte, ... }
+ * @returns {number} cuántos se agregaron realmente (sin contar duplicados)
+ */
+export function addInscritos(eventId, list) {
+  if (!eventId || !Array.isArray(list) || !list.length) return 0;
+  let all;
+  try { all = JSON.parse(sessionStorage.getItem(ROSTER_KEY) || '{}'); }
+  catch { all = {}; }
+  const cur = all[eventId] || [];
+  const seen = new Set(cur.map(rosterKey));
+  let added = 0;
+  list.forEach((p) => {
+    const k = rosterKey(p);
+    if (seen.has(k)) return;               // ya inscrito en este deporte → no duplicar
+    seen.add(k);
+    cur.push({ id: `L-${eventId}-${cur.length}`, origen: 'Masivo', prueba: '', ...p });
+    added++;
+  });
+  all[eventId] = cur;
+  sessionStorage.setItem(ROSTER_KEY, JSON.stringify(all));
+  return added;
+}
+
+/* ═══════════════════════════════════════════════════════════════
    CALENDARIO DEL ORGANISMO (liga/entidad)
    Los eventos que el organismo publica en calendario.html se guardan en
    sessionStorage bajo esta misma clave; aquí se exponen para que el

@@ -56,8 +56,30 @@ const MODULE_NAME = 'Eventos';
    dashboard — Próximos eventos como banner superior + Eventos por estado arriba,
    Eventos por mes conservado, Inscripciones agregadas al final con alcance
    aclarado; (5) calendario: super-admin (ADMIN) puede registrar eventos con
-   fecha pasada (migración) — datepicker future-only para organismo + nota. */
-const MODULE_VERSION = 'v0.7.5';
+   fecha pasada (migración) — datepicker future-only para organismo + nota.
+   v0.7.6 = refinamiento UI edición (evento-detalle, feedback Doug): (1) meta-strip
+   de la cabecera a 5 columnas en desktop — 'Organismo' ya no queda huérfano bajo
+   'Fecha de inicio' (se desbordaba desde que v0.7.1 agregó 'Alcance'); (2) fix
+   dropdowns que salían por detrás de
+   la card siguiente — la sección con el dropdown abierto se eleva (z-index) y el
+   menú usa el z-index canónico (999); (3) CTA 'Agregar deporte'/'Invitar' e input
+   a la altura del dropdown (--field-h 48px); (4) cada deporte es un acordeón
+   colapsable (chevron + contador .naowee-badge) — ya no vuelca todas las
+   competencias al agregarlo; (5) aviso de quitar organización → .naowee-message
+   --caution canónico (antes era un <p> sin estilo); (6) "Agregar deporte" e
+   "Invitar" arrancan disabled hasta que se elige deporte / se escribe nombre;
+   (7) ranking internacional: botón "Registrar resultado" usaba .naowee-btn--outline
+   (inexistente en el DS) → --ghost canónico; el drawer se monta en <body> para que
+   position:fixed cubra el viewport + overlay (antes quedaba atrapado por un
+   ancestro con transform); (8) toast: se quita el override verde/rojo inventado en
+   flash() — usa el #evToast canónico (pill neutro del naowee-footer.css);
+   (9) cargue masivo REAL (feedback Gustavo): se parsea el .xlsx subido con SheetJS
+   y se valida de verdad contra TEMPLATE_COLS (encabezados + requeridos vacíos +
+   formato email/número) — ya no inventa errores hardcodeados; archivo vacío / sin
+   filas / estructura incorrecta → mensajes reales. "Descargar plantilla" genera un
+   .xlsx real con los encabezados oficiales (antes era un link roto). (10) el × de
+   quitar archivo deja de ser naranja (neutro, rojo al hover). */
+const MODULE_VERSION = 'v0.7.7';
 
 (function () {
   function mount() {

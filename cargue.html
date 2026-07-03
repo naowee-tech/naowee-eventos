@@ -15,7 +15,9 @@
 <link rel="stylesheet" href="shared/event-detail.css?v=0.4.0">
 <link rel="stylesheet" href="shared/forms.css?v=0.4.3">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.7.5" defer></script>
+<script src="shared/naowee-footer.js?v=0.7.7" defer></script>
+<!-- SheetJS: lectura/escritura real de .xlsx para el cargue masivo (validación real por fila). -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -233,6 +235,12 @@
     outline: none; box-shadow: 0 0 0 3px rgba(215,64,9,.18);
   }
 
+  /* El "quitar" (×) del tag de archivo NO debe ser naranja (feedback Gustavo):
+     neutro por defecto, rojo al hover (semántica de eliminar) — patrón del módulo. */
+  .naowee-file-uploader__file-dismiss { color: var(--text-muted); }
+  .naowee-file-uploader__file-dismiss svg { color: currentColor; }
+  .naowee-file-uploader__file-dismiss:hover { background: var(--red-bg); color: var(--red); }
+
   /* ── Responsive ── */
   @media (max-width: 900px) {
     .carg-card { padding: 18px 16px; }
@@ -398,8 +406,9 @@
 
 <script type="module">
   import { mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher, getRoleFromQuery, getIcon, ROLES, homeForRole } from './shared/sidebar.js';
-  import { allEvents, STATUS_LABEL, applyUpload, addUploadRecord, getFileVersions, addFileVersion, GESTOR_MAP, resolveGestorId, eventsForGestor, gestorIdForRole } from './shared/events-data.js';
+  import { allEvents, STATUS_LABEL, applyUpload, addUploadRecord, getFileVersions, addFileVersion, addInscritos, GESTOR_MAP, resolveGestorId, eventsForGestor, gestorIdForRole } from './shared/events-data.js';
   import { GESTORES, DEPORTES_POR_TIPO, DEPARTAMENTOS } from './shared/catalogo.js';
+  import { effectiveRoster } from './shared/roster-data.js';
 
   /* ─── Params ─── */
   const params = new URLSearchParams(window.location.search);
@@ -473,7 +482,89 @@
     }
   };
 
-  /* ─── Mock data por tipo (filas válidas con TODAS las columnas + errores) ─── */
+  /* ─── Columnas REALES de cada plantilla (fuente única) ───────────────────────
+     Se usa para (a) generar el .xlsx descargable y (b) validar de verdad el archivo
+     subido (encabezado + requeridos + formato). h = encabezado exacto en la hoja,
+     k = key interna, req = obligatorio, type = validación de formato. */
+  const TEMPLATE_COLS = {
+    inscripciones: [
+      { h: 'Organización', k: 'organizacion', req: true }, { h: 'Tipo de documento', k: 'tipoDoc', req: true },
+      { h: 'Número de documento', k: 'nroDoc', req: true }, { h: 'Primer nombre', k: 'pn', req: true },
+      { h: 'Segundo nombre', k: 'sn' }, { h: 'Primer apellido', k: 'pa', req: true }, { h: 'Segundo apellido', k: 'sa' },
+      { h: 'Fecha de nacimiento', k: 'fnac' }, { h: 'Edad', k: 'edad' }, { h: 'Sexo', k: 'sexo', req: true },
+      { h: 'Nacionalidad', k: 'nacionalidad' }, { h: 'Tipo de deporte', k: 'tipoDeporte' }, { h: 'Deporte', k: 'deporte', req: true },
+      { h: 'Identidad de género', k: 'identidadGenero' }, { h: 'Orientación sexual', k: 'orientacion' }, { h: 'Discapacidad', k: 'discapacidad' },
+      { h: 'Pertenencia étnica', k: 'etnia' }, { h: 'Priorización', k: 'priorizacion' }, { h: 'Departamento', k: 'departamento' },
+      { h: 'Ciudad', k: 'ciudad' }, { h: 'Zona', k: 'zona' }, { h: 'Dirección', k: 'direccion' }, { h: 'Teléfono', k: 'telefono' },
+      { h: 'Correo electrónico', k: 'correo', type: 'email' }
+    ],
+    ranking: [
+      { h: 'Organización', k: 'organizacion', req: true }, { h: 'Deporte', k: 'deporte', req: true }, { h: 'Categoría', k: 'categoria' },
+      { h: 'Modalidad', k: 'modalidad' }, { h: 'Prueba', k: 'prueba', req: true }, { h: 'Tipo de documento', k: 'tipoDoc', req: true },
+      { h: 'Número de documento', k: 'nroDoc', req: true }, { h: 'Primer nombre', k: 'pn', req: true }, { h: 'Segundo nombre', k: 'sn' },
+      { h: 'Primer apellido', k: 'pa', req: true }, { h: 'Segundo apellido', k: 'sa' }, { h: 'Sexo', k: 'sexo', req: true },
+      { h: 'Departamento', k: 'departamento' }, { h: 'Ciudad', k: 'ciudad' }, { h: 'Posición', k: 'posicion', req: true, type: 'number' },
+      { h: 'Marca/Tiempo/Puntaje', k: 'marca', req: true }
+    ],
+    medalleria: [
+      { h: 'Organización', k: 'organizacion', req: true }, { h: 'Departamento', k: 'departamento', req: true }, { h: 'Municipio', k: 'municipio' },
+      { h: 'Deporte', k: 'deporte', req: true }, { h: 'Categoría', k: 'categoria' }, { h: 'Modalidad', k: 'modalidad' }, { h: 'Prueba', k: 'prueba', req: true },
+      { h: 'Oro', k: 'oro', req: true, type: 'number' }, { h: 'Plata', k: 'plata', req: true, type: 'number' },
+      { h: 'Bronce', k: 'bronce', req: true, type: 'number' }, { h: 'Total', k: 'total', type: 'number' }
+    ]
+  };
+
+  /* Genera y descarga el .xlsx oficial (solo encabezados — el usuario llena los datos). */
+  function downloadTemplate(cfg) {
+    if (typeof XLSX === 'undefined') { flash('No se pudo generar la plantilla (librería no disponible).', 'error'); return; }
+    const cols = TEMPLATE_COLS[activeTipo] || [];
+    const ws = XLSX.utils.aoa_to_sheet([cols.map((c) => c.h)]);
+    ws['!cols'] = cols.map((c) => ({ wch: Math.max(12, c.h.length + 2) }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Datos');
+    XLSX.writeFile(wb, cfg.plantilla);
+  }
+
+  /* Validación REAL del archivo subido contra TEMPLATE_COLS[tipo]. */
+  function validateUpload(aoa, tipo) {
+    const cols = TEMPLATE_COLS[tipo] || [];
+    const norm = (s) => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+    const header = (aoa[0] || []).map(norm);
+    if (!aoa.length || header.every((h) => !h)) return { structureError: 'El archivo está vacío o no tiene encabezados. Descarga y usa la plantilla oficial.' };
+    const idx = {}; const missing = [];
+    cols.forEach((c) => { const i = header.indexOf(norm(c.h)); idx[c.k] = i; if (c.req && i < 0) missing.push(c.h); });
+    if (missing.length) return { structureError: `El archivo no coincide con la plantilla oficial. Faltan columnas obligatorias: ${missing.join(', ')}.` };
+    const dataRows = aoa.slice(1)
+      .map((r, i) => ({ cells: r || [], fila: i + 2 }))
+      .filter(({ cells }) => cells.some((c) => String(c ?? '').trim() !== ''));
+    if (!dataRows.length) return { empty: true };
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const errors = [], valid = [];
+    dataRows.forEach(({ cells, fila }) => {
+      const get = (k) => { const i = idx[k]; return i >= 0 ? String(cells[i] ?? '').trim() : ''; };
+      const probs = [];
+      cols.forEach((c) => {
+        const v = get(c.k);
+        if (c.req && !v) probs.push(`falta «${c.h}»`);
+        else if (v && c.type === 'email' && !emailRe.test(v)) probs.push(`«${c.h}» con formato inválido`);
+        else if (v && c.type === 'number' && isNaN(Number(String(v).replace(',', '.')))) probs.push(`«${c.h}» debe ser numérico`);
+      });
+      if (probs.length) errors.push({ fila, msg: probs.join(' · ').replace(/^./, (m) => m.toUpperCase()) });
+      else valid.push(displayRow(get, tipo));
+    });
+    return { total: dataRows.length, valid, errors };
+  }
+
+  /* Mapea una fila válida a las columnas de DISPLAY (cfg.columns) por tipo. */
+  function displayRow(get, tipo) {
+    const nombre = [get('pn'), get('sn'), get('pa'), get('sa')].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+    if (tipo === 'inscripciones') return { organizacion: get('organizacion'), tipoDoc: get('tipoDoc'), nroDoc: get('nroDoc'), nombre, sexo: get('sexo'), deporte: get('deporte'), depto: get('departamento'), correo: get('correo') };
+    if (tipo === 'ranking') return { organizacion: get('organizacion'), deporte: get('deporte'), prueba: get('prueba'), nombre, nroDoc: get('nroDoc'), posicion: get('posicion'), marca: get('marca') };
+    return { organizacion: get('organizacion'), depto: get('departamento'), deporte: get('deporte'), prueba: get('prueba'), oro: get('oro'), plata: get('plata'), bronce: get('bronce'), total: get('total') };
+  }
+
+  /* ─── Mock data por tipo: SOLO sirve como base de datos SUID para la búsqueda
+     de inscripción manual (NO para el análisis del masivo, que ahora es real). ─── */
   const MOCK_ROWS = {
     inscripciones: {
       valid: [
@@ -539,36 +630,53 @@
   const LIGAS_DEMO = ['Liga del Valle', 'Liga Antioqueña', 'Liga Bogotana', 'Liga de Santander', 'Liga de Risaralda', 'Liga Atlántico', 'Liga de Cundinamarca'];
   Object.values(MOCK_ROWS).forEach((t) => (t.valid || []).forEach((r, i) => { if (!r.organizacion) r.organizacion = LIGAS_DEMO[i % LIGAS_DEMO.length]; }));
 
-  /* ─── Mock deportistas inscritos (para manual Ranking / Medallería) ─── */
-  const MOCK_INSCRITOS = [
-    { id: 'D01', nombre: 'Laura Ospina Gómez', doc: 'TI 1052342871', deporte: 'Atletismo', prueba: '100 MTS PLANOS' },
-    { id: 'D02', nombre: 'Sebastián Ríos Torres', doc: 'CC 1010203040', deporte: 'Atletismo', prueba: '200 MTRS PLANOS' },
-    { id: 'D03', nombre: 'María Herrera Sánchez', doc: 'TI 1064789321', deporte: 'Natación', prueba: '50 MTS LIBRE' },
-    { id: 'D04', nombre: 'Daniel Mora Jiménez', doc: 'CC 1075432198', deporte: 'Natación', prueba: '100 MTS ESPALDA' },
-    { id: 'D05', nombre: 'Valeria Pinto Ortega', doc: 'TI 1023876543', deporte: 'Taekwondo', prueba: 'COMBATE -63 KG' },
-    { id: 'D06', nombre: 'Andrés Vargas Núñez', doc: 'CC 1012456789', deporte: 'Patinaje', prueba: '500 MTS + DISTANCIA' },
-    { id: 'D07', nombre: 'Juliana Mancera Díaz', doc: 'TI 1031987654', deporte: 'Patinaje', prueba: '1000 MTS SPRINT' },
-    { id: 'D08', nombre: 'Mateo Cárdenas Ruiz', doc: 'CC 1098765432', deporte: 'Atletismo', prueba: 'SALTO LARGO' },
-    { id: 'D09', nombre: 'Sara Quintero López', doc: 'TI 1040123456', deporte: 'Natación', prueba: '100 MTS LIBRE' },
-    { id: 'D10', nombre: 'Diego Salcedo Bejarano', doc: 'CC 1005678901', deporte: 'Levantamiento de Pesas', prueba: 'TOTAL OLÍMPICO' },
-    { id: 'D11', nombre: 'Luisa Arango Reyes', doc: 'TI 1057234890', deporte: 'Atletismo', prueba: '400 MTRS PLANOS' },
-    { id: 'D12', nombre: 'Carlos Peñaloza Castro', doc: 'CC 1083456712', deporte: 'Taekwondo', prueba: 'COMBATE -58 KG' },
-    { id: 'D13', nombre: 'Isabella Cruz Montoya', doc: 'TI 1029087654', deporte: 'Patinaje', prueba: 'CIRCUITO RUTA 200 MTS' },
-    { id: 'D14', nombre: 'Nicolás Parra Estrada', doc: 'CC 1065439870', deporte: 'Natación', prueba: '50 MTS MARIPOSA' }
-  ];
+  /* Roster de inscritos → viene de effectiveRoster(ev) (events-data + roster-data):
+     capturas en vivo + roster sintetizado COHERENTE con el deporte del evento.
+     Ya NO existe un roster fijo hardcodeado: ranking y medallería solo operan
+     sobre los deportistas realmente inscritos en ESTE evento. */
+
+  /* Estado vacío canónico cuando el evento aún no tiene inscritos: ranking y
+     medallería dependen de las inscripciones, así que se invita a cargarlas. */
+  function rosterEmptyState(container, verboPlural) {
+    container.innerHTML = `
+      <div class="carg-card">
+        <div class="empty-state">
+          <div class="empty-state__icon">${I.users}</div>
+          <p class="empty-state__title">Aún no hay deportistas inscritos</p>
+          <p class="empty-state__desc">${verboPlural} se registran únicamente sobre los deportistas <strong>inscritos</strong> en el evento. Primero carga las <strong>inscripciones</strong> (masivo o manual).</p>
+          <button class="naowee-btn naowee-btn--loud naowee-btn--sm" id="goInscBtn" type="button">${I.userPlus} Ir a inscripciones</button>
+        </div>
+      </div>`;
+    container.querySelector('#goInscBtn')?.addEventListener('click', () => {
+      const tab = document.querySelector('#tipoTabs .naowee-tab[data-tab="inscripciones"]');
+      if (tab) tab.click();
+    });
+  }
+
+  /* Nota de muestreo: la captura manual trabaja sobre una muestra de los inscritos
+     cuando el total es grande (el total real se mantiene en el detalle/dashboard). */
+  function sampleNote(shown) {
+    const total = (ev && ev.insc && ev.insc.done) ? ev.insc.done : shown;
+    return total > shown ? ` · muestra de ${shown} de ${total} inscritos` : '';
+  }
+
+  /* Documento y sub-línea del inscrito (deporte + prueba si la hay). */
+  const rosterDoc = (r) => `${r.tipoDoc || ''} ${r.nroDoc || ''}`.trim();
+  const rosterSub = (r) => `${esc(rosterDoc(r))} · ${esc(r.deporte || '—')}${r.prueba ? ' · ' + esc(r.prueba) : ''}`;
 
   /* ─── Toast ─── */
   let _toastT = null;
   function flash(msg, type = 'info') {
+    /* Toast canónico del DS (#evToast en naowee-footer.css): pill neutro oscuro.
+       No se pintan colores semánticos (el DS no los define); el éxito se comunica
+       con el "✓" del mensaje. role=alert para errores. */
     let toast = document.getElementById('evToast');
-    if (!toast) { toast = document.createElement('div'); toast.id = 'evToast'; toast.setAttribute('role', 'status'); document.body.appendChild(toast); }
+    if (!toast) { toast = document.createElement('div'); toast.id = 'evToast'; document.body.appendChild(toast); }
+    toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
     toast.textContent = msg;
-    if (type === 'success') toast.style.background = '#1a6e22';
-    else if (type === 'error') toast.style.background = '#b91c1c';
-    else toast.style.background = '';
     toast.classList.add('is-visible');
     clearTimeout(_toastT);
-    _toastT = setTimeout(() => { toast.classList.remove('is-visible'); toast.style.background = ''; }, 3200);
+    _toastT = setTimeout(() => { toast.classList.remove('is-visible'); }, 3200);
   }
 
   /* ─── Utilidad ─── */
@@ -867,9 +975,9 @@
               <div class="carg-template-strip__hint">La estructura está bloqueada — solo llena los datos. No modifiques columnas ni formato.</div>
             </div>
           </div>
-          <a class="naowee-btn naowee-btn--ghost naowee-btn--sm" href="../plantillas/${cfg.plantilla}" download="${cfg.plantilla}" id="dlPlantilla">
+          <button class="naowee-btn naowee-btn--ghost naowee-btn--sm" type="button" id="dlPlantilla">
             ${I.download} Descargar plantilla
-          </a>
+          </button>
         </div>
 
         <div class="naowee-file-uploader" id="fileUploader">
@@ -972,21 +1080,51 @@
     }
 
     fileInput.addEventListener('change', () => setFile(fileInput.files[0] || null));
+    document.getElementById('dlPlantilla')?.addEventListener('click', () => downloadTemplate(cfg));
 
+    /* Análisis REAL: lee el .xlsx, valida encabezados + filas contra TEMPLATE_COLS.
+       Ya no inventa errores — reporta lo que de verdad falta/está mal en el archivo. */
     analyzeBtn.addEventListener('click', () => {
       if (!selectedFile) return;
+      if (typeof XLSX === 'undefined') { renderResultsError('No se pudo cargar el lector de archivos (.xlsx). Revisa tu conexión e intenta de nuevo.'); return; }
       analyzeBtn.disabled = true;
       analyzeBtn.textContent = 'Analizando…';
-      setTimeout(() => {
-        const mock = MOCK_ROWS[activeTipo];
-        parseResults = { total: mock.valid.length + mock.errors.length, valid: mock.valid, errors: mock.errors };
-        renderResults(parseResults, cfg);
-        analyzeBtn.innerHTML = `${I.file} Analizar archivo`;
-        analyzeBtn.disabled = false;
-      }, 900);
+      const restore = () => { analyzeBtn.innerHTML = `${I.file} Analizar archivo`; analyzeBtn.disabled = false; };
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const wb = XLSX.read(e.target.result, { type: 'array' });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const aoa = ws ? XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: false, defval: '' }) : [];
+          const res = validateUpload(aoa, activeTipo);
+          if (res.structureError) renderResultsError(res.structureError);
+          else if (res.empty) renderResultsError('El archivo no tiene filas de datos. Descarga la plantilla, llénala y vuelve a subir.');
+          else { parseResults = res; renderResults(res, cfg); }
+        } catch (err) {
+          renderResultsError('No se pudo leer el archivo. Asegúrate de que sea un .xlsx válido generado desde la plantilla oficial.');
+        }
+        restore();
+      };
+      reader.onerror = () => { renderResultsError('No se pudo leer el archivo. Intenta de nuevo.'); restore(); };
+      reader.readAsArrayBuffer(selectedFile);
     });
 
     paintIdle();
+  }
+
+  /* Error de estructura/archivo vacío → message caution canónico en el panel. */
+  function renderResultsError(msg) {
+    const panel = document.getElementById('resultsPanel');
+    if (!panel) return;
+    panel.innerHTML = `
+      <div class="naowee-message naowee-message--caution">
+        <div class="naowee-message__header">
+          <span class="naowee-message__icon">${I.bang}</span>
+          <span class="naowee-message__body">${esc(msg)}</span>
+        </div>
+      </div>`;
+    panel.classList.add('is-visible');
+    parseResults = null;
   }
 
   /* ─── Panel de resultados del análisis ─── */
@@ -1038,6 +1176,15 @@
       fileName, n, modeLabel: 'Masivo', timestamp: ts,
       columns: cfg.columns, rows: validRows
     });
+    /* Inscripción masiva → los deportistas válidos entran al roster del evento
+       (fuente de verdad para ranking/resultados y medallería). */
+    if (cfg.storeTipo === 'insc') {
+      addInscritos(selectedEventId, validRows.map((r) => ({
+        tipoDoc: r.tipoDoc, nroDoc: r.nroDoc, nombre: r.nombre, sexo: r.sexo,
+        deporte: r.deporte, depto: r.depto, organizacion: r.organizacion || '', correo: r.correo || '',
+        origen: 'Masivo'
+      })));
+    }
     flash(`✓ ${n} fila${n !== 1 ? 's' : ''} cargada${n !== 1 ? 's' : ''} correctamente en ${cfg.label}.`, 'success');
     /* Refresca el panel (resetea uploader + muestra la nueva versión arriba). */
     selectedFile = null; parseResults = null;
@@ -1057,13 +1204,14 @@
      la competencia. El medallero por organismo se calcula solo (el deportista ya
      pertenece a una organización). */
   function renderManualMedalleria(container, cfg) {
-    const rows = MOCK_INSCRITOS;
+    const rows = effectiveRoster(ev);
+    if (!rows.length) { rosterEmptyState(container, 'Las medallas'); return; }
     const medals = {};   // id -> 'oro' | 'plata' | 'bronce'
     const medalRow = (r) => `
       <div class="carg-med-row" data-id="${r.id}">
         <div class="carg-med-row__info">
           <div class="carg-med-row__name">${esc(r.nombre)}</div>
-          <div class="carg-med-row__sub">${esc(r.doc)} · ${esc(r.deporte)} · ${esc(r.prueba)}</div>
+          <div class="carg-med-row__sub">${rosterSub(r)}</div>
         </div>
         <div class="carg-med-picker" role="group" aria-label="Medalla de ${esc(r.nombre)}">
           <button type="button" class="carg-medal ${medals[r.id] === 'oro' ? 'is-selected' : ''}" data-medal="oro" data-id="${r.id}" title="Oro">🥇</button>
@@ -1075,7 +1223,7 @@
       <div class="carg-card">
         <div class="carg-card__head"><div>
           <h3 class="carg-card__title">Captura manual — Medallería</h3>
-          <p class="carg-card__sub">Busca al deportista y asígnale su medalla en la competencia. El medallero por organismo se calcula solo.</p>
+          <p class="carg-card__sub">Busca al deportista y asígnale su medalla en la competencia. El medallero por organismo se calcula solo.${sampleNote(rows.length)}</p>
         </div></div>
         <div class="carg-search-row" style="margin-bottom:14px">
           <div class="naowee-searchbox" id="medSearch" style="max-width:480px;flex:1 1 260px">
@@ -1112,7 +1260,7 @@
     }
     const renderList = () => {
       const q = (input.value || '').trim().toLowerCase();
-      const filtered = q ? rows.filter((r) => `${r.nombre} ${r.doc} ${r.deporte} ${r.prueba}`.toLowerCase().includes(q)) : rows;
+      const filtered = q ? rows.filter((r) => `${r.nombre} ${rosterDoc(r)} ${r.deporte} ${r.prueba || ''}`.toLowerCase().includes(q)) : rows;
       list.innerHTML = filtered.length ? filtered.map(medalRow).join('') : '<div class="carg-empty-inline" style="padding:16px;color:var(--text-muted)">Sin resultados para esa búsqueda.</div>';
       bindMedals();
     };
@@ -1148,11 +1296,11 @@
     return `<div class="carg-intl-athlete ${done ? 'is-done' : ''}" data-athlete="${r.id}">
       <div class="carg-intl-athlete__main">
         <span class="carg-intl-athlete__flag">🇨🇴</span>
-        <div><div class="carg-intl-athlete__name">${esc(r.nombre)}</div><div class="carg-intl-athlete__sub">${esc(r.doc)} · ${esc(r.deporte)} · ${esc(r.prueba)}</div></div>
+        <div><div class="carg-intl-athlete__name">${esc(r.nombre)}</div><div class="carg-intl-athlete__sub">${rosterSub(r)}</div></div>
       </div>
       <div class="carg-intl-athlete__right">
         <span class="carg-intl-athlete__status" data-status ${done ? '' : 'hidden'}>✓ Resultado registrado</span>
-        <button type="button" class="naowee-btn naowee-btn--outline naowee-btn--sm" data-open="${r.id}">${done ? 'Editar' : 'Registrar resultado'}</button>
+        <button type="button" class="naowee-btn naowee-btn--ghost naowee-btn--sm" data-open="${r.id}">${done ? 'Editar' : 'Registrar resultado'}</button>
       </div>
     </div>`;
   }
@@ -1205,7 +1353,8 @@
   }
 
   function renderManualRankingIntl(container) {
-    const rows = MOCK_INSCRITOS;
+    const rows = effectiveRoster(ev);
+    if (!rows.length) { rosterEmptyState(container, 'Los resultados'); return; }
     container.innerHTML = `
       <div class="carg-card">
         <div class="carg-card__head"><div>
@@ -1219,13 +1368,17 @@
           </div>
         </div>
         <div class="carg-intl-list">${rows.map((r) => intlAthleteRow(r)).join('')}</div>
-      </div>
-      ${intlDrawerHTML()}`;
+      </div>`;
+    /* El drawer se monta en <body>: position:fixed dentro del card quedaba
+       atrapado por un ancestro con transform (animación) → no cubría toda la
+       pantalla ni mostraba el overlay. En body se ancla al viewport. */
+    document.getElementById('intlDrawer')?.remove();
+    document.body.insertAdjacentHTML('beforeend', intlDrawerHTML());
     bindIntl(container, rows);
   }
 
   function bindIntl(container, rows) {
-    const drawer = container.querySelector('#intlDrawer');
+    const drawer = document.getElementById('intlDrawer');
     const paisState = { 1: '', 2: '', 3: '' };
     let currentId = null;
     [1, 2, 3].forEach((n) => {
@@ -1246,9 +1399,9 @@
       currentId = id; clearForm();
       const r = rows.find((x) => x.id === id);
       drawer.querySelector('[data-drawer-name]').textContent = r.nombre;
-      drawer.querySelector('[data-drawer-sub]').textContent = `${r.deporte} · ${r.prueba}`;
+      drawer.querySelector('[data-drawer-sub]').textContent = r.prueba ? `${r.deporte} · ${r.prueba}` : (r.deporte || '');
       drawer.hidden = false;
-      void drawer.offsetWidth;           // reflow → la transición del panel anima
+      void drawer.offsetWidth;           // reflow → commit del estado cerrado para que la transición del panel/overlay anime
       drawer.classList.add('is-open');
     };
     const close = () => { drawer.classList.remove('is-open'); setTimeout(() => { drawer.hidden = true; }, 300); };
@@ -1416,6 +1569,13 @@
       columns: cfg.columns,
       rows: inscQueue.map((a) => ({ tipoDoc: a.tipoDoc, nroDoc: a.nroDoc, nombre: a.nombre, sexo: a.sexo, deporte: a.deporte, depto: a.depto, correo: a.correo || '—' }))
     });
+    /* FUENTE DE VERDAD: los inscritos entran al roster del evento → quedan
+       disponibles para ranking/resultados y medallería. */
+    addInscritos(selectedEventId, inscQueue.map((a) => ({
+      tipoDoc: a.tipoDoc, nroDoc: a.nroDoc, nombre: a.nombre, sexo: a.sexo,
+      deporte: a.deporte, depto: a.depto, organizacion: a.organizacion || '', correo: a.correo || '',
+      origen: a.origen || 'Manual'
+    })));
     flash(`✓ ${n} deportista${n !== 1 ? 's' : ''} inscrito${n !== 1 ? 's' : ''} correctamente.`, 'success');
     inscQueue = []; newDraft = {};
     renderTabPanel();
@@ -1525,14 +1685,15 @@
      (feedback Juanma). Estado por fila para preservar posición/marca al filtrar/paginar. */
   const ICON_CHEVR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
   function renderManualGrid(container, cfg) {
-    const all = MOCK_INSCRITOS;
+    const all = effectiveRoster(ev);
+    if (!all.length) { rosterEmptyState(container, 'Los resultados'); return; }
     const PAGE_SIZE = 6;
     const state = {};   // id -> { posicion, marca }
     let page = 1, q = '';
     const rowHTML = (r) => {
       const st = state[r.id] || {};
       return `<div class="carg-manual-row g-ranking" data-id="${r.id}">
-        <div><div class="carg-manual-row__name">${esc(r.nombre)}</div><div class="carg-manual-row__doc">${esc(r.doc)} · ${esc(r.deporte)} · ${esc(r.prueba)}</div></div>
+        <div><div class="carg-manual-row__name">${esc(r.nombre)}</div><div class="carg-manual-row__doc">${rosterSub(r)}</div></div>
         <input class="carg-manual-input" type="number" min="1" placeholder="—" data-field="posicion" data-id="${r.id}" value="${esc(st.posicion || '')}">
         <input class="carg-manual-input" type="text" placeholder="ej: 10.45s" data-field="marca" data-id="${r.id}" value="${esc(st.marca || '')}">
       </div>`;
@@ -1541,7 +1702,7 @@
       <div class="carg-card">
         <div class="carg-card__head"><div>
           <h3 class="carg-card__title">Captura manual — ${esc(cfg.label)}</h3>
-          <p class="carg-card__sub">Filtra por deporte o nombre y registra posición y marca/tiempo para cada inscrito.</p>
+          <p class="carg-card__sub">Filtra por deporte o nombre y registra posición y marca/tiempo para cada inscrito.${sampleNote(all.length)}</p>
         </div></div>
         <div class="carg-search-row" style="margin-bottom:12px">
           <div class="naowee-searchbox" id="rkSearch" style="max-width:480px;flex:1 1 260px">
@@ -1566,7 +1727,7 @@
     const saveBtn = container.querySelector('#manualSaveBtn');
     const input = container.querySelector('#rkInput');
     const searchBox = container.querySelector('#rkSearch');
-    const filtered = () => { const t = q.trim().toLowerCase(); return t ? all.filter((r) => `${r.nombre} ${r.deporte} ${r.prueba} ${r.doc}`.toLowerCase().includes(t)) : all; };
+    const filtered = () => { const t = q.trim().toLowerCase(); return t ? all.filter((r) => `${r.nombre} ${r.deporte} ${r.prueba || ''} ${rosterDoc(r)}`.toLowerCase().includes(t)) : all; };
     const entered = () => Object.values(state).filter((s) => String(s.posicion || '').trim() || String(s.marca || '').trim()).length;
     const syncSave = () => { saveBtn.disabled = entered() === 0; };
     function paint() {
