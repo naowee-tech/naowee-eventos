@@ -325,7 +325,7 @@ const ROSTER_KEY = 'naowee-eventos-roster';
 export function getRoster(eventId) {
   try {
     const all = JSON.parse(sessionStorage.getItem(ROSTER_KEY) || '{}');
-    return all[eventId] || [];
+    return Array.isArray(all[eventId]) ? all[eventId] : [];   // blinda contra storage corrupto/no-array
   } catch { return []; }
 }
 

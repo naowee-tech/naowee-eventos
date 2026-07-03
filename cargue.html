@@ -900,6 +900,9 @@
     const cfg = TIPO_CFG[activeTipo];
     const panel = document.getElementById('tabPanel');
     if (!panel) return;
+    /* Refresca el snapshot del evento: tras un cargue en vivo, insc.done incluye
+       el delta → la nota de muestreo (sampleNote) muestra el total al día. */
+    ev = allEvents().find((e) => e.id === selectedEventId) || ev;
 
     /* Único estado que cierra el cargue: finalizado → solo lectura de lo ya cargado.
        (Borrador NO bloquea: el gestor puede adelantar la operación — feedback Danna.) */
@@ -958,6 +961,13 @@
 
   /* ═══ MODO MASIVO ═══ */
   function renderMasivo(container, cfg) {
+    /* Mismo invariante que el modo manual: resultados y medallería (masivo o
+       manual) SOLO se cargan sobre un evento con inscritos. Sin inscripciones
+       → estado vacío también por la vía masiva (no basta con la plantilla). */
+    if (activeTipo !== 'inscripciones' && !effectiveRoster(ev).length) {
+      rosterEmptyState(container, activeTipo === 'medalleria' ? 'Las medallas' : 'Los resultados');
+      return;
+    }
     container.innerHTML = `
       <div class="carg-card" id="uploadCard">
         <div class="carg-card__head">
