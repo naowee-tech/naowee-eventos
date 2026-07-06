@@ -105,6 +105,24 @@ export const DEPORTES_POR_TIPO = {
   ]
 };
 
+/* ─── Catálogos de ORGANIZACIONES por tipo (para "Organizaciones invitadas"
+   en la edición del evento). El buscador filtra por el tipo elegido: Liga →
+   ligas del país; Club → clubes; Departamento/Municipio usan sus catálogos. ─── */
+export const LIGAS = [
+  'Liga del Valle', 'Liga Antioqueña', 'Liga de Bogotá', 'Liga de Santander',
+  'Liga de Cundinamarca', 'Liga del Atlántico', 'Liga de Risaralda', 'Liga de Nariño',
+  'Liga del Cauca', 'Liga de Boyacá', 'Liga de Caldas', 'Liga del Tolima',
+  'Liga de Bolívar', 'Liga del Meta', 'Liga de Córdoba', 'Liga de Sucre',
+  'Liga del Huila', 'Liga del Quindío', 'Liga del Magdalena', 'Liga de Norte de Santander'
+];
+export const CLUBES = [
+  'Club Deportivo Cali', 'Atlético Nacional', 'Millonarios FC', 'Independiente Santa Fe',
+  'América de Cali', 'Junior FC', 'Club Aqua Valle', 'Atlético Bucaramanga',
+  'Deportivo Pereira', 'Once Caldas', 'Club Los Andes', 'Club Náutico de Bogotá',
+  'Club Halcones de Barranquilla', 'Club Cóndores de Nariño', 'Club Titanes de Córdoba',
+  'Club Deportivo Popular', 'Club Sporting Medellín', 'Club Real Cartagena'
+];
+
 /* ─── Cascada Departamento → Municipio (hoja `Listas`: `departamento` 33 ·
    `municipio/localidad` 1055). Subconjunto representativo de municipios por
    depto (no los 1055). El "Lugar" guardado = "Municipio, Departamento". ─── */

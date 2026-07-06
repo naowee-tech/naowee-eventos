@@ -127,8 +127,17 @@ const MODULE_NAME = 'Eventos';
    "Marca") en grid, drawer internacional y equipos; (4) ranking internacional muestra los
    resultados registrados en TABLA de previsualización (sin tener que Editar) + puesto en
    la fila; (5) liga Resultados↔Medallería: la posición registrada (ledger result-pos)
-   restringe la medalla — fuera de podio (>3) queda bloqueada, 1/2/3 solo su medalla. */
-const MODULE_VERSION = 'v0.8.4';
+   restringe la medalla — fuera de podio (>3) queda bloqueada, 1/2/3 solo su medalla.
+   ── v0.8.5: alcance de catálogos por evento + fixes de dropdown (Doug) ──
+   v0.8.5 = (1) "Organizaciones invitadas" (edición) = buscador de catálogo por TIPO
+   (Liga→ligas del país · Club→clubes · Departamento/Municipio→sus catálogos), acento-
+   insensible, resetea al cambiar tipo; (2) al inscribir, el DEPORTE se limita a los
+   asociados al evento (fijo si es uno) y la ORGANIZACIÓN a las invitadas (fija si es una);
+   (3) fix z-index: los menús de los dropdowns del formulario ya no quedan detrás de la card
+   "Cargas realizadas" (#modeBody se apila sobre #filesMount); (4) fix setDD de openNewForm
+   (selector .naowee-dropdown__value) que rompía el prellenado desde SUID; + LIGAS/CLUBES
+   en catalogo.js. */
+const MODULE_VERSION = 'v0.8.5';
 
 (function () {
   function mount() {

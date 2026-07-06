@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="shared/event-detail.css?v=0.4.0">
 <link rel="stylesheet" href="shared/forms.css?v=0.4.3">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.8.4" defer></script>
+<script src="shared/naowee-footer.js?v=0.8.5" defer></script>
 <!-- SheetJS: lectura/escritura real de .xlsx para el cargue masivo (validación real por fila). -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -62,6 +62,11 @@
   .carg-mode-bar { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
   /* Pila de cards del modo activo (form + cola "Deportistas por inscribir") con gap */
   #modeBody { display: flex; flex-direction: column; gap: 18px; }
+  /* El modo activo (formularios/grids con dropdowns) se apila POR ENCIMA de la card
+     "Cargas realizadas": si no, la card siguiente (posterior en el DOM) tapaba el menú
+     absolute de los dropdowns que se abren cerca del borde inferior del formulario. */
+  #modeBody { position: relative; z-index: 3; }
+  #filesMount { position: relative; z-index: 1; }
 
   /* Los avisos de estado (borrador/finalizado) usan el componente canónico del
      DS .naowee-message (--caution / --informative) de forms.css. */
@@ -2338,6 +2343,21 @@
   function openNewForm(cfg, formEl, prefill = {}) {
     newDraft = {};
     const nacional = ev.alcance !== 'internacional';   /* organización obligatoria solo en nacional (#3) */
+    /* La inscripción se limita a los DEPORTES asociados al evento (feedback Doug): si el
+       ADMIN configuró el catálogo (ev.deportes), solo esos aparecen; si es UNO, queda FIJO
+       (sin opción de cambiarlo). Sin catálogo configurado → fallback al catálogo completo. */
+    const evCat = Array.isArray(ev && ev.deportes) ? ev.deportes : [];
+    const depList = evCat.length ? evCat.map((d) => ({ value: d.deporte, label: `${d.emoji ? d.emoji + ' ' : ''}${d.deporte}`.trim(), emoji: d.emoji || '' })) : DEPORTES_LIST;
+    const pruebasForEv = (dep) => { if (evCat.length) { const d = evCat.find((x) => x.deporte === dep); return ((d && d.competencias) || []).map((p) => ({ value: p, label: p })); } return pruebasFor(dep); };
+    const lockedDep = evCat.length === 1 ? evCat[0].deporte : null;
+    if (lockedDep) newDraft.deporte = lockedDep;
+    /* Organización se limita a las ORGANIZACIONES INVITADAS del evento (feedback Doug):
+       si el ADMIN invitó organizaciones, solo esas; si es UNA, queda FIJA. Sin invitadas
+       → fallback al catálogo general de ligas/clubes. Solo aplica en eventos nacionales. */
+    const evOrgs = Array.isArray(ev && ev.organizaciones) ? ev.organizaciones : [];
+    const orgList = (nacional && evOrgs.length) ? evOrgs.map((o) => ({ value: o.nombre, label: o.nombre })) : ORGS_LIST;
+    const lockedOrg = (nacional && evOrgs.length === 1) ? evOrgs[0].nombre : null;
+    if (lockedOrg) newDraft.organizacion = lockedOrg;
     formEl.removeAttribute('hidden');
     formEl.innerHTML = `
       <div class="carg-newform__inner">
@@ -2350,9 +2370,13 @@
           ${tfFieldHTML('sn', 'Segundo nombre', '', false)}
           ${tfFieldHTML('pa', 'Primer apellido', '', true)}
           ${tfFieldHTML('sa', 'Segundo apellido', '', false)}
-          ${ddFieldHTML('deporte', 'Deporte', 'Selecciona…', true)}
+          ${lockedDep
+            ? `<div class="carg-field"><label class="naowee-textfield__label naowee-textfield__label--required">Deporte</label><div class="carg-eq-fixed">${esc((evCat[0].emoji ? evCat[0].emoji + ' ' : '') + lockedDep)}</div></div>`
+            : ddFieldHTML('deporte', 'Deporte', 'Selecciona…', true)}
           ${ddFieldHTML('prueba', 'Prueba (competencia)', 'Selecciona la prueba…', true)}
-          ${nacional ? ddFieldHTML('organizacion', 'Organización', 'Busca la liga/club…', true) : ''}
+          ${nacional ? (lockedOrg
+            ? `<div class="carg-field"><label class="naowee-textfield__label naowee-textfield__label--required">Organización</label><div class="carg-eq-fixed">${esc(lockedOrg)}</div></div>`
+            : ddFieldHTML('organizacion', 'Organización', evOrgs.length ? 'Selecciona la organización…' : 'Busca la liga/club…', true)) : ''}
           ${ddFieldHTML('depto', 'Departamento (opcional)', 'Selecciona…', false)}
           ${tfFieldHTML('correo', 'Correo electrónico', 'nombre@correo.com', true, true)}
         </div>
@@ -2376,9 +2400,9 @@
     setupDropdown(formEl.querySelector('[data-dd="sexo"]'), SEXOS, () => newDraft.sexo, (v) => { newDraft.sexo = v; syncAdd(); });
     /* Deporte → resetea la prueba (cascada); Prueba lee sus opciones del deporte elegido. */
     let ddPrueba = null;
-    setupDropdown(formEl.querySelector('[data-dd="deporte"]'), DEPORTES_LIST, () => newDraft.deporte, (v) => { newDraft.deporte = v; newDraft.prueba = ''; if (ddPrueba) ddPrueba.reset(); syncAdd(); });
-    ddPrueba = setupDropdown(formEl.querySelector('[data-dd="prueba"]'), () => pruebasFor(newDraft.deporte), () => newDraft.prueba, (v) => { newDraft.prueba = v; syncAdd(); });
-    if (nacional) setupDropdown(formEl.querySelector('[data-dd="organizacion"]'), ORGS_LIST, () => newDraft.organizacion, (v) => { newDraft.organizacion = v; syncAdd(); });
+    if (!lockedDep) setupDropdown(formEl.querySelector('[data-dd="deporte"]'), depList, () => newDraft.deporte, (v) => { newDraft.deporte = v; newDraft.prueba = ''; if (ddPrueba) ddPrueba.reset(); syncAdd(); });
+    ddPrueba = setupDropdown(formEl.querySelector('[data-dd="prueba"]'), () => pruebasForEv(newDraft.deporte), () => newDraft.prueba, (v) => { newDraft.prueba = v; syncAdd(); });
+    if (nacional && !lockedOrg) setupDropdown(formEl.querySelector('[data-dd="organizacion"]'), orgList, () => newDraft.organizacion, (v) => { newDraft.organizacion = v; syncAdd(); });
     setupDropdown(formEl.querySelector('[data-dd="depto"]'), DEPTOS_LIST, () => newDraft.depto, (v) => { newDraft.depto = v; syncAdd(); });
 
     /* Pre-llenado (p.ej. desde el SUID): setea valores + etiquetas de dropdown. */
@@ -2386,15 +2410,18 @@
       if (!val) return; newDraft[name] = val;
       const dd = formEl.querySelector(`[data-dd="${name}"]`); if (!dd) return;
       const o = (typeof opts === 'function' ? opts() : opts).find((x) => x.value === val);
-      const vEl = dd.querySelector('[data-dd-val]'); vEl.textContent = o ? o.label : val; vEl.classList.remove('is-placeholder');
+      const vEl = dd.querySelector('.naowee-dropdown__value'); if (!vEl) return; vEl.textContent = o ? o.label : val; vEl.classList.remove('is-placeholder');
     };
     ['nroDoc', 'pn', 'sn', 'pa', 'sa', 'correo'].forEach((k) => {
       if (!prefill[k]) return; newDraft[k] = prefill[k];
       const wrap = formEl.querySelector(`[data-tf="${k}"]`); if (wrap) { const inp = wrap.querySelector('.naowee-textfield__input'); inp.value = prefill[k]; wrap.classList.add('naowee-textfield--active'); }
     });
     setDD('tipoDoc', prefill.tipoDoc, TIPOS_DOC); setDD('sexo', prefill.sexo, SEXOS);
-    setDD('deporte', prefill.deporte, DEPORTES_LIST); setDD('depto', prefill.depto, DEPTOS_LIST);
-    if (nacional) setDD('organizacion', prefill.organizacion, ORGS_LIST);
+    if (!lockedDep) setDD('deporte', prefill.deporte, depList);
+    setDD('depto', prefill.depto, DEPTOS_LIST);
+    /* Deporte fijo con una sola competencia → pre-selecciona la prueba. */
+    if (lockedDep) { const ps = pruebasForEv(lockedDep); if (ps.length === 1) setDD('prueba', ps[0].value, () => pruebasForEv(lockedDep)); }
+    if (nacional && !lockedOrg && (!evOrgs.length || evOrgs.some((o) => o.nombre === prefill.organizacion))) setDD('organizacion', prefill.organizacion, orgList);
     syncAdd();
 
     formEl.querySelector('#newCancel').addEventListener('click', () => { formEl.setAttribute('hidden', ''); formEl.innerHTML = ''; newDraft = {}; });
