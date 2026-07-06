@@ -360,6 +360,31 @@ export function addInscritos(eventId, list) {
   return added;
 }
 
+/* Inscritos ELIMINADOS por el gestor (feedback 25-jul: el gestor puede eliminar
+   inscripciones). Guarda los ids removidos para que effectiveRoster los excluya —
+   sirve tanto para los capturados en vivo como para los sintetizados del demo. */
+const ROSTER_REMOVED_KEY = 'naowee-eventos-roster-removed';
+export function getRemovedInscritos(eventId) {
+  try { const all = JSON.parse(sessionStorage.getItem(ROSTER_REMOVED_KEY) || '{}'); return Array.isArray(all[eventId]) ? all[eventId] : []; }
+  catch { return []; }
+}
+/** Elimina un inscrito del evento (por id). Lo quita del roster en vivo y lo marca
+ *  como removido (para los sintetizados que effectiveRoster regenera). */
+export function removeInscrito(eventId, id) {
+  if (!eventId || !id) return false;
+  try {
+    const all = JSON.parse(sessionStorage.getItem(ROSTER_KEY) || '{}');
+    if (Array.isArray(all[eventId])) { all[eventId] = all[eventId].filter((p) => p.id !== id); sessionStorage.setItem(ROSTER_KEY, JSON.stringify(all)); }
+  } catch { /* noop */ }
+  try {
+    const rm = JSON.parse(sessionStorage.getItem(ROSTER_REMOVED_KEY) || '{}');
+    rm[eventId] = rm[eventId] || [];
+    if (!rm[eventId].includes(id)) rm[eventId].push(id);
+    sessionStorage.setItem(ROSTER_REMOVED_KEY, JSON.stringify(rm));
+  } catch { /* noop */ }
+  return true;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    CALENDARIO DEL ORGANISMO (liga/entidad)
    Los eventos que el organismo publica en calendario.html se guardan en

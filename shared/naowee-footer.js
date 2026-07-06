@@ -78,8 +78,41 @@ const MODULE_NAME = 'Eventos';
    formato email/número) — ya no inventa errores hardcodeados; archivo vacío / sin
    filas / estructura incorrecta → mensajes reales. "Descargar plantilla" genera un
    .xlsx real con los encabezados oficiales (antes era un link roto). (10) el × de
-   quitar archivo deja de ser naranja (neutro, rojo al hover). */
-const MODULE_VERSION = 'v0.7.7';
+   quitar archivo deja de ser naranja (neutro, rojo al hover).
+   ── v0.8.x: cierre de huecos de la entrega 25-jun (auditoría video+código) ──
+   v0.8.0 = (1) MEDALLERÍA manual: persiste la data (addFileVersion → aparece en
+   "Archivos cargados"), evita doble-guardado (reset tras guardar), muestra un
+   "Medallero por organización" EN VIVO derivado de la organización de cada inscrito
+   → hace real el "se calcula solo" (Juanma); + aviso .naowee-message--caution cuando
+   el evento tiene deportes de CONJUNTO (la medalla de equipo es una, no N — mientras
+   negocio define grupos). (2) RANKING manual: persiste posiciones/marcas como versión
+   de archivo + evita doble-guardado. (3) DRAWER internacional: exige la posición del
+   colombiano antes de guardar; persiste lo capturado (Editar reabre con datos y NO
+   re-suma al contador); pre-carga 🇨🇴 + nombre en el slot del podio si quedó 1-3;
+   handler de Escape único (ya no se acumula por render). (4) Modal EDITAR: respeta el
+   alcance — en internacional Departamento/Municipio NO aplican (no se piden ni se
+   validan ni pisan 'Internacional'). (5) Quitar organización invitada pide
+   CONFIRMACIÓN (el aviso prometía validación y antes borraba directo).
+   ── Accionables reunión de revisión 25-jul (uno por uno) ──
+   v0.8.1 = [#1 Disciplina/Prueba] la inscripción ahora captura la PRUEBA
+   (competencia) vinculada al deporte: en el form manual un dropdown Prueba en
+   CASCADA desde Deporte (obligatorio, se resetea al cambiar de deporte) y en la
+   plantilla masiva la columna 'Prueba' (obligatoria). La prueba se persiste en el
+   roster → aparece en ranking/medallería, en la tabla de la cola y en las versiones
+   de archivo. setupDropdown acepta opts como función (cascadas) y expone reset().
+   v0.8.2 = resto de accionables 25-jul en la inscripción manual + ranking:
+   [#2 Vista Inscritos] se elimina "Archivos cargados" de la inscripción y se
+   reemplaza por "Deportistas inscritos" (lista del roster) con filtros deporte ·
+   competencia · búsqueda por documento/correo/nombre. [#3 Organizaciones] el form
+   de nuevo deportista agrega dropdown Organización (obligatorio en nacional) y el
+   correo pasa a obligatorio. [#4 Flujo/borrador] se elimina la cola "Deportistas
+   por inscribir"; registrar (nuevo o desde SUID) abre un MODAL de confirmación y
+   queda inscrito directo (SUID pre-llena el form para completar prueba/organización).
+   [#5 Eliminar] cada inscrito tiene ícono de eliminar (con confirmación) →
+   removeInscrito en events-data + effectiveRoster lo excluye. [#6 Ranking] no se
+   permiten posiciones repetidas dentro de una misma competencia (deporte+prueba):
+   se marcan en rojo, se avisa y se bloquea Guardar hasta corregir. */
+const MODULE_VERSION = 'v0.8.2';
 
 (function () {
   function mount() {

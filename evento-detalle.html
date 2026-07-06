@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="shared/event-detail.css?v=0.4.0">
 <link rel="stylesheet" href="shared/forms.css?v=0.4.3">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.7.7" defer></script>
+<script src="shared/naowee-footer.js?v=0.8.2" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -518,7 +518,13 @@
     orgBtn?.addEventListener('click', addOrg);
     orgInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addOrg(); } });
     page.querySelectorAll('[data-rm-org]').forEach((b) => b.addEventListener('click', () => {
-      const cur = getOrgs(ev).slice(); cur.splice(+b.dataset.rmOrg, 1); persistCfg({ organizaciones: cur });
+      const cur = getOrgs(ev).slice();
+      const org = cur[+b.dataset.rmOrg];
+      /* Validación al quitar (feedback Juanma): confirmar; en real, el sistema
+         verificaría inscritos/resultados/medallería cargados para esa organización. */
+      const ok = window.confirm(`¿Quitar «${org ? org.nombre : ''}» de las organizaciones invitadas?\n\nSi ya tuviera inscritos, resultados o medallería cargados, el sistema los validaría antes de eliminarla.`);
+      if (!ok) return;
+      cur.splice(+b.dataset.rmOrg, 1); persistCfg({ organizaciones: cur });
     }));
   }
 
@@ -887,6 +893,7 @@
     const finLocked = isLockedAll;
     const lugarLocked = lockPlace || isLockedAll;
     const allLocked = isLockedAll;
+    const intl = ev.alcance === 'internacional';   /* internacional → el lugar (depto/municipio) NO aplica */
 
     const dpIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
     const ddChevIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
@@ -939,26 +946,28 @@
           <span class="naowee-textfield__msg" data-msg style="display:none"></span>
         </div>
 
-        <!-- Departamento (locked si Activo/Finalizado) -->
+        <!-- Departamento / Municipio: NO aplican en eventos internacionales -->
         <div data-field="m-departamento">
-          <label class="naowee-textfield__label ${lugarLocked?'lbl-locked':''}" id="mlbl-depto">
-            ${lugarLocked?ICON_LOCK+' ':''}Departamento
+          <label class="naowee-textfield__label ${(lugarLocked||intl)?'lbl-locked':''}" id="mlbl-depto">
+            ${(lugarLocked||intl)?ICON_LOCK+' ':''}${intl ? 'Alcance' : 'Departamento'}
           </label>
-          ${lugarLocked
-            ? `<div class="field-readonly-val">${ev.departamento || (ev.place||'').split(', ').slice(-1)[0] || ev.place || '—'}</div>`
-            : `<div class="naowee-dropdown" data-dd="m-departamento" data-sheet-title="Departamento">
-                <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-labelledby="mlbl-depto">
-                  <span class="naowee-dropdown__value is-placeholder" data-dd-val>Selecciona un departamento…</span>
-                  <span class="naowee-dropdown__chevron">${ddChevIcon}</span>
-                </button>
-                <div class="naowee-dropdown__menu" role="listbox"></div>
-              </div>`
+          ${intl
+            ? `<div class="field-readonly-val">🌐 Internacional — el lugar no aplica</div>`
+            : lugarLocked
+              ? `<div class="field-readonly-val">${ev.departamento || (ev.place||'').split(', ').slice(-1)[0] || ev.place || '—'}</div>`
+              : `<div class="naowee-dropdown" data-dd="m-departamento" data-sheet-title="Departamento">
+                  <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-labelledby="mlbl-depto">
+                    <span class="naowee-dropdown__value is-placeholder" data-dd-val>Selecciona un departamento…</span>
+                    <span class="naowee-dropdown__chevron">${ddChevIcon}</span>
+                  </button>
+                  <div class="naowee-dropdown__menu" role="listbox"></div>
+                </div>`
           }
           <span class="naowee-textfield__msg" data-msg style="display:none"></span>
         </div>
 
-        <!-- Municipio (locked si Activo/Finalizado) -->
-        <div data-field="m-municipio" id="mMuniField" ${lugarLocked?'':'hidden'}>
+        <!-- Municipio (locked si Activo/Finalizado; oculto en internacional) -->
+        <div data-field="m-municipio" id="mMuniField" ${(lugarLocked && !intl)?'':'hidden'}>
           <label class="naowee-textfield__label ${lugarLocked?'lbl-locked':''}" id="mlbl-muni">
             ${lugarLocked?ICON_LOCK+' ':''}Municipio
           </label>
@@ -1157,8 +1166,9 @@
     if (!inicioLocked() && !mState.inicio) fail('m-inicio','Selecciona la fecha de inicio.');
     if (!isFinal && !mState.fin) fail('m-fin','Selecciona la fecha de fin.');
     if (!inicioLocked() && mState.inicio && mState.fin && mState.fin < mState.inicio) fail('m-fin','La fecha de fin debe ser igual o posterior al inicio.');
-    if (!isActivo && !isFinal && !mState.departamento) fail('m-departamento','Selecciona el departamento.');
-    if (!isActivo && !isFinal && mState.departamento && !mState.municipio) fail('m-municipio','Selecciona el municipio.');
+    const mIntl = ev.alcance === 'internacional';   /* internacional → no se exige lugar */
+    if (!isActivo && !isFinal && !mIntl && !mState.departamento) fail('m-departamento','Selecciona el departamento.');
+    if (!isActivo && !isFinal && !mIntl && mState.departamento && !mState.municipio) fail('m-municipio','Selecciona el municipio.');
 
     if (firstErr) {
       const f = mFieldEl(firstErr);
@@ -1173,7 +1183,7 @@
     const patch = { name: mState.nombre.trim() };
     if (!inicioLocked() && mState.inicio) patch.start = fmtDateM(mState.inicio);
     if (!isFinal && mState.fin) patch.end = fmtDateM(mState.fin);
-    if (!isActivo && !isFinal) {
+    if (!isActivo && !isFinal && ev.alcance !== 'internacional') {
       if (mState.departamento && mState.municipio) {
         patch.place = `${mState.municipio}, ${mState.departamento}`;
         patch.departamento = mState.departamento;

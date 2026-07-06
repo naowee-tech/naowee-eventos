@@ -15,7 +15,7 @@
      · evento nuevo sin inscripciones (insc.done = 0) → SIN roster (estado vacío)
    ═══════════════════════════════════════════════════════════════════════ */
 import { DEPORTES_POR_TIPO, DEPARTAMENTOS } from './catalogo.js';
-import { EVENTS, getDrafts, getRoster } from './events-data.js';
+import { EVENTS, getDrafts, getRoster, getRemovedInscritos } from './events-data.js';
 
 /* ── RNG determinista (FNV-1a → LCG), mismo patrón que reporteria-data.js ── */
 function seedFrom(str) {
@@ -33,6 +33,9 @@ const NOMBRES_M = ['Santiago', 'Sebastián', 'Mateo', 'Nicolás', 'Samuel', 'And
 const NOMBRES_F = ['Valentina', 'Isabella', 'María José', 'Sara', 'Laura', 'Mariana', 'Sofía', 'Gabriela', 'Daniela', 'Antonella', 'Luciana', 'Salomé', 'Juliana', 'Camila', 'Valeria', 'Manuela', 'Emily', 'Paula', 'Alejandra', 'Andrea'];
 const APELLIDOS = ['Gómez', 'Rodríguez', 'Martínez', 'García', 'López', 'Hernández', 'Ramírez', 'Torres', 'Vargas', 'Jiménez', 'Moreno', 'Muñoz', 'Rojas', 'Herrera', 'Castro', 'Ortiz', 'Sánchez', 'Cárdenas', 'Quintero', 'Mejía', 'Ríos', 'Arango', 'Pinto', 'Salcedo', 'Peñaloza', 'Mancera', 'Bermúdez', 'Naranjo', 'Mosquera', 'Salas'];
 const TIPOS_DOC = ['CC', 'TI', 'CE'];
+/* Organizaciones (ligas) que el participante REPRESENTA — el medallero se agrupa
+   por esto, no por el organismo que organiza el evento. */
+const LIGAS_POOL = ['Liga del Valle', 'Liga Antioqueña', 'Liga de Bogotá', 'Liga de Santander', 'Liga de Cundinamarca', 'Liga del Atlántico', 'Liga de Risaralda', 'Liga de Nariño', 'Liga del Cauca', 'Liga de Boyacá'];
 
 /* ── Catálogo aplanado (deporte → pruebas + tipo) y alias del ev.sport ── */
 const ALL_DEPORTES = Object.entries(DEPORTES_POR_TIPO)
@@ -101,7 +104,9 @@ function synthRoster(ev) {
   const deportes = resolveDeportes(ev);
   const depto = (ev.place && ev.place.includes(',')) ? ev.place.split(',').pop().trim()
     : DEPARTAMENTOS[Math.floor(rng() * DEPARTAMENTOS.length)];
-  const org = ev.org || 'Organismo deportivo';
+  /* Subconjunto de ligas (4-6) seedeado por evento → medallero variado pero estable. */
+  const nLigas = 4 + Math.floor(rng() * 3);
+  const ligas = LIGAS_POOL.slice().sort(() => rng() - 0.5).slice(0, nLigas);
   const usedName = new Set();
   const usedDoc = new Set();
   const out = [];
@@ -128,7 +133,7 @@ function synthRoster(ev) {
       id: `S-${ev.id}-${i}`,
       tipoDoc, nroDoc, nombre, sexo,
       deporte: dep.label, prueba,
-      depto, organizacion: org,
+      depto, organizacion: ligas[Math.floor(rng() * ligas.length)],
       correo: `${norm(nombre).replace(/\s+/g, '.')}@correo.com`,
       origen: 'Precargado', seed: true
     });
@@ -150,10 +155,11 @@ function key(p) {
  */
 export function effectiveRoster(ev) {
   if (!ev) return [];
+  const removed = new Set(getRemovedInscritos(ev.id));   // eliminados por el gestor
   const live = getRoster(ev.id).map((p, i) => ({ prueba: '', ...p, id: p.id || `L-${ev.id}-${i}` }));
   const merged = [...live, ...synthRoster(ev)];
   const seen = new Set();
   const out = [];
-  merged.forEach((p) => { const k = key(p); if (seen.has(k)) return; seen.add(k); out.push(p); });
+  merged.forEach((p) => { if (removed.has(p.id)) return; const k = key(p); if (seen.has(k)) return; seen.add(k); out.push(p); });
   return out;
 }
