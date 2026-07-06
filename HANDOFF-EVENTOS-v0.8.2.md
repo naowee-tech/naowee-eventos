@@ -1,7 +1,7 @@
-# 🤝 HANDOFF — Naowee **Eventos** (ministerio / light) · v0.8.2
+# 🤝 HANDOFF — Naowee **Eventos** (ministerio / light) · v0.8.3
 
 > Documento semilla para **arrancar un chat nuevo de Eventos** sin re-derivar contexto.
-> Adjúntalo (@) al iniciar. Fecha de corte: 2026-07-06 · versión en producción: **v0.8.2**.
+> Adjúntalo (@) al iniciar. Fecha de corte: 2026-07-06 · en producción: **v0.8.2** · build local **v0.8.3** (grupos/conjunto — pendiente de push).
 
 ---
 
@@ -66,8 +66,9 @@ Módulos ES en `shared/`, importados sin `?v=` (grafo de módulos). Persistencia
 1. Disciplina/Prueba en inscripción (masiva+manual). 2. Vista Inscritos (lista+filtros, reemplaza Archivos cargados). 3. Buscador Organizaciones + correo obligatorio (nacional). 4. Flujo sin borrador → modal de confirmación. 5. Eliminar inscripciones (ícono+confirmación). 6. Ranking sin posiciones duplicadas.
 
 ## 8. Pendientes
+**Grupos / deportes de conjunto → RESUELTO en v0.8.3** (era el gran pendiente). Flujo completo en `cargue.html` (modo Manual de Ranking y Medallería): **captura POR EQUIPO sin inscripción previa** (`renderManualEquipo(container, cfg, kind)`) — Equipo/Organización + posición/marca (ranking) o medalla oro/plata/bronce (medallería) + **integrantes opcionales** (chips nombre+doc, se asocian sin inscribirlos). Dedup por competencia (posición/medalla) al Agregar; guarda vía `addFileVersion('res'|'med')`. **Multideporte** → sub-segmento `Individuales | Equipos·conjunto` (`renderManualDual`), y los atletas de conjunto se **excluyen** del listado individual (medalla de equipo = UNA). **Puro conjunto** → flujo de equipos directo; el masivo por-persona redirige a Manual. Helpers: `eventAdmiteConjunto`/`eventEsMultideporte`/`conjuntoDeportesForEvent`. Auditado (multi-agente) + verificado en navegador. *Pendiente real:* carga MASIVA de equipos por backend/S3 (fuera de la demo); dedup cross-sesión por competencia (limitación heredada del flujo individual — sessionStorage).
+
 **Negocio (Danna/Vanessa) — NO implementar sin definición:**
-- **Grupos / deportes de conjunto:** medalla de equipo es UNA, no N; "crear resultado de equipo sin inscripción previa, asociar participantes después". Hoy solo hay mitigación (aviso conjunto en medallería). *Es el gran pendiente.*
 - Visibilidad por rol (¿admin ve todo el país? ¿organización solo lo suyo?), multi-organización (Naowee usa el módulo también), login propio del organismo, paradeporte sin clasificación funcional, API pública del calendario.
 **Dev/demo:**
 - Limpiar código muerto de la cola (§6). SUID: el nuevo registrado no entra al universo global buscable (`MOCK_ROWS`), solo al roster del evento. Persistencia solo en sessionStorage (se pierde al recargar). Backend real: validación masiva vía S3 (mencionado en reunión, fuera de la demo).
@@ -78,7 +79,7 @@ Módulos ES en `shared/`, importados sin `?v=` (grafo de módulos). Persistencia
 - Personas: **Danna** (PM), **Andrea** (producto), **Diego** (analítica/reportería), **Juanma** (líder técnico), **Kenneth** (backend), **César Pabuena** (≈"Javi", dev), **Juani** (producto). Equipo dev: Kenneth (lidera), Ema, Pizarro; Daniel Castillo (frontend).
 
 ## 10. Changelog resumido
-v0.6.x reportería + refinamientos UI · v0.7.0–0.7.5 feedback Juanma (conteos, nacional/internacional, catálogo en edición, medallería rediseñada, quick-wins) · v0.7.6–0.7.7 refinamiento edición + cargue masivo real (SheetJS) + roster por evento · **v0.8.0** cierre de huecos (medallero por org en vivo, persistencia, drawer internacional, modal editar respeta alcance, confirmación quitar org) · **v0.8.1** #1 prueba/disciplina · **v0.8.2** #2–#6 (vista inscritos, organizaciones, modal sin cola, eliminar, dedup ranking).
+v0.6.x reportería + refinamientos UI · v0.7.0–0.7.5 feedback Juanma (conteos, nacional/internacional, catálogo en edición, medallería rediseñada, quick-wins) · v0.7.6–0.7.7 refinamiento edición + cargue masivo real (SheetJS) + roster por evento · **v0.8.0** cierre de huecos (medallero por org en vivo, persistencia, drawer internacional, modal editar respeta alcance, confirmación quitar org) · **v0.8.1** #1 prueba/disciplina · **v0.8.2** #2–#6 (vista inscritos, organizaciones, modal sin cola, eliminar, dedup ranking) · **v0.8.3** grupos/deportes de conjunto — captura por equipo sin inscripción previa + integrantes + 1 medalla por equipo + modo dual multideporte (auditado + fixes de auditoría aplicados).
 
 ## 11. Para arrancar el chat v0.2
 Invoca `naowee-build`, lee este handoff + `cargue.html` completo antes de tocarlo. Verifica en preview (server `eventos-demo`:4310). No pushees sin que Doug lo pida.

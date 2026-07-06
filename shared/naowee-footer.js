@@ -111,8 +111,24 @@ const MODULE_NAME = 'Eventos';
    [#5 Eliminar] cada inscrito tiene ícono de eliminar (con confirmación) →
    removeInscrito en events-data + effectiveRoster lo excluye. [#6 Ranking] no se
    permiten posiciones repetidas dentro de una misma competencia (deporte+prueba):
-   se marcan en rojo, se avisa y se bloquea Guardar hasta corregir. */
-const MODULE_VERSION = 'v0.8.2';
+   se marcan en rojo, se avisa y se bloquea Guardar hasta corregir.
+   ── v0.8.3: GRUPOS / deportes de conjunto (reunión 03-jul) ──
+   v0.8.3 = captura POR EQUIPO sin inscripción previa (renderManualEquipo) en Ranking y
+   Medallería manual: equipo/organización + posición/marca o medalla + integrantes
+   opcionales; medalla = UNA por equipo (medallero por org en vivo); multideporte con
+   sub-segmento Individuales|Equipos (los atletas de conjunto se excluyen del individual);
+   puro conjunto → equipos directo, masivo por-persona redirige a Manual. + fixes de
+   auditoría (excluir conjunto del individual, conjunto>internacional, setupDropdown
+   auto-limpieza, aria).
+   ── v0.8.4: feedback revisión en vivo (Doug) ──
+   v0.8.4 = (1) solo UN dropdown abierto a la vez (closeOtherDropdowns); (2) editar
+   inscrito (lápiz + modal, updateInscrito); (3) el RESULTADO se etiqueta según
+   deporte+prueba (resultMeta: kg en pesas, tiempo, distancia, sets, combate… no genérico
+   "Marca") en grid, drawer internacional y equipos; (4) ranking internacional muestra los
+   resultados registrados en TABLA de previsualización (sin tener que Editar) + puesto en
+   la fila; (5) liga Resultados↔Medallería: la posición registrada (ledger result-pos)
+   restringe la medalla — fuera de podio (>3) queda bloqueada, 1/2/3 solo su medalla. */
+const MODULE_VERSION = 'v0.8.4';
 
 (function () {
   function mount() {

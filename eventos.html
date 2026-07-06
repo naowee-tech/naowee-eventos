@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="shared/list-components.css?v=0.4.2">
 <link rel="stylesheet" href="shared/forms.css?v=0.4.3">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.8.2" defer></script>
+<script src="shared/naowee-footer.js?v=0.8.4" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -34,9 +34,10 @@
   }
 
   /* Tabs de alcance (Mis eventos / Todos los eventos) DENTRO del card.
-     Bleed -20px (= padding del .naowee-table-card) → el divider va de borde a
-     borde del container. Fondo transparente para no tapar las esquinas redondeadas. */
-  .ev-scope-tabs { margin: -20px -20px 0; background: transparent; padding: 0 12px; }
+     Bleed lateral -20px (= padding del .naowee-table-card) → el divider va de borde
+     a borde. El bleed SUPERIOR se deja en -8px (no -20px) para que el fondo del hover
+     del tab (accent-bg, llena los 48px) NO quede pegado al borde superior del card. */
+  .ev-scope-tabs { margin: -8px -20px 0; background: transparent; padding: 0 12px; }
   /* tab interno 8px → la etiqueta queda a 20px del borde (alineada con el toolbar),
      y el hover/underline no se pegan a la esquina redondeada del card. */
   .ev-scope-tabs .naowee-tab { padding: 0 8px; }

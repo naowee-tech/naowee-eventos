@@ -385,6 +385,62 @@ export function removeInscrito(eventId, id) {
   return true;
 }
 
+/**
+ * Actualiza un inscrito del roster (edición desde la vista "Deportistas inscritos").
+ * Entrada EN VIVO → merge en sitio (conserva id). Sintetizada (demo) → se materializa:
+ * marca la original como removida y agrega la versión editada al roster en vivo.
+ */
+export function updateInscrito(eventId, id, patch) {
+  if (!eventId || !id || !patch) return false;
+  let all;
+  try { all = JSON.parse(sessionStorage.getItem(ROSTER_KEY) || '{}'); } catch { all = {}; }
+  const list = Array.isArray(all[eventId]) ? all[eventId] : [];
+  const idx = list.findIndex((p) => p.id === id);
+  if (idx !== -1) {
+    /* Entrada EN VIVO: rechaza si el nuevo doc+deporte colisiona con OTRO inscrito
+       (evita un duplicado oculto por dedup de effectiveRoster). */
+    const newKey = rosterKey(patch);
+    if (list.some((p, i) => i !== idx && rosterKey(p) === newKey)) return false;
+    list[idx] = { ...list[idx], ...patch, id };   // conserva id y origen si no se pasa
+    all[eventId] = list;
+    sessionStorage.setItem(ROSTER_KEY, JSON.stringify(all));
+    return true;
+  }
+  /* Sintetizada → materializar: agrega PRIMERO la editada; si el dedup la rechaza
+     (colisión doc+deporte con otro inscrito en vivo) NO borres la original y reporta
+     el conflicto — evita el borrado silencioso (hallazgo auditoría v0.8.4). */
+  const added = addInscritos(eventId, [{ origen: 'Editado', ...patch }]);
+  if (!added) return false;
+  removeInscrito(eventId, id);
+  return true;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESULTADOS — posición por (evento · persona · competencia)
+   Liga Resultados ↔ Medallería (feedback Doug): la medalla debe RESPETAR el
+   puesto del podio — un puesto > 3 no recibe medalla; 1/2/3 → oro/plata/bronce.
+   Lo ESCRIBE el ranking manual (individual + internacional); lo LEE la medallería.
+   key: 'naowee-eventos-result-pos' → { [eventId]: { [posKey]: {posicion, deportista, deporte, prueba} } }
+   ═══════════════════════════════════════════════════════════════ */
+const RESULT_POS_KEY = 'naowee-eventos-result-pos';
+/** Clave persona+competencia (documento · deporte · prueba, normalizada). */
+export function positionKey(p) {
+  const n = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+  return `${String(p.nroDoc || '').trim()}·${n(p.deporte)}·${n(p.prueba)}`;
+}
+export function getResultPositions(eventId) {
+  try { const all = JSON.parse(sessionStorage.getItem(RESULT_POS_KEY) || '{}'); return all[eventId] || {}; }
+  catch { return {}; }
+}
+export function setResultPosition(eventId, rec) {
+  if (!eventId || !rec || !rec.nroDoc) return;
+  let all;
+  try { all = JSON.parse(sessionStorage.getItem(RESULT_POS_KEY) || '{}'); } catch { all = {}; }
+  if (!all[eventId]) all[eventId] = {};
+  all[eventId][positionKey(rec)] = { posicion: rec.posicion, deportista: rec.deportista || rec.nombre || '', deporte: rec.deporte || '', prueba: rec.prueba || '' };
+  sessionStorage.setItem(RESULT_POS_KEY, JSON.stringify(all));
+}
+
 /* ═══════════════════════════════════════════════════════════════
    CALENDARIO DEL ORGANISMO (liga/entidad)
    Los eventos que el organismo publica en calendario.html se guardan en

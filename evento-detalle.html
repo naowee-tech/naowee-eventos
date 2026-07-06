@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="shared/event-detail.css?v=0.4.0">
 <link rel="stylesheet" href="shared/forms.css?v=0.4.3">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.8.2" defer></script>
+<script src="shared/naowee-footer.js?v=0.8.4" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -152,6 +152,16 @@
   .cfg-addrow .naowee-btn { height: var(--field-h); }
   .cfg-input { height: var(--field-h); padding: 0 12px; border: 1px solid var(--field-border-idle); border-radius: var(--radius-md); font-family: inherit; font-size: 14px; color: var(--text-primary); flex: 1; min-width: 180px; background: var(--surface); }
   .cfg-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(215,64,9,.12); }
+  /* Multi-selector de deportes: cada opción es un checkbox (el menú NO se cierra al
+     elegir); los deportes ya agregados salen deshabilitados con su check fijo. */
+  .cfg-opt-multi { display: flex; align-items: center; gap: 10px; }
+  .cfg-opt-multi .cfg-opt-lbl { flex: 1; min-width: 0; }
+  .cfg-opt-box { width: 18px; height: 18px; flex-shrink: 0; border: 1.5px solid var(--border-dark); border-radius: var(--radius-sm); display: inline-flex; align-items: center; justify-content: center; color: #fff; transition: background var(--duration-fast), border-color var(--duration-fast); }
+  .cfg-opt-box svg { width: 13px; height: 13px; }
+  .cfg-opt-multi.is-checked .cfg-opt-box { background: var(--accent); border-color: var(--accent); }
+  .cfg-opt-multi.is-added { opacity: .55; cursor: default; }
+  .cfg-opt-multi.is-added .cfg-opt-box { background: var(--border-dark); border-color: var(--border-dark); }
+  .cfg-opt-added { font-size: 11px; font-weight: 600; color: var(--text-muted); flex-shrink: 0; }
   .cfg-list { display: flex; flex-direction: column; gap: 12px; }
   /* Acordeón por deporte: colapsado por defecto para no volcar todas las
      competencias al agregarlo (feedback Doug). El header es el toggle. */
@@ -427,7 +437,7 @@
     const deportesSec = `
       <section class="det-section cfg-section" aria-labelledby="cfg-dep-title" style="animation-delay:.12s">
         <div class="det-section__head">${ICON_SPORT}<h3 id="cfg-dep-title">Deportes y competencias</h3></div>
-        ${canEdit ? `<div class="cfg-addrow">${ddMarkupCfg('cfgDeporte', 'Selecciona un deporte…')}<button type="button" class="naowee-btn naowee-btn--loud" id="cfgAddDeporte" disabled>${ICON_PLUS} Agregar deporte</button></div>` : ''}
+        ${canEdit ? `<div class="cfg-addrow">${ddMarkupCfg('cfgDeporte', 'Selecciona deportes…')}<button type="button" class="naowee-btn naowee-btn--loud" id="cfgAddDeporte" disabled>${ICON_PLUS} Agregar deporte</button></div>` : ''}
         <div class="cfg-list">
           ${deportes.length ? deportes.map((d, i) => { const nc = (d.competencias || []).length; return `
             <div class="cfg-sport">
@@ -478,17 +488,65 @@
     });
   }
   document.addEventListener('click', (e) => { if (!e.target.closest('.cfg-dd')) closeAllCfgDd(); });
+  /* Variante MULTI-select de cfgDropdown: cada opción es un checkbox, el menú se
+     mantiene ABIERTO al elegir, y los ya agregados salen deshabilitados. onChange se
+     dispara en cada toggle (para sincronizar el botón "Agregar N deportes"). */
+  function cfgMultiDropdown(dd, opts, pickedSet, onChange) {
+    if (!dd) return;
+    const menu = dd.querySelector('.naowee-dropdown__menu');
+    const valEl = dd.querySelector('[data-dd-val]');
+    const trigger = dd.querySelector('.naowee-dropdown__trigger');
+    const placeholder = valEl.textContent;
+    const CHK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    function updateTrigger() {
+      const n = pickedSet.size;
+      if (!n) { valEl.textContent = placeholder; valEl.classList.add('is-placeholder'); }
+      else { valEl.textContent = `${n} deporte${n > 1 ? 's' : ''} seleccionado${n > 1 ? 's' : ''}`; valEl.classList.remove('is-placeholder'); }
+    }
+    function paint() {
+      menu.innerHTML = opts.map((o) => {
+        const checked = pickedSet.has(o.value);
+        return `<button type="button" class="naowee-dropdown__opt cfg-opt-multi${checked ? ' is-checked' : ''}${o.added ? ' is-added' : ''}" data-val="${escH(o.value)}"${o.added ? ' disabled aria-disabled="true"' : ''}>
+          <span class="cfg-opt-box">${checked || o.added ? CHK : ''}</span>
+          <span class="cfg-opt-lbl">${escH(o.label)}</span>
+          ${o.added ? '<span class="cfg-opt-added">ya agregado</span>' : ''}
+        </button>`;
+      }).join('');
+      menu.querySelectorAll('.cfg-opt-multi:not(.is-added)').forEach((b) => b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const v = b.dataset.val;
+        if (pickedSet.has(v)) pickedSet.delete(v); else pickedSet.add(v);
+        const on = pickedSet.has(v);
+        b.classList.toggle('is-checked', on);
+        b.querySelector('.cfg-opt-box').innerHTML = on ? CHK : '';
+        updateTrigger();
+        onChange && onChange();
+      }));
+    }
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const willOpen = !dd.classList.contains('is-open');
+      closeAllCfgDd();
+      if (willOpen) { paint(); dd.classList.add('is-open'); dd.closest('.cfg-section')?.classList.add('cfg-section--front'); }
+    });
+    updateTrigger();
+  }
   function bindConfig() {
     if (!canEdit) return;
     const page = document.getElementById('detailPage');
-    let pickedDeporte = null;
-    cfgDropdown(page.querySelector('[data-dd="cfgDeporte"]'), DEPORTES_FLAT.map((d) => ({ value: d.nombre, label: `${d.emoji} ${d.nombre}`.trim() })), (o) => { pickedDeporte = o.value; const ab = page.querySelector('#cfgAddDeporte'); if (ab) ab.disabled = false; });
-    page.querySelector('#cfgAddDeporte')?.addEventListener('click', () => {
-      if (!pickedDeporte) { flash('Selecciona un deporte primero.'); return; }
+    /* Multi-selector de deportes (feedback Doug): elige varios y agrégalos de una. */
+    const pickedDeportes = new Set();
+    const addDepBtn = page.querySelector('#cfgAddDeporte');
+    const syncAddDep = () => { if (!addDepBtn) return; const n = pickedDeportes.size; addDepBtn.disabled = n === 0; addDepBtn.innerHTML = `${ICON_PLUS} ${n > 1 ? 'Agregar ' + n + ' deportes' : 'Agregar deporte'}`; };
+    const depOpts = DEPORTES_FLAT.map((d) => ({ value: d.nombre, label: `${d.emoji} ${d.nombre}`.trim(), added: getDeportes(ev).some((x) => x.deporte === d.nombre) }));
+    cfgMultiDropdown(page.querySelector('[data-dd="cfgDeporte"]'), depOpts, pickedDeportes, syncAddDep);
+    addDepBtn?.addEventListener('click', () => {
+      if (!pickedDeportes.size) { flash('Selecciona al menos un deporte.'); return; }
       const cur = getDeportes(ev);
-      if (cur.some((d) => d.deporte === pickedDeporte)) { flash('Ese deporte ya está agregado.'); return; }
-      const src = DEPORTES_FLAT.find((d) => d.nombre === pickedDeporte);
-      persistCfg({ deportes: [...cur, { deporte: pickedDeporte, emoji: src?.emoji || '', competencias: src?.pruebas || [] }] });
+      const existing = new Set(cur.map((d) => d.deporte));
+      const toAdd = [...pickedDeportes].filter((name) => !existing.has(name)).map((name) => { const src = DEPORTES_FLAT.find((d) => d.nombre === name); return { deporte: name, emoji: src?.emoji || '', competencias: src?.pruebas || [] }; });
+      if (!toAdd.length) { flash('Esos deportes ya están agregados.'); return; }
+      persistCfg({ deportes: [...cur, ...toAdd] });
     });
     page.querySelectorAll('.cfg-sport__toggle').forEach((b) => b.addEventListener('click', () => {
       const card = b.closest('.cfg-sport'); const open = card.classList.toggle('is-open');

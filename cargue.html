@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="shared/event-detail.css?v=0.4.0">
 <link rel="stylesheet" href="shared/forms.css?v=0.4.3">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.8.2" defer></script>
+<script src="shared/naowee-footer.js?v=0.8.4" defer></script>
 <!-- SheetJS: lectura/escritura real de .xlsx para el cargue masivo (validación real por fila). -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -259,7 +259,7 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .carg-tabs-card, .carg-results, .carg-file__body { animation: none !important; }
-    .carg-file__chev { transition: none !important; }
+    .carg-file__chev, .carg-medal { transition: none !important; }
   }
 
   /* ── OVERSIGHT (Admin solo lectura) ── */
@@ -381,9 +381,15 @@
   .carg-med-row__name { font-size: 14px; font-weight: 700; color: var(--text-primary); }
   .carg-med-row__sub { font-size: 12px; color: var(--text-secondary); }
   .carg-med-picker { display: flex; gap: 6px; }
-  .carg-medal { width: 42px; height: 42px; border-radius: var(--radius-md); border: 1.5px solid var(--border); background: var(--surface); font-size: 20px; line-height: 1; cursor: pointer; opacity: .4; filter: grayscale(.4); transition: opacity .14s, filter .14s, border-color .14s, box-shadow .14s; }
-  .carg-medal:hover { opacity: .85; }
+  .carg-medal { width: 42px; height: 42px; border-radius: var(--radius-md); border: 1.5px solid var(--border); background: var(--surface); font-size: 20px; line-height: 1; cursor: pointer; opacity: .4; filter: grayscale(.4); transition: opacity .14s, filter .14s; }
+  .carg-medal:hover:not(:disabled) { opacity: .85; }
   .carg-medal.is-selected { opacity: 1; filter: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(215,64,9,.1); }
+  /* Medalla bloqueada por el puesto del ranking (fuera de podio o no corresponde). */
+  .carg-medal:disabled, .carg-medal.is-disabled { opacity: .22; filter: grayscale(1); cursor: not-allowed; }
+  /* Tag de puesto en la fila de medallería (liga Resultados↔Medallería). */
+  .carg-med-postag { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: var(--radius-full); font-size: 10.5px; font-weight: 700; vertical-align: middle; }
+  .carg-med-postag--podio { background: var(--green-bg); color: var(--green); }
+  .carg-med-postag--out { background: var(--red-bg); color: var(--red); }
   .carg-med-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
   .carg-med-count { font-size: 13px; font-weight: 700; color: var(--text-secondary); }
   /* Medallero por organización EN VIVO (se calcula solo). */
@@ -394,6 +400,40 @@
   .carg-tally-org { font-size: 13px; font-weight: 600; color: var(--text-primary); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .carg-tally-medals { font-size: 13px; font-weight: 700; color: var(--text-secondary); white-space: nowrap; flex-shrink: 0; font-feature-settings: 'tnum'; }
   .carg-tally-empty { font-size: 12.5px; color: var(--text-muted); margin: 0; }
+
+  /* ═══ Captura de EQUIPOS (deportes de conjunto) — feedback reunión 03-jul ═══ */
+  .carg-eq-scopebar { display: flex; justify-content: center; margin-bottom: 18px; }
+  .carg-eq-form { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-soft); padding: 18px 18px 16px; }
+  .carg-eq-form__title { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 14px; display: flex; align-items: center; gap: 7px; }
+  .carg-eq-form__title svg { width: 16px; height: 16px; color: var(--accent); }
+  .carg-eq-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .carg-eq-fixed { height: 44px; display: flex; align-items: center; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .carg-eq-medalfield { display: flex; flex-direction: column; gap: 6px; }
+  .carg-eq-medalfield .carg-med-picker { margin-top: 2px; }
+  .carg-eq-foot { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+
+  /* Integrantes del equipo (asociar participantes — sin inscripción) */
+  .carg-eq-members { margin-top: 8px; border-top: 1px dashed var(--border-dark); padding-top: 14px; }
+  .carg-eq-members__title { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .3px; margin-bottom: 10px; }
+  .carg-eq-members__row { display: grid; grid-template-columns: 1fr 170px auto; gap: 10px; align-items: end; }
+  .carg-eq-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .carg-eq-chip { display: inline-flex; align-items: center; gap: 8px; padding: 5px 6px 5px 12px; border: 1px solid var(--border); border-radius: var(--radius-full); background: var(--surface); font-size: 12.5px; font-weight: 600; color: var(--text-primary); }
+  .carg-eq-chip__doc { color: var(--text-secondary); font-size: 11.5px; font-weight: 500; }
+  .carg-eq-chip__x { width: 22px; height: 22px; border: none; background: transparent; border-radius: var(--radius-full); color: var(--text-muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+  .carg-eq-chip__x:hover { background: var(--red-bg); color: var(--red); }
+  .carg-eq-chip__x svg { width: 13px; height: 13px; }
+
+  /* Lista de equipos por guardar (staged) */
+  .carg-eq-staged { margin-top: 20px; }
+  .carg-eq-staged:empty { display: none; }
+  .carg-eq-staged__title { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .3px; margin-bottom: 12px; display: flex; align-items: center; gap: 7px; }
+  .carg-eq-staged__title svg { width: 15px; height: 15px; }
+  .carg-eq-del { width: 30px; height: 30px; border: none; background: transparent; border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+  .carg-eq-del:hover { background: var(--red-bg); color: var(--red); }
+  .carg-eq-del svg { width: 16px; height: 16px; }
+  .carg-eq-medaltag { font-weight: 700; white-space: nowrap; }
+  @media (max-width: 760px) { .carg-eq-grid { grid-template-columns: repeat(2, 1fr); } .carg-eq-members__row { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 520px) { .carg-eq-grid { grid-template-columns: 1fr; } .carg-eq-members__row { grid-template-columns: 1fr; } }
 
   /* ── Modal de confirmación (registro / eliminar) — patrón canónico ── */
   .carg-modal-overlay { position: fixed; inset: 0; z-index: 1100; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(40,40,52,.50); opacity: 0; pointer-events: none; transition: opacity .2s ease; }
@@ -420,7 +460,22 @@
   .carg-insc-del { width: 30px; height: 30px; border: none; background: transparent; border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
   .carg-insc-del:hover { background: var(--red-bg); color: var(--red); }
   .carg-insc-del svg { width: 16px; height: 16px; }
+  /* Editar inscripción (neutro → accent al hover; NO rojo, no es destructivo). */
+  .carg-insc-edit { width: 30px; height: 30px; border: none; background: transparent; border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; margin-right: 2px; }
+  .carg-insc-edit:hover { background: var(--accent-bg); color: var(--accent); }
+  .carg-insc-edit svg { width: 16px; height: 16px; }
   .carg-insc-count { color: var(--text-muted); font-weight: 600; }
+  /* Modal de edición de inscripción (más ancho para el grid del form). */
+  .carg-modal--wide { max-width: 620px; }
+  /* Grid del modal de edición: 2 columnas ROBUSTAS. min-width:0 en los campos deja
+     que los tracks 1fr encojan → los .naowee-dropdown/.naowee-textfield no desbordan
+     el modal (el .carg-newform__grid de 3-col se salía y el overflow:hidden del modal
+     recortaba la 3ª columna). Campo --wide = fila completa. */
+  .carg-edit-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px 14px; }
+  .carg-edit-grid > * { min-width: 0; }
+  .carg-edit-grid .naowee-dropdown, .carg-edit-grid .naowee-textfield { width: 100%; min-width: 0; }
+  .carg-edit-grid .carg-field--wide { grid-column: span 2; }
+  @media (max-width: 560px) { .carg-edit-grid { grid-template-columns: 1fr; } .carg-edit-grid .carg-field--wide { grid-column: span 1; } }
 </style>
 
 </head>
@@ -437,7 +492,7 @@
 
 <script type="module">
   import { mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher, getRoleFromQuery, getIcon, ROLES, homeForRole } from './shared/sidebar.js';
-  import { allEvents, STATUS_LABEL, applyUpload, addUploadRecord, getFileVersions, addFileVersion, addInscritos, removeInscrito, GESTOR_MAP, resolveGestorId, eventsForGestor, gestorIdForRole } from './shared/events-data.js';
+  import { allEvents, STATUS_LABEL, applyUpload, addUploadRecord, getFileVersions, addFileVersion, addInscritos, removeInscrito, updateInscrito, getResultPositions, setResultPosition, positionKey, GESTOR_MAP, resolveGestorId, eventsForGestor, gestorIdForRole } from './shared/events-data.js';
   import { GESTORES, DEPORTES_POR_TIPO, DEPARTAMENTOS } from './shared/catalogo.js';
   import { effectiveRoster } from './shared/roster-data.js';
 
@@ -685,6 +740,25 @@
     });
   }
 
+  /* Estado cuando el sub-modo Individuales solo tendría atletas de conjunto: esos
+     resultados/medallas se registran POR EQUIPO → redirige al modo Equipos. */
+  function conjuntoOnlyState(container, kind) {
+    const verbo = kind === 'medalleria' ? 'Las medallas' : 'Los resultados';
+    container.innerHTML = `
+      <div class="carg-card">
+        <div class="empty-state">
+          <div class="empty-state__icon">${I.users}</div>
+          <p class="empty-state__title">Solo hay deportes de conjunto</p>
+          <p class="empty-state__desc">${verbo} de este evento se registran <strong>por equipo</strong>, no por deportista. Usa el modo <strong>Equipos · conjunto</strong>.</p>
+          <button class="naowee-btn naowee-btn--loud naowee-btn--sm" id="goEqBtn" type="button">${I.layers} Ir a Equipos · conjunto</button>
+        </div>
+      </div>`;
+    container.querySelector('#goEqBtn')?.addEventListener('click', () => {
+      const eqTab = document.querySelector('#scopeSegment .naowee-segment__item[data-val="eq"]');
+      if (eqTab) eqTab.click();
+    });
+  }
+
   /* Nota de muestreo: la captura manual trabaja sobre una muestra de los inscritos
      cuando el total es grande (el total real se mantiene en el detalle/dashboard). */
   function sampleNote(shown) {
@@ -701,6 +775,47 @@
   const _normDep = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
   const CONJUNTO_SET = new Set((DEPORTES_POR_TIPO.Conjunto || []).map((d) => _normDep(d.label)));
   const isConjuntoDeporte = (dep) => CONJUNTO_SET.has(_normDep(dep));
+  /* ¿El evento es MULTIDEPORTE? (puede incluir disciplinas de conjunto). */
+  const eventEsMultideporte = (e) => _normDep(e && e.sport).startsWith('multideporte');
+  /* ¿El evento admite deportes de conjunto? (multideporte, deporte de conjunto en el
+     encabezado, o la etiqueta "· Conjunto" del sport). Feedback reunión 03-jul: los
+     deportes de conjunto se registran POR EQUIPO, sin inscripción previa. */
+  const eventAdmiteConjunto = (e) => {
+    if (!e) return false;
+    if (eventEsMultideporte(e)) return true;
+    const head = String(e.sport || '').split('·')[0].trim();
+    return isConjuntoDeporte(head) || _normDep(e.sport).includes('conjunto');
+  };
+  /* Deportes de conjunto disponibles para el evento: multideporte → todos;
+     evento de un solo deporte de conjunto → ese deporte. */
+  const conjuntoDeportesForEvent = (e) => {
+    const all = DEPORTES_POR_TIPO.Conjunto || [];
+    if (eventEsMultideporte(e)) return all;
+    const head = String((e && e.sport) || '').split('·')[0].trim();
+    const exact = all.find((d) => _normDep(d.label) === _normDep(head));
+    if (exact) return [exact];
+    const partial = all.find((d) => _normDep(head).includes(_normDep(d.label)) || _normDep(d.label).includes(_normDep(head)));
+    return partial ? [partial] : all;
+  };
+
+  /* El "resultado" NO es genérico: depende del deporte + prueba (feedback Doug —
+     en Pesas es kg, no "Marca"). Devuelve {label, ph} para el campo/columna. */
+  function resultMeta(deporte, prueba) {
+    const d = _normDep(deporte), p = _normDep(prueba);
+    const hp = (...ks) => ks.some((k) => p.includes(k));
+    if (d.includes('pesas') || d.includes('halterofilia') || hp('arranque', 'envion', 'total olimp')) return { label: 'Kilogramos', ph: 'ej: 145 kg' };
+    if (hp('salto', 'impulso', 'lanzamiento', 'bala', 'jabalina', 'disco', 'martillo', 'garrocha')) return { label: 'Marca (distancia)', ph: 'ej: 5.92 m' };
+    if (hp('combate', 'kumite')) return { label: 'Resultado (combate)', ph: 'ej: gana 2-1' };
+    if (hp('poomsae', 'kata')) return { label: 'Puntaje (jueces)', ph: 'ej: 8.50' };
+    if (d.includes('ajedrez')) return { label: 'Puntos', ph: 'ej: 6.5' };
+    if (d.includes('boccia')) return { label: 'Puntos', ph: 'ej: 6' };
+    if (d.includes('badminton') || d.includes('tenis de mesa')) return { label: 'Sets / marcador', ph: 'ej: 2-1' };
+    if (isConjuntoDeporte(deporte)) return { label: 'Resultado', ph: 'ej: 3-1 · 3-0 sets' };
+    if (hp('mts', 'mtrs', 'km', 'relevo', 'libre', 'espalda', 'pecho', 'mariposa', 'combinado', 'ruta', 'cri', 'sprint', 'meta contra meta', 'circuito')) return { label: 'Tiempo', ph: 'ej: 11.84 s' };
+    return { label: 'Marca / Resultado', ph: 'ej: —' };
+  }
+  /* Medalla que corresponde a un puesto de podio (1/2/3); null si fuera de podio. */
+  const MEDAL_BY_POS = { 1: 'oro', 2: 'plata', 3: 'bronce' };
 
   /* ─── Toast ─── */
   let _toastT = null;
@@ -743,6 +858,7 @@
   /* ─── Estado ─── */
   let activeTipo = TIPOS.includes(tipoParam) ? tipoParam : 'inscripciones';
   let activeMode = 'masivo';      // 'masivo' | 'manual'
+  let manualScope = 'ind';        // 'ind' | 'eq' — sub-modo manual en eventos multideporte (individuales|equipos)
   let selectedFile = null;
   let parseResults = null;
   let newDraft = {};              // borrador del form "nuevo deportista"
@@ -927,6 +1043,7 @@
         if (val === activeTipo) return;
         activeTipo = val;
         activeMode = 'masivo';
+        manualScope = 'ind';
         selectedFile = null; parseResults = null;
         newDraft = {};
         document.querySelectorAll('#tipoTabs .naowee-tab').forEach((t) => {
@@ -955,7 +1072,7 @@
       panel.innerHTML = `
         <div class="naowee-message naowee-message--informative" style="margin-bottom:18px">
           <div class="naowee-message__header">
-            <span class="naowee-message__icon"><svg viewBox="0 0 16 16" fill="none"><path d="M7 7h2v4H7z" fill="#fff"/><circle cx="8" cy="5" r="1" fill="#fff"/></svg></span>
+            <span class="naowee-message__icon"><svg viewBox="0 0 16 16" fill="none"><path d="M7 7h2v4H7z" fill="currentColor"/><circle cx="8" cy="5" r="1" fill="currentColor"/></svg></span>
             <span class="naowee-message__body">Evento <strong>finalizado</strong> · los cargues están cerrados (solo lectura). Puedes consultar los archivos ya cargados.</span>
           </div>
         </div>
@@ -970,7 +1087,7 @@
     const borradorNote = ev.status === 'borrador'
       ? `<div class="naowee-message naowee-message--caution" style="margin-bottom:18px">
            <div class="naowee-message__header">
-             <span class="naowee-message__icon"><svg viewBox="0 0 16 16" fill="none"><path d="M7 5h2v4H7z" fill="#fff"/><circle cx="8" cy="11" r="1" fill="#fff"/></svg></span>
+             <span class="naowee-message__icon"><svg viewBox="0 0 16 16" fill="none"><path d="M7 5h2v4H7z" fill="currentColor"/><circle cx="8" cy="11" r="1" fill="currentColor"/></svg></span>
              <span class="naowee-message__body">Evento en <strong>borrador</strong>. Puedes adelantar los cargues de <strong>${esc(cfg.label.toLowerCase())}</strong>; el evento se activará automáticamente el <strong>${esc(ev.start)}</strong>.</span>
            </div>
          </div>`
@@ -1011,7 +1128,29 @@
   function renderMasivo(container, cfg) {
     /* Mismo invariante que el modo manual: resultados y medallería (masivo o
        manual) SOLO se cargan sobre un evento con inscritos. Sin inscripciones
-       → estado vacío también por la vía masiva (no basta con la plantilla). */
+       → estado vacío también por la vía masiva (no basta con la plantilla).
+       EXCEPCIÓN (reunión 03-jul): los eventos de PURO conjunto se registran por
+       equipo sin inscripción previa → no se bloquean por roster vacío. */
+    const pureConjunto = eventAdmiteConjunto(ev) && !eventEsMultideporte(ev);
+    /* Puro conjunto: la carga masiva por-persona NO aplica (el registro es por equipo;
+       la masiva de equipos vive en backend/S3). Se redirige al modo Manual · Equipos,
+       único flujo coherente en la demo → evita el callejón de la plantilla individual. */
+    if (activeTipo !== 'inscripciones' && pureConjunto) {
+      container.innerHTML = `
+        <div class="carg-card">
+          <div class="empty-state">
+            <div class="empty-state__icon">${I.layers}</div>
+            <p class="empty-state__title">Deporte de conjunto — se registra por equipo</p>
+            <p class="empty-state__desc">${activeTipo === 'medalleria' ? 'Las medallas' : 'Los resultados'} de conjunto no se cargan con la plantilla por deportista. Regístralos por <strong>equipo</strong> en el modo <strong>Manual</strong>.</p>
+            <button class="naowee-btn naowee-btn--loud naowee-btn--sm" id="goManualEq" type="button">${I.users} Ir a captura manual</button>
+          </div>
+        </div>`;
+      container.querySelector('#goManualEq')?.addEventListener('click', () => {
+        const m = document.querySelector('#modeSegment .naowee-segment__item[data-val="manual"]');
+        if (m) m.click();
+      });
+      return;
+    }
     if (activeTipo !== 'inscripciones' && !effectiveRoster(ev).length) {
       rosterEmptyState(container, activeTipo === 'medalleria' ? 'Las medallas' : 'Los resultados');
       return;
@@ -1251,10 +1390,48 @@
 
   /* ═══ MODO MANUAL ═══ */
   function renderManual(container, cfg) {
-    if (cfg.manualMode === 'search') renderManualSearch(container, cfg);
-    else if (activeTipo === 'ranking' && ev && ev.alcance === 'internacional') renderManualRankingIntl(container);
-    else if (activeTipo === 'medalleria') renderManualMedalleria(container, cfg);
+    if (cfg.manualMode === 'search') { renderManualSearch(container, cfg); return; }
+    const kind = activeTipo === 'medalleria' ? 'medalleria' : 'ranking';
+    /* Deportes de conjunto → captura POR EQUIPO (sin inscripción previa). Tiene
+       prioridad sobre el flujo internacional (igual que la vía masiva) para que un
+       evento de conjunto internacional también llegue a la captura por equipos.
+       Multideporte: sub-segmento Individuales|Equipos; puro conjunto: solo equipos. */
+    if (eventAdmiteConjunto(ev)) {
+      if (eventEsMultideporte(ev)) renderManualDual(container, cfg, kind);
+      else renderManualEquipo(container, cfg, kind);
+      return;
+    }
+    /* Internacional (ranking, eventos individuales): flujo de ficticios. */
+    if (activeTipo === 'ranking' && ev && ev.alcance === 'internacional') { renderManualRankingIntl(container); return; }
+    if (activeTipo === 'medalleria') renderManualMedalleria(container, cfg);
     else renderManualGrid(container, cfg);
+  }
+
+  /* Eventos multideporte: el manual permite capturar INDIVIDUALES (roster) o
+     EQUIPOS (conjunto). Un sub-segmento canónico alterna entre ambos. */
+  function renderManualDual(container, cfg, kind) {
+    container.innerHTML = `
+      <div class="carg-eq-scopebar">
+        <div class="naowee-segment" data-segmented id="scopeSegment" role="tablist" aria-label="Individuales o equipos">
+          <span class="naowee-segment__pill" aria-hidden="true"></span>
+          <button class="naowee-segment__item" data-val="ind" type="button" role="tab" id="scopeTabInd" aria-selected="${manualScope === 'ind'}">Individuales</button>
+          <button class="naowee-segment__item" data-val="eq" type="button" role="tab" id="scopeTabEq" aria-selected="${manualScope === 'eq'}">Equipos · conjunto</button>
+        </div>
+      </div>
+      <div id="scopeBody" role="tabpanel" aria-labelledby="scopeTabInd"></div>`;
+    const body = container.querySelector('#scopeBody');
+    const paint = () => {
+      body.setAttribute('aria-labelledby', manualScope === 'eq' ? 'scopeTabEq' : 'scopeTabInd');
+      if (manualScope === 'eq') renderManualEquipo(body, cfg, kind);
+      else if (kind === 'medalleria') renderManualMedalleria(body, cfg);
+      else renderManualGrid(body, cfg);
+    };
+    bindSegment(container.querySelector('#scopeSegment'), () => manualScope, (val) => {
+      if (val === manualScope) return;
+      manualScope = val;
+      paint();
+    });
+    paint();
   }
 
   /* ═══ MEDALLERÍA MANUAL (rediseño, feedback Juanma 25-jun) ═══
@@ -1272,29 +1449,48 @@
     { k: 'posicion', l: 'Posición', num: true }, { k: 'marca', l: 'Marca/Tiempo' }
   ];
   function renderManualMedalleria(container, cfg) {
-    const rows = effectiveRoster(ev);
-    if (!rows.length) { rosterEmptyState(container, 'Las medallas'); return; }
-    const hasConjunto = rows.some((r) => isConjuntoDeporte(r.deporte));
+    /* Los atletas de deportes de conjunto NO se medallan individualmente aquí (la
+       medalla de equipo es UNA): se excluyen del listado y van al modo Equipos. */
+    const fullRoster = effectiveRoster(ev);
+    const rows = fullRoster.filter((r) => !isConjuntoDeporte(r.deporte));
+    const hasConjunto = fullRoster.some((r) => isConjuntoDeporte(r.deporte));
+    if (!rows.length) { if (hasConjunto) { conjuntoOnlyState(container, 'medalleria'); return; } rosterEmptyState(container, 'Las medallas'); return; }
     const medals = {};   // id -> 'oro' | 'plata' | 'bronce'
-    const medalRow = (r) => `
+    /* Liga con Resultados: la posición registrada en el ranking restringe la medalla
+       (fuera de podio = sin medalla; 1/2/3 = solo la que corresponde). Sin resultado → libre. */
+    const positions = getResultPositions(selectedEventId);
+    const hasPositions = Object.keys(positions).length > 0;
+    const posOf = (r) => { const e = positions[positionKey({ nroDoc: r.nroDoc, deporte: r.deporte, prueba: r.prueba })]; const n = e ? parseInt(e.posicion, 10) : NaN; return Number.isFinite(n) ? n : null; };
+    const medalRow = (r) => {
+      const pos = posOf(r);
+      const podiumMedal = pos != null ? MEDAL_BY_POS[pos] : null;   // oro/plata/bronce · undefined si >3
+      const locked = pos != null;                                   // hay resultado → la medalla la manda el puesto
+      const btn = (m, emoji, label) => {
+        const dis = locked && m !== podiumMedal;
+        return `<button type="button" class="carg-medal ${medals[r.id] === m ? 'is-selected' : ''}" data-medal="${m}" data-id="${r.id}" title="${label}"${dis ? ' disabled aria-disabled="true"' : ''}>${emoji}</button>`;
+      };
+      const posTag = pos == null ? '' : (podiumMedal
+        ? `<span class="carg-med-postag carg-med-postag--podio">Puesto ${pos}</span>`
+        : `<span class="carg-med-postag carg-med-postag--out">Puesto ${pos} · fuera de podio</span>`);
+      return `
       <div class="carg-med-row" data-id="${r.id}">
         <div class="carg-med-row__info">
-          <div class="carg-med-row__name">${esc(r.nombre)}</div>
+          <div class="carg-med-row__name">${esc(r.nombre)}${posTag}</div>
           <div class="carg-med-row__sub">${rosterSub(r)}${r.organizacion ? ' · ' + esc(r.organizacion) : ''}</div>
         </div>
         <div class="carg-med-picker" role="group" aria-label="Medalla de ${esc(r.nombre)}">
-          <button type="button" class="carg-medal ${medals[r.id] === 'oro' ? 'is-selected' : ''}" data-medal="oro" data-id="${r.id}" title="Oro">🥇</button>
-          <button type="button" class="carg-medal ${medals[r.id] === 'plata' ? 'is-selected' : ''}" data-medal="plata" data-id="${r.id}" title="Plata">🥈</button>
-          <button type="button" class="carg-medal ${medals[r.id] === 'bronce' ? 'is-selected' : ''}" data-medal="bronce" data-id="${r.id}" title="Bronce">🥉</button>
+          ${btn('oro', '🥇', 'Oro')}${btn('plata', '🥈', 'Plata')}${btn('bronce', '🥉', 'Bronce')}
         </div>
       </div>`;
+    };
     container.innerHTML = `
       <div class="carg-card">
         <div class="carg-card__head"><div>
           <h3 class="carg-card__title">Captura manual — Medallería</h3>
           <p class="carg-card__sub">Busca al deportista y asígnale su medalla en la competencia. El medallero por organismo se calcula solo.${sampleNote(rows.length)}</p>
         </div></div>
-        ${hasConjunto ? `<div class="naowee-message naowee-message--caution" style="margin-bottom:14px"><div class="naowee-message__header"><span class="naowee-message__icon">${I.bang}</span><span class="naowee-message__body">Este evento incluye <strong>deportes de conjunto</strong>: la medalla de equipo es <strong>una sola</strong>, no una por integrante. Regístrala una vez por equipo para no inflar el medallero. <em>El armado de grupos está en definición con negocio.</em></span></div></div>` : ''}
+        ${hasConjunto ? `<div class="naowee-message naowee-message--caution" style="margin-bottom:14px"><div class="naowee-message__header"><span class="naowee-message__icon">${I.bang}</span><span class="naowee-message__body">Este evento incluye <strong>deportes de conjunto</strong>: la medalla de equipo es <strong>una sola</strong>, no una por integrante. Regístrala en el modo <strong>Equipos · conjunto</strong> (arriba), no aquí por deportista.</span></div></div>` : ''}
+        ${hasPositions ? `<div class="naowee-message naowee-message--informative" style="margin-bottom:14px"><div class="naowee-message__header"><span class="naowee-message__icon"><svg viewBox="0 0 16 16" fill="none"><path d="M7 7h2v4H7z" fill="currentColor"/><circle cx="8" cy="5" r="1" fill="currentColor"/></svg></span><span class="naowee-message__body">Las medallas respetan el <strong>ranking</strong>: solo el <strong>podio (1-3)</strong> recibe medalla, y oro/plata/bronce según el puesto. Los deportistas fuera de podio quedan bloqueados.</span></div></div>` : ''}
         <div class="carg-search-row" style="margin-bottom:14px">
           <div class="naowee-searchbox" id="medSearch" style="max-width:480px;flex:1 1 260px">
             <div class="naowee-searchbox__input-wrap">
@@ -1342,6 +1538,7 @@
     };
     function bindMedals() {
       list.querySelectorAll('.carg-medal').forEach((b) => b.addEventListener('click', () => {
+        if (b.disabled) return;   // medalla bloqueada por el puesto del ranking
         const id = b.dataset.id, m = b.dataset.medal;
         if (medals[id] === m) delete medals[id]; else medals[id] = m;
         b.closest('.carg-med-row').querySelectorAll('.carg-medal').forEach((x) => x.classList.toggle('is-selected', medals[id] === x.dataset.medal));
@@ -1376,6 +1573,216 @@
     sync();
   }
 
+  /* ═══ CAPTURA POR EQUIPOS — deportes de conjunto (feedback reunión 03-jul) ═══
+     Los deportes de conjunto se registran POR EQUIPO, sin inscripción previa: se
+     crea el resultado/medalla del equipo (organización) en su competencia y,
+     opcionalmente, se asocian los integrantes al grupo. La medalla es UNA por
+     equipo (no una por integrante). Reusa la misma función para ranking y
+     medallería (kind); persiste como versión de archivo igual que los demás. */
+  const EQ_RANK_COLS = [
+    { k: 'organizacion', l: 'Equipo / Organización' }, { k: 'deporte', l: 'Deporte' },
+    { k: 'prueba', l: 'Prueba' }, { k: 'posicion', l: 'Posición', num: true },
+    { k: 'marca', l: 'Resultado / Marca' }, { k: 'integrantes', l: 'Integrantes' }
+  ];
+  const EQ_MED_COLS = [
+    { k: 'organizacion', l: 'Equipo / Organización' }, { k: 'deporte', l: 'Deporte' },
+    { k: 'prueba', l: 'Prueba' }, { k: 'medalla', l: 'Medalla' }, { k: 'integrantes', l: 'Integrantes' }
+  ];
+  const _cap = (s) => String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1);
+
+  function renderManualEquipo(container, cfg, kind) {
+    const isMed = kind === 'medalleria';
+    const storeTipo = isMed ? 'med' : 'res';
+    const deportes = conjuntoDeportesForEvent(ev);
+    const multi = deportes.length > 1;
+    const pruebasDe = (label) => { const d = deportes.find((x) => x.label === label); return (d && d.pruebas && d.pruebas.length) ? d.pruebas : ['EQUIPOS']; };
+    const teams = [];   // equipos staged (por guardar)
+    const form = { deporte: multi ? '' : deportes[0].label, prueba: multi ? '' : pruebasDe(deportes[0].label)[0], organizacion: '', posicion: '', marca: '', medalla: '', integrantes: [] };
+
+    container.innerHTML = `
+      <div class="carg-card">
+        <div class="carg-card__head"><div>
+          <h3 class="carg-card__title">Captura manual — ${isMed ? 'Medallería de equipos' : 'Resultado de equipos'}</h3>
+          <p class="carg-card__sub">Los deportes de conjunto se registran por equipo, sin inscripción previa. Crea el ${isMed ? 'equipo con su medalla' : 'resultado del equipo'} y, si quieres, asocia a sus integrantes.</p>
+        </div></div>
+        <div class="naowee-message naowee-message--informative" style="margin-bottom:16px">
+          <div class="naowee-message__header">
+            <span class="naowee-message__icon"><svg viewBox="0 0 16 16" fill="none"><path d="M7 7h2v4H7z" fill="currentColor"/><circle cx="8" cy="5" r="1" fill="currentColor"/></svg></span>
+            <span class="naowee-message__body">Evento con <strong>deportes de conjunto</strong>: registra el ${isMed ? 'la medalla del' : 'resultado del'} <strong>equipo</strong> (no hace falta inscribir a cada integrante). ${isMed ? 'La medalla de equipo es <strong>una sola</strong>.' : ''} Puedes asociar a los participantes en el mismo formulario.</span>
+          </div>
+        </div>
+        <div class="carg-eq-form" id="eqForm">
+          <div class="carg-eq-form__title">${I.userPlus} Nuevo ${isMed ? 'equipo con medalla' : 'resultado de equipo'}</div>
+          <div class="carg-eq-grid">
+            ${multi
+              ? ddFieldHTML('deporte', 'Deporte', 'Selecciona…', true)
+              : `<div class="carg-field"><label class="naowee-textfield__label">Deporte</label><div class="carg-eq-fixed">${esc(form.deporte)}</div></div>`}
+            <div class="carg-field" data-prueba-slot></div>
+            ${ddFieldHTML('organizacion', 'Equipo / Organización', 'Busca la liga/club…', true)}
+            ${isMed
+              ? `<div class="carg-field carg-eq-medalfield">
+                   <label class="naowee-textfield__label naowee-textfield__label--required">Medalla</label>
+                   <div class="carg-med-picker" role="group" aria-label="Medalla del equipo" id="eqMedalPicker">
+                     <button type="button" class="carg-medal" data-medal="oro" title="Oro">🥇</button>
+                     <button type="button" class="carg-medal" data-medal="plata" title="Plata">🥈</button>
+                     <button type="button" class="carg-medal" data-medal="bronce" title="Bronce">🥉</button>
+                   </div>
+                 </div>`
+              : `${tfFieldHTML('posicion', 'Posición', 'ej: 1', true)}${tfFieldHTML('marca', 'Resultado / Marca', 'ej: 3-1 · 3-0 sets', false)}`}
+          </div>
+          <div class="carg-eq-members">
+            <div class="carg-eq-members__title">Integrantes del equipo · opcional</div>
+            <div class="carg-eq-members__row">
+              <div class="carg-field naowee-textfield"><label class="naowee-textfield__label">Nombre del integrante</label><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" type="text" id="memNombre" placeholder="Nombre y apellidos" autocomplete="off"></div></div>
+              <div class="carg-field naowee-textfield"><label class="naowee-textfield__label">Documento</label><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" type="text" id="memDoc" placeholder="ej: CC 1052…" autocomplete="off"></div></div>
+              <button class="naowee-btn naowee-btn--ghost naowee-btn--sm" type="button" id="memAdd">${I.userPlus} Agregar</button>
+            </div>
+            <div class="carg-eq-chips" id="memChips"></div>
+          </div>
+          <div class="carg-eq-foot">
+            <button class="naowee-btn naowee-btn--ghost naowee-btn--sm" type="button" id="eqAddBtn" disabled>${I.check} Agregar equipo</button>
+          </div>
+        </div>
+
+        <div class="carg-eq-staged" id="eqStaged"></div>
+
+        ${isMed ? `<div class="carg-med-orgpanel"><div class="carg-med-orgpanel__title">Medallero por organización <span class="carg-med-orgpanel__hint">· se calcula solo</span></div><div id="eqOrgTally"></div></div>` : ''}
+
+        <div class="carg-med-foot" style="margin-top:18px">
+          <span class="carg-med-count" id="eqCount">0 equipos en la lista</span>
+          <button class="naowee-btn naowee-btn--loud" id="eqSaveBtn" disabled>${I.check} Guardar ${isMed ? 'medallería' : 'resultados'}</button>
+        </div>
+      </div>`;
+
+    const addBtn = container.querySelector('#eqAddBtn');
+    const saveBtn = container.querySelector('#eqSaveBtn');
+    const stagedEl = container.querySelector('#eqStaged');
+    const countEl = container.querySelector('#eqCount');
+    const tallyEl = container.querySelector('#eqOrgTally');
+    const chipsEl = container.querySelector('#memChips');
+    const pruebaSlot = container.querySelector('[data-prueba-slot]');
+    const memNombre = container.querySelector('#memNombre');
+    const memDoc = container.querySelector('#memDoc');
+
+    /* Prueba = campo fijo derivado del deporte (conjunto → 'EQUIPOS'). */
+    const setPruebaDisplay = () => {
+      const p = form.prueba;
+      pruebaSlot.innerHTML = `<label class="naowee-textfield__label">Prueba</label><div class="carg-eq-fixed">${p ? esc(p) : '<span style="color:var(--text-muted);font-weight:500">Elige el deporte…</span>'}</div>`;
+    };
+    const canAdd = () => !!(form.deporte && form.prueba && form.organizacion && (isMed ? form.medalla : String(form.posicion).trim()));
+    const syncAdd = () => { addBtn.disabled = !canAdd(); };
+
+    if (multi) {
+      setupDropdown(container.querySelector('[data-dd="deporte"]'), deportes.map((d) => ({ value: d.label, label: d.label, emoji: d.emoji })), () => form.deporte, (v) => { form.deporte = v; form.prueba = pruebasDe(v)[0] || 'EQUIPOS'; setPruebaDisplay(); syncAdd(); });
+    }
+    const orgDd = setupDropdown(container.querySelector('[data-dd="organizacion"]'), ORGS_LIST, () => form.organizacion, (v) => { form.organizacion = v; syncAdd(); });
+
+    if (isMed) {
+      const picker = container.querySelector('#eqMedalPicker');
+      picker.querySelectorAll('.carg-medal').forEach((b) => b.addEventListener('click', () => {
+        const m = b.dataset.medal;
+        form.medalla = form.medalla === m ? '' : m;
+        picker.querySelectorAll('.carg-medal').forEach((x) => x.classList.toggle('is-selected', x.dataset.medal === form.medalla));
+        syncAdd();
+      }));
+    } else {
+      container.querySelector('[data-tf="posicion"] .naowee-textfield__input').addEventListener('input', (e) => { form.posicion = e.target.value; syncAdd(); });
+      container.querySelector('[data-tf="marca"] .naowee-textfield__input').addEventListener('input', (e) => { form.marca = e.target.value; });
+    }
+
+    /* ── Integrantes (asociar participantes al grupo) ── */
+    const renderChips = () => {
+      chipsEl.innerHTML = form.integrantes.map((m, i) => `<span class="carg-eq-chip">${esc(m.nombre)}${m.doc ? ` <span class="carg-eq-chip__doc">${esc(m.doc)}</span>` : ''}<button type="button" class="carg-eq-chip__x" data-rm="${i}" aria-label="Quitar integrante">${I.x}</button></span>`).join('');
+      chipsEl.querySelectorAll('[data-rm]').forEach((b) => b.addEventListener('click', () => { form.integrantes.splice(Number(b.dataset.rm), 1); renderChips(); }));
+    };
+    const addMember = () => {
+      const nombre = (memNombre.value || '').trim();
+      if (!nombre) { flash('Escribe el nombre del integrante.', 'error'); memNombre.focus(); return; }
+      form.integrantes.push({ nombre, doc: (memDoc.value || '').trim() });
+      memNombre.value = ''; memDoc.value = ''; renderChips(); memNombre.focus();
+    };
+    container.querySelector('#memAdd').addEventListener('click', addMember);
+    memDoc.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addMember(); } });
+
+    /* ── Lista de equipos por guardar (staged) + medallero en vivo ── */
+    const compKey = (t) => `${_normDep(t.deporte)}·${_normDep(t.prueba)}`;
+    const stagedRow = (t, i) => {
+      const meta = isMed
+        ? `<td data-label="Medalla"><span class="carg-eq-medaltag">${MED_EMOJI[t.medalla]} ${_cap(t.medalla)}</span></td>`
+        : `<td data-label="Posición" class="num">${esc(t.posicion)}</td><td data-label="Resultado">${esc(t.marca || '—')}</td>`;
+      return `<tr>
+        <td data-label="Equipo">${esc(t.organizacion)}</td>
+        <td data-label="Deporte">${esc(t.deporte)}</td>
+        <td data-label="Prueba">${esc(t.prueba)}</td>
+        ${meta}
+        <td data-label="Integrantes">${t.integrantes.length ? esc(t.integrantes.map((m) => m.nombre).join(', ')) : '—'}</td>
+        <td style="text-align:right"><button class="carg-eq-del" type="button" data-rm-team="${i}" aria-label="Quitar equipo">${I.trash}</button></td>
+      </tr>`;
+    };
+    const renderTally = () => {
+      if (!isMed || !tallyEl) return;
+      const t = {};
+      teams.forEach((tm) => { const o = tm.organizacion || 'Sin organización'; (t[o] = t[o] || { oro: 0, plata: 0, bronce: 0 })[tm.medalla]++; });
+      const orgs = Object.keys(t).sort();
+      tallyEl.innerHTML = orgs.length
+        ? orgs.map((o) => `<div class="carg-tally-row"><span class="carg-tally-org">${esc(o)}</span><span class="carg-tally-medals">${['oro', 'plata', 'bronce'].filter((k) => t[o][k]).map((k) => `${MED_EMOJI[k]} ${t[o][k]}`).join('&nbsp;&nbsp;') || '—'}</span></div>`).join('')
+        : '<p class="carg-tally-empty">Agrega equipos con medalla y verás aquí el medallero por organización, automáticamente.</p>';
+    };
+    const renderStaged = () => {
+      const head = isMed
+        ? `<th>Equipo / Organización</th><th>Deporte</th><th>Prueba</th><th>Medalla</th><th>Integrantes</th><th></th>`
+        : `<th>Equipo / Organización</th><th>Deporte</th><th>Prueba</th><th>Posición</th><th>Resultado</th><th>Integrantes</th><th></th>`;
+      stagedEl.innerHTML = teams.length ? `
+        <div class="carg-eq-staged__title">${I.layers} Equipos por guardar (${teams.length})</div>
+        <div class="carg-data-scroll"><table class="naowee-table--in-card"><thead><tr>${head}</tr></thead><tbody>${teams.map(stagedRow).join('')}</tbody></table></div>` : '';
+      stagedEl.querySelectorAll('[data-rm-team]').forEach((b) => b.addEventListener('click', () => { teams.splice(Number(b.dataset.rmTeam), 1); refresh(); }));
+      const n = teams.length;
+      countEl.textContent = `${n} equipo${n !== 1 ? 's' : ''} en la lista`;
+      saveBtn.disabled = n === 0;
+      renderTally();
+    };
+    const refresh = () => renderStaged();
+
+    addBtn.addEventListener('click', () => {
+      if (!canAdd()) return;
+      const ck = `${_normDep(form.deporte)}·${_normDep(form.prueba)}`;
+      if (isMed) {
+        if (teams.some((t) => compKey(t) === ck && t.medalla === form.medalla)) { flash(`Ya hay un equipo con medalla de ${form.medalla} en esa competencia.`, 'error'); return; }
+      } else {
+        const pos = String(form.posicion).trim();
+        if (teams.some((t) => compKey(t) === ck && String(t.posicion).trim() === pos)) { flash(`Ya hay un equipo en la posición ${pos} de esa competencia.`, 'error'); return; }
+      }
+      teams.push({ organizacion: form.organizacion, deporte: form.deporte, prueba: form.prueba, posicion: form.posicion, marca: form.marca, medalla: form.medalla, integrantes: form.integrantes.slice() });
+      /* Reset de los campos por-equipo (mantiene deporte/prueba para agregar rápido). */
+      form.organizacion = ''; form.posicion = ''; form.marca = ''; form.medalla = ''; form.integrantes = [];
+      if (orgDd) orgDd.reset();
+      if (isMed) { container.querySelectorAll('#eqMedalPicker .carg-medal').forEach((x) => x.classList.remove('is-selected')); }
+      else { const pi = container.querySelector('[data-tf="posicion"] .naowee-textfield__input'); const mi = container.querySelector('[data-tf="marca"] .naowee-textfield__input'); if (pi) pi.value = ''; if (mi) mi.value = ''; }
+      renderChips(); syncAdd(); refresh();
+      flash('Equipo agregado a la lista.');
+    });
+
+    saveBtn.addEventListener('click', () => {
+      if (!teams.length) return;
+      saveBtn.disabled = true;
+      const n = teams.length;
+      const ts = nowStamp();
+      const rows = teams.map((t) => isMed
+        ? { organizacion: t.organizacion, deporte: t.deporte, prueba: t.prueba, medalla: `${MED_EMOJI[t.medalla]} ${_cap(t.medalla)}`, integrantes: t.integrantes.length ? t.integrantes.map((m) => m.nombre).join(', ') : '—' }
+        : { organizacion: t.organizacion, deporte: t.deporte, prueba: t.prueba, posicion: t.posicion || '—', marca: t.marca || '—', integrantes: t.integrantes.length ? t.integrantes.map((m) => m.nombre).join(', ') : '—' });
+      applyUpload(selectedEventId, storeTipo, n);
+      addUploadRecord(selectedEventId, { tipo: isMed ? 'Medallería' : 'Ranking / Resultados', n, modeLabel: 'Manual · equipos', timestamp: ts });
+      addFileVersion(selectedEventId, storeTipo, { fileName: isMed ? 'Medallería de equipos' : 'Resultados de equipos', n, modeLabel: 'Manual · equipos', timestamp: ts, columns: isMed ? EQ_MED_COLS : EQ_RANK_COLS, rows });
+      flash(`✓ ${n} equipo${n !== 1 ? 's' : ''} guardado${n !== 1 ? 's' : ''} en ${isMed ? 'medallería' : 'resultados'}.`, 'success');
+      renderTabPanel();
+    });
+
+    setPruebaDisplay();
+    renderChips();
+    renderStaged();
+    syncAdd();
+  }
+
   /* ═══ RANKING INTERNACIONAL (feedback Juanma/Vanessa 25-jun) ═══
      En un evento internacional solo se sigue a los deportistas de Colombia.
      Para cada colombiano se registra su posición y se crean los participantes
@@ -1401,7 +1808,7 @@
         <div><div class="carg-intl-athlete__name">${esc(r.nombre)}</div><div class="carg-intl-athlete__sub">${rosterSub(r)}</div></div>
       </div>
       <div class="carg-intl-athlete__right">
-        <span class="carg-intl-athlete__status" data-status ${done ? '' : 'hidden'}>✓ Resultado registrado</span>
+        <span class="carg-intl-athlete__status" data-status ${done ? '' : 'hidden'}>✓ ${done && intlData[r.id] ? 'Puesto ' + esc(intlData[r.id].pos) : 'Resultado registrado'}</span>
         <button type="button" class="naowee-btn naowee-btn--ghost naowee-btn--sm" data-open="${r.id}">${done ? 'Editar' : 'Registrar resultado'}</button>
       </div>
     </div>`;
@@ -1420,7 +1827,7 @@
         </div>
         <div class="carg-intl-row2">
           <div class="carg-intl-field"><label>Nombre</label><input class="carg-intl-input" data-slot-nombre="${n}" placeholder="Nombre del participante"></div>
-          <div class="carg-intl-field"><label>Marca</label><input class="carg-intl-input" data-slot-marca="${n}" placeholder="ej: 10.4 s"></div>
+          <div class="carg-intl-field"><label data-slot-marca-label="${n}">Marca</label><input class="carg-intl-input" data-slot-marca="${n}" placeholder="ej: 10.4 s"></div>
         </div>
       </div>`;
     return `
@@ -1439,7 +1846,7 @@
             <div class="carg-intl-sec__title">Resultado del colombiano</div>
             <div class="carg-intl-row2">
               <div class="carg-intl-field"><label>Posición final</label><input class="carg-intl-input" id="colPos" type="number" min="1" placeholder="ej: 4"></div>
-              <div class="carg-intl-field"><label>Marca</label><input class="carg-intl-input" id="colMarca" placeholder="ej: 10.6 s"></div>
+              <div class="carg-intl-field"><label data-col-marca-label>Marca</label><input class="carg-intl-input" id="colMarca" placeholder="ej: 10.6 s"></div>
             </div>
           </section>
           <section>
@@ -1465,11 +1872,12 @@
         </div></div>
         <div class="naowee-message naowee-message--informative" style="margin-bottom:16px">
           <div class="naowee-message__header">
-            <span class="naowee-message__icon"><svg viewBox="0 0 16 16" fill="none"><path d="M7 7h2v4H7z" fill="#fff"/><circle cx="8" cy="5" r="1" fill="#fff"/></svg></span>
+            <span class="naowee-message__icon"><svg viewBox="0 0 16 16" fill="none"><path d="M7 7h2v4H7z" fill="currentColor"/><circle cx="8" cy="5" r="1" fill="currentColor"/></svg></span>
             <span class="naowee-message__body">Evento <strong>internacional</strong>: solo se hace seguimiento a los deportistas de Colombia 🇨🇴. Para cada uno, crea los <strong>participantes ficticios</strong> (país + nombre) del podio contra los que compitió.</span>
           </div>
         </div>
         <div class="carg-intl-list">${rows.map((r) => intlAthleteRow(r)).join('')}</div>
+        <div id="intlPreview"></div>
       </div>`;
     /* El drawer se monta en <body>: position:fixed dentro del card quedaba
        atrapado por un ancestro con transform (animación) → no cubría toda la
@@ -1481,6 +1889,22 @@
 
   function bindIntl(container, rows) {
     const drawer = document.getElementById('intlDrawer');
+    const previewEl = container.querySelector('#intlPreview');
+    /* Previsualización tipo TABLA de los resultados ya registrados (feedback Doug:
+       poder verlos sin tener que darle "Editar"). Read-only; se recalcula al guardar. */
+    const renderIntlPreview = () => {
+      if (!previewEl) return;
+      const done = rows.filter((r) => intlDone.has(r.id) && intlData[r.id]);
+      if (!done.length) { previewEl.innerHTML = ''; return; }
+      const medalN = ['🥇', '🥈', '🥉'];
+      const podioStr = (d) => [1, 2, 3].map((n) => { const s = (d.podio && d.podio[n]) || {}; const pa = (PAISES.find((x) => x.value === s.pais) || {}).label || ''; return s.nombre ? `${medalN[n - 1]} ${esc(pa)} ${esc(s.nombre)}`.trim() : ''; }).filter(Boolean).join(' · ') || '—';
+      previewEl.innerHTML = `
+        <div class="carg-eq-staged__title" style="margin-top:22px">${I.layers} Resultados registrados (${done.length})</div>
+        <div class="carg-data-scroll"><table class="naowee-table--in-card">
+          <thead><tr><th>Deportista 🇨🇴</th><th>Puesto</th><th>Resultado</th><th>Podio de la prueba</th></tr></thead>
+          <tbody>${done.map((r) => { const d = intlData[r.id]; return `<tr><td>${esc(r.nombre)}</td><td class="num">${esc(d.pos)}</td><td>${esc(d.marca || '—')}</td><td>${podioStr(d)}</td></tr>`; }).join('')}</tbody>
+        </table></div>`;
+    };
     const paisState = { 1: '', 2: '', 3: '' };
     let currentId = null;
     const paisLabel = (val) => (PAISES.find((p) => p.value === val) || {}).label || 'Selecciona país…';
@@ -1508,6 +1932,11 @@
       const r = rows.find((x) => x.id === id);
       drawer.querySelector('[data-drawer-name]').textContent = r.nombre;
       drawer.querySelector('[data-drawer-sub]').textContent = r.prueba ? `${r.deporte} · ${r.prueba}` : (r.deporte || '');
+      /* El resultado se etiqueta según deporte+prueba (no genérico "Marca"). */
+      const rm = resultMeta(r.deporte, r.prueba);
+      const colLbl = drawer.querySelector('[data-col-marca-label]'); if (colLbl) colLbl.textContent = rm.label;
+      const colM = drawer.querySelector('#colMarca'); if (colM) colM.placeholder = rm.ph;
+      [1, 2, 3].forEach((n) => { const l = drawer.querySelector(`[data-slot-marca-label="${n}"]`); if (l) l.textContent = rm.label; const i2 = drawer.querySelector(`[data-slot-marca="${n}"]`); if (i2) i2.placeholder = rm.ph; });
       if (intlData[id]) fillForm(intlData[id]); else clearForm();   // Editar reabre CON lo capturado
       drawer.hidden = false;
       void drawer.offsetWidth;           // reflow → commit del estado cerrado para que la transición del panel/overlay anime
@@ -1545,19 +1974,32 @@
       const row = container.querySelector(`.carg-intl-athlete[data-athlete="${currentId}"]`);
       if (row) {
         row.classList.add('is-done');
-        row.querySelector('[data-status]').hidden = false;
+        const st = row.querySelector('[data-status]'); st.hidden = false; st.textContent = '✓ Puesto ' + pos;
         row.querySelector('[data-open]').textContent = 'Editar';
       }
+      /* Liga con Medallería: la posición del colombiano restringe su medalla. */
+      const rAth = rows.find((x) => x.id === currentId);
+      if (rAth) setResultPosition(selectedEventId, { nroDoc: rAth.nroDoc, deporte: rAth.deporte, prueba: rAth.prueba, posicion: pos, deportista: rAth.nombre });
       close();
       if (!wasDone) {   // solo suma la primera vez; "Editar" no re-suma al contador
         applyUpload(selectedEventId, 'res', 1);
         addUploadRecord(selectedEventId, { tipo: 'Ranking / Resultados', n: 1, modeLabel: 'Manual · internacional', timestamp: nowStamp() });
       }
+      renderIntlPreview();
       flash(wasDone ? '✓ Resultado actualizado.' : '✓ Resultado internacional registrado.', 'success');
     });
+    renderIntlPreview();   // muestra los ya registrados al montar (persisten en la sesión)
   }
 
   /* ── Dropdown flotante canónico (reusable para el form de nuevo deportista) ── */
+  /* Cierra cualquier otro dropdown abierto → solo UNO abierto a la vez (feedback Doug). */
+  function closeOtherDropdowns(except) {
+    document.querySelectorAll('.naowee-dropdown.is-open').forEach((d) => {
+      if (d === except) return;
+      d.classList.remove('is-open');
+      d.querySelector('.naowee-dropdown__trigger')?.setAttribute('aria-expanded', 'false');
+    });
+  }
   function setupDropdown(ddEl, opts, getVal, onSelect) {
     if (!ddEl) return;
     const trigger = ddEl.querySelector('.naowee-dropdown__trigger');
@@ -1581,12 +2023,27 @@
           valEl.textContent = o ? o.label : '';
           valEl.classList.remove('is-placeholder');
           ddEl.classList.remove('is-open');
+          trigger.setAttribute('aria-expanded', 'false');
           onSelect(b.dataset.val, o);
         });
       });
     }
-    trigger.addEventListener('click', (e) => { e.stopPropagation(); const open = ddEl.classList.toggle('is-open'); if (open) paint(); });
-    document.addEventListener('click', (e) => { if (!ddEl.contains(e.target)) ddEl.classList.remove('is-open'); });
+    trigger.setAttribute('aria-expanded', 'false');
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const willOpen = !ddEl.classList.contains('is-open');
+      if (willOpen) closeOtherDropdowns(ddEl);          // solo un dropdown abierto a la vez
+      ddEl.classList.toggle('is-open', willOpen);
+      trigger.setAttribute('aria-expanded', String(willOpen));
+      if (willOpen) paint();
+    });
+    /* Handler nombrado con auto-limpieza: si el dropdown ya no está en el DOM (tras
+       re-render) se desuscribe solo → evita fuga de listeners de document (auditoría). */
+    function onDocClick(e) {
+      if (!ddEl.isConnected) { document.removeEventListener('click', onDocClick); return; }
+      if (!ddEl.contains(e.target)) { ddEl.classList.remove('is-open'); trigger.setAttribute('aria-expanded', 'false'); }
+    }
+    document.addEventListener('click', onDocClick);
     return { reset() { valEl.textContent = placeholder; valEl.classList.add('is-placeholder'); } };
   }
 
@@ -1669,10 +2126,11 @@
   /* ═══ Panel "Deportistas inscritos" con filtros + eliminar (#2, #5) —
      reemplaza a "archivos cargados" en la pestaña Inscripciones ═══ */
   let inscFilter = { deporte: '', prueba: '', q: '' };
+  const ICON_EDIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>';
   const inscRowHTML = (r) => `<tr>
       <td>${esc(r.nombre)}</td><td>${esc(rosterDoc(r))}</td><td>${esc(r.deporte || '—')}</td>
       <td>${esc(r.prueba || '—')}</td><td>${esc(r.organizacion || '—')}</td><td>${esc(r.correo || '—')}</td>
-      <td style="text-align:right"><button class="carg-insc-del" type="button" data-del="${esc(r.id)}" aria-label="Eliminar inscripción">${I.trash}</button></td>
+      <td style="text-align:right;white-space:nowrap"><button class="carg-insc-edit" type="button" data-edit="${esc(r.id)}" aria-label="Editar inscripción" title="Editar">${ICON_EDIT}</button><button class="carg-insc-del" type="button" data-del="${esc(r.id)}" aria-label="Eliminar inscripción" title="Eliminar">${I.trash}</button></td>
     </tr>`;
   function mountInscritosPanel() {
     const mount = document.getElementById('filesMount');
@@ -1708,6 +2166,9 @@
       const id = b.dataset.del, r = all.find((x) => x.id === id);
       confirmDialog({ title: 'Eliminar inscripción', message: `¿Eliminar a <strong>${esc(r ? r.nombre : '')}</strong> de las inscripciones de este evento?`, confirmLabel: 'Eliminar', onConfirm: () => { removeInscrito(selectedEventId, id); flash('Inscripción eliminada.'); mountInscritosPanel(); } });
     }));
+    const bindEdit = () => mount.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => {
+      const r = all.find((x) => x.id === b.dataset.edit); if (r) editInscritoModal(r);
+    }));
     if (!all.length) return;
     setupDropdown(mount.querySelector('[data-dd="fDeporte"]'), [{ value: '', label: 'Todos los deportes' }, ...deportes.map((d) => ({ value: d, label: d }))], () => inscFilter.deporte, (v) => { inscFilter.deporte = v; inscFilter.prueba = ''; mountInscritosPanel(); });
     setupDropdown(mount.querySelector('[data-dd="fPrueba"]'), [{ value: '', label: 'Todas las competencias' }, ...pruebas.map((p) => ({ value: p, label: p }))], () => inscFilter.prueba, (v) => { inscFilter.prueba = v; mountInscritosPanel(); });
@@ -1716,10 +2177,79 @@
     inp.addEventListener('input', () => {
       inscFilter.q = inp.value; box.classList.toggle('naowee-searchbox--has-value', inp.value.length > 0);
       const tb = mount.querySelector('#inscTbody'); const f2 = applyFilter();
-      tb.innerHTML = f2.length ? f2.map(inscRowHTML).join('') : emptyRow; bindDel();
+      tb.innerHTML = f2.length ? f2.map(inscRowHTML).join('') : emptyRow; bindDel(); bindEdit();
     });
     mount.querySelector('#fClear').addEventListener('click', () => { inscFilter.q = ''; mountInscritosPanel(); });
-    bindDel();
+    bindDel(); bindEdit();
+  }
+
+  /* Modal de EDICIÓN de un inscrito (feedback Doug: lápiz junto al borrar). Reusa los
+     builders de campo canónicos + cascada Deporte→Prueba; persiste vía updateInscrito. */
+  function editInscritoModal(r) {
+    const draft = { tipoDoc: r.tipoDoc || '', nroDoc: r.nroDoc || '', nombre: r.nombre || '', sexo: r.sexo || '', deporte: r.deporte || '', prueba: r.prueba || '', organizacion: r.organizacion || '', depto: r.depto || '', correo: r.correo || '' };
+    const baseline = JSON.stringify(draft);
+    document.getElementById('cargEdit')?.remove();
+    const el = document.createElement('div');
+    el.className = 'carg-modal-overlay'; el.id = 'cargEdit';
+    el.innerHTML = `
+      <div class="carg-modal carg-modal--wide" role="dialog" aria-modal="true" aria-labelledby="cargEditTitle">
+        <div class="carg-modal__head">
+          <h3 class="carg-modal__title" id="cargEditTitle">Editar inscripción</h3>
+          <button class="carg-modal__close" type="button" data-close aria-label="Cerrar">${I.x}</button>
+        </div>
+        <div class="carg-modal__body">
+          <div class="carg-edit-grid">
+            ${ddFieldHTML('tipoDoc', 'Tipo de documento', 'Selecciona…', true)}
+            ${tfFieldHTML('nroDoc', 'Número de documento', 'Ej: 1052342871', true)}
+            ${tfFieldHTML('nombre', 'Nombres y apellidos', '', true, true)}
+            ${ddFieldHTML('deporte', 'Deporte', 'Selecciona…', true)}
+            ${ddFieldHTML('prueba', 'Prueba (competencia)', 'Selecciona…', true)}
+            ${ddFieldHTML('sexo', 'Sexo', 'Selecciona…', true)}
+            ${ddFieldHTML('organizacion', 'Organización', 'Busca la liga/club…', false)}
+            ${ddFieldHTML('depto', 'Departamento', 'Selecciona…', false)}
+            ${tfFieldHTML('correo', 'Correo electrónico', 'nombre@correo.com', true)}
+          </div>
+        </div>
+        <div class="carg-modal__foot">
+          <button class="naowee-btn naowee-btn--ghost" type="button" data-close>Cancelar</button>
+          <button class="naowee-btn naowee-btn--loud" type="button" id="cargEditSave" disabled>${I.check} Guardar cambios</button>
+        </div>
+      </div>`;
+    document.body.appendChild(el);
+    void el.offsetWidth; el.classList.add('is-open');
+    const saveBtn = el.querySelector('#cargEditSave');
+    const REQUIRED = ['tipoDoc', 'nroDoc', 'nombre', 'sexo', 'deporte', 'prueba', 'correo'];
+    /* Guardar arranca disabled: solo se habilita con cambio REAL y requeridos completos. */
+    const syncSave = () => { saveBtn.disabled = !REQUIRED.every((k) => (draft[k] || '').trim() !== '') || JSON.stringify(draft) === baseline; };
+    el.querySelectorAll('[data-tf]').forEach((wrap) => {
+      const name = wrap.dataset.tf; const inp = wrap.querySelector('.naowee-textfield__input');
+      inp.value = draft[name] || ''; if (draft[name]) wrap.classList.add('naowee-textfield--active');
+      inp.addEventListener('input', () => { draft[name] = inp.value; wrap.classList.toggle('naowee-textfield--active', inp.value.length > 0); syncSave(); });
+    });
+    setupDropdown(el.querySelector('[data-dd="tipoDoc"]'), TIPOS_DOC, () => draft.tipoDoc, (v) => { draft.tipoDoc = v; syncSave(); });
+    setupDropdown(el.querySelector('[data-dd="sexo"]'), SEXOS, () => draft.sexo, (v) => { draft.sexo = v; syncSave(); });
+    let ddPrueba = null;
+    setupDropdown(el.querySelector('[data-dd="deporte"]'), DEPORTES_LIST, () => draft.deporte, (v) => { draft.deporte = v; draft.prueba = ''; if (ddPrueba) ddPrueba.reset(); syncSave(); });
+    ddPrueba = setupDropdown(el.querySelector('[data-dd="prueba"]'), () => pruebasFor(draft.deporte), () => draft.prueba, (v) => { draft.prueba = v; syncSave(); });
+    setupDropdown(el.querySelector('[data-dd="organizacion"]'), ORGS_LIST, () => draft.organizacion, (v) => { draft.organizacion = v; syncSave(); });
+    setupDropdown(el.querySelector('[data-dd="depto"]'), DEPTOS_LIST, () => draft.depto, (v) => { draft.depto = v; syncSave(); });
+    const setDD = (name, val, opts) => { if (!val) return; const dd = el.querySelector(`[data-dd="${name}"]`); if (!dd) return; const o = (typeof opts === 'function' ? opts() : opts).find((x) => x.value === val); const vEl = dd.querySelector('.naowee-dropdown__value'); vEl.textContent = o ? o.label : val; vEl.classList.remove('is-placeholder'); };
+    setDD('tipoDoc', draft.tipoDoc, TIPOS_DOC); setDD('sexo', draft.sexo, SEXOS); setDD('deporte', draft.deporte, DEPORTES_LIST);
+    setDD('prueba', draft.prueba, () => pruebasFor(draft.deporte)); setDD('organizacion', draft.organizacion, ORGS_LIST); setDD('depto', draft.depto, DEPTOS_LIST);
+    function onEsc(e) { if (e.key === 'Escape') close(); }
+    function close() { el.classList.remove('is-open'); document.removeEventListener('keydown', onEsc); setTimeout(() => el.remove(), 240); }
+    el.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', close));
+    el.addEventListener('click', (e) => { if (e.target === el) close(); });
+    document.addEventListener('keydown', onEsc);
+    syncSave();
+    saveBtn.addEventListener('click', () => {
+      const patch = { tipoDoc: draft.tipoDoc, nroDoc: (draft.nroDoc || '').trim(), nombre: (draft.nombre || '').trim(), sexo: draft.sexo, deporte: draft.deporte, prueba: draft.prueba, organizacion: draft.organizacion || '', depto: draft.depto || '', correo: (draft.correo || '').trim() };
+      const ok = updateInscrito(selectedEventId, r.id, patch);
+      if (!ok) { flash('Ya hay un inscrito con ese documento en ese deporte.', 'error'); return; }   // conflicto → el modal sigue abierto para corregir
+      close();
+      flash(`✓ ${patch.nombre} actualizado.`, 'success');
+      mountInscritosPanel();
+    });
   }
 
   /* ── Modo manual Inscripciones: búsqueda SUID + registro (confirmación directa) ── */
@@ -1885,25 +2415,31 @@
      (feedback Juanma). Estado por fila para preservar posición/marca al filtrar/paginar. */
   const ICON_CHEVR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
   function renderManualGrid(container, cfg) {
-    const all = effectiveRoster(ev);
-    if (!all.length) { rosterEmptyState(container, 'Los resultados'); return; }
+    /* Los atletas de conjunto no reciben posición individual: se excluyen y van a Equipos. */
+    const fullRoster = effectiveRoster(ev);
+    const all = fullRoster.filter((r) => !isConjuntoDeporte(r.deporte));
+    const hasConjunto = fullRoster.some((r) => isConjuntoDeporte(r.deporte));
+    if (!all.length) { if (hasConjunto) { conjuntoOnlyState(container, 'ranking'); return; } rosterEmptyState(container, 'Los resultados'); return; }
+    const conjNote = hasConjunto ? `<div class="naowee-message naowee-message--caution" style="margin-bottom:12px"><div class="naowee-message__header"><span class="naowee-message__icon">${I.bang}</span><span class="naowee-message__body">Este evento incluye <strong>deportes de conjunto</strong>: sus resultados se registran en el modo <strong>Equipos · conjunto</strong> (arriba), no aquí por deportista.</span></div></div>` : '';
     const PAGE_SIZE = 6;
     const state = {};   // id -> { posicion, marca }
     let page = 1, q = '';
     const rowHTML = (r) => {
       const st = state[r.id] || {};
+      const rm = resultMeta(r.deporte, r.prueba);
       return `<div class="carg-manual-row g-ranking" data-id="${r.id}">
         <div><div class="carg-manual-row__name">${esc(r.nombre)}</div><div class="carg-manual-row__doc">${rosterSub(r)}</div></div>
         <input class="carg-manual-input" type="number" min="1" placeholder="—" data-field="posicion" data-id="${r.id}" value="${esc(st.posicion || '')}">
-        <input class="carg-manual-input" type="text" placeholder="ej: 10.45s" data-field="marca" data-id="${r.id}" value="${esc(st.marca || '')}">
+        <input class="carg-manual-input" type="text" placeholder="${esc(rm.ph)}" data-field="marca" data-id="${r.id}" value="${esc(st.marca || '')}" title="${esc(rm.label)}">
       </div>`;
     };
     container.innerHTML = `
       <div class="carg-card">
         <div class="carg-card__head"><div>
           <h3 class="carg-card__title">Captura manual — ${esc(cfg.label)}</h3>
-          <p class="carg-card__sub">Filtra por deporte o nombre y registra posición y marca/tiempo para cada inscrito.${sampleNote(all.length)}</p>
+          <p class="carg-card__sub">Filtra por deporte o nombre y registra posición y resultado para cada inscrito.${sampleNote(all.length)}</p>
         </div></div>
+        ${conjNote}
         <div class="carg-search-row" style="margin-bottom:12px">
           <div class="naowee-searchbox" id="rkSearch" style="max-width:480px;flex:1 1 260px">
             <div class="naowee-searchbox__input-wrap">
@@ -1914,7 +2450,7 @@
           </div>
         </div>
         <div class="carg-manual-grid">
-          <div class="carg-manual-grid__header g-ranking"><span>Deportista</span><span>Posición</span><span>Marca/Tiempo</span></div>
+          <div class="carg-manual-grid__header g-ranking"><span>Deportista</span><span>Posición</span><span>Resultado</span></div>
           <div id="rkRows"></div>
         </div>
         <div class="carg-rk-foot">
@@ -1984,6 +2520,9 @@
         columns: RANK_COLS,
         rows: filled.map((r) => { const s = state[r.id] || {}; return { organizacion: r.organizacion || '—', deportista: r.nombre || '—', deporte: r.deporte || '—', prueba: r.prueba || '—', posicion: s.posicion || '—', marca: s.marca || '—' }; })
       });
+      /* Liga con Medallería: registra la posición por persona+competencia → la
+         medallería solo permitirá la medalla que corresponde al puesto. */
+      if (cfg.storeTipo === 'res') filled.forEach((r) => { const s = state[r.id] || {}; const pos = String(s.posicion || '').trim(); if (pos) setResultPosition(selectedEventId, { nroDoc: r.nroDoc, deporte: r.deporte, prueba: r.prueba, posicion: pos, deportista: r.nombre }); });
       flash(`✓ ${n} ${cfg.labelShort.toLowerCase()}${n !== 1 ? 's' : ''} guardada${n !== 1 ? 's' : ''} correctamente.`, 'success');
       renderTabPanel();   // resetea el estado y muestra la nueva versión en "Archivos cargados"
     });
@@ -1996,17 +2535,17 @@
     if (versions.length === 0) {
       return `
         <div class="carg-files">
-          <div class="carg-files__title">${I.layers} Archivos cargados <span class="carg-files__count">(0)</span></div>
+          <div class="carg-files__title">${I.layers} Cargas realizadas <span class="carg-files__count">(0)</span></div>
           <div class="empty-state">
             <div class="empty-state__icon">${I.fileSheet}</div>
-            <p class="empty-state__title">Aún no hay archivos cargados</p>
-            <p class="empty-state__desc">Cuando subas un archivo de ${esc(cfg.label.toLowerCase())}, aquí verás cada versión con su data en formato tabla.</p>
+            <p class="empty-state__title">Aún no hay cargas</p>
+            <p class="empty-state__desc">Cuando cargues ${esc(cfg.label.toLowerCase())} (masivo o manual), aquí verás cada carga con su data en tabla.</p>
           </div>
         </div>`;
     }
     return `
       <div class="carg-files">
-        <div class="carg-files__title">${I.layers} Archivos cargados <span class="carg-files__count">(${versions.length})</span></div>
+        <div class="carg-files__title">${I.layers} Cargas realizadas <span class="carg-files__count">(${versions.length})</span></div>
         <div class="carg-files__list">
           ${versions.map((v, i) => fileCardHTML(v, i === 0)).join('')}
         </div>
@@ -2019,8 +2558,8 @@
         <button class="carg-file__head" type="button" aria-expanded="${open ? 'true' : 'false'}">
           <span class="carg-file__ico">${I.fileSheet}</span>
           <span class="carg-file__meta">
-            <span class="carg-file__name"><span class="carg-file__name-txt">${esc(v.fileName)}</span><span class="carg-file__ver">v${v.version}</span></span>
-            <span class="carg-file__sub"><span class="carg-file__n">${v.n} registros</span><span>·</span><span>${esc(v.modeLabel)}</span><span>·</span><span>${esc(v.timestamp)}</span></span>
+            <span class="carg-file__name"><span class="carg-file__name-txt">${esc(v.fileName)}</span></span>
+            <span class="carg-file__sub"><span class="carg-file__n">${v.n} registro${v.n !== 1 ? 's' : ''}</span><span>·</span><span>${esc(v.timestamp)}</span></span>
           </span>
           <span class="carg-file__chev">${I.chevD}</span>
         </button>
@@ -2095,7 +2634,7 @@
           <td class="ov-col-prog" data-label="Progreso"><div class="ov-prog-wrap"><div class="ov-prog-track"><div class="ov-prog-fill" style="width:${p}%"></div></div><span class="ov-prog-pct">${progLabel(e)}</span></div></td>
           <td class="ov-col-last" data-label="Último cargue"><span class="ov-last-cargue">${esc(last)}</span></td>
           <td data-label="Archivos" style="text-align:right">
-            ${versions.length ? `<button type="button" class="ov-history-toggle" data-ev-id="${esc(e.id)}">Ver archivos (${versions.length})</button>` : '<span style="font-size:11.5px;color:var(--text-muted)">Sin cargues</span>'}
+            ${versions.length ? `<button type="button" class="ov-history-toggle" data-ev-id="${esc(e.id)}">Ver cargas (${versions.length})</button>` : '<span style="font-size:11.5px;color:var(--text-muted)">Sin cargues</span>'}
           </td>
         </tr>`;
     }).join('');
@@ -2138,7 +2677,7 @@
     overlay.innerHTML = `
       <div class="ov-modal" role="document">
         <div class="ov-modal__head">
-          <div><h3 data-ov-title>Archivos cargados</h3><p data-ov-sub></p></div>
+          <div><h3 data-ov-title>Cargas realizadas</h3><p data-ov-sub></p></div>
           <button type="button" class="ov-modal__close" aria-label="Cerrar">${I.x}</button>
         </div>
         <div class="ov-modal__body" data-ov-body></div>
@@ -2158,7 +2697,7 @@
     const gestor = GESTORES.find((g) => g.id === gid) || null;
     const versions = getFileVersions(eventId, storeKey);
     const overlay = ensureOvModal();
-    overlay.querySelector('[data-ov-title]').textContent = 'Archivos cargados';
+    overlay.querySelector('[data-ov-title]').textContent = 'Cargas realizadas';
     overlay.querySelector('[data-ov-sub]').textContent = `${ev.name} · ${cfg.label}`;
     const whoHTML = gestor
       ? `<span class="carg-tl-who"><span class="carg-tl-av" style="background:${esc(gestor.color)}">${esc(gestor.avatar)}</span>${esc(gestor.name)}</span><span>·</span>`
@@ -2167,8 +2706,8 @@
       <div class="carg-tl-item">
         <span class="carg-tl-dot" aria-hidden="true"></span>
         <div class="carg-tl-content">
-          <div class="carg-tl-file"><span class="carg-tl-ico">${I.fileSheet}</span><span class="carg-tl-name">${esc(v.fileName)}</span><span class="carg-file__ver">v${v.version}</span></div>
-          <div class="carg-tl-meta">${whoHTML}<span class="carg-tl-n">+${v.n} registros</span><span>·</span><span>${esc(v.modeLabel)}</span></div>
+          <div class="carg-tl-file"><span class="carg-tl-ico">${I.fileSheet}</span><span class="carg-tl-name">${esc(v.fileName)}</span></div>
+          <div class="carg-tl-meta">${whoHTML}<span class="carg-tl-n">+${v.n} registro${v.n !== 1 ? 's' : ''}</span></div>
           <div class="carg-tl-time">${esc(v.timestamp)}</div>
         </div>
       </div>`).join('');
