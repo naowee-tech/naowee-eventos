@@ -169,13 +169,6 @@
   .carg-newform__foot { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 16px; }
   .carg-field { display: flex; flex-direction: column; }
 
-  /* Cola de inscripción */
-  .carg-q-count { color: var(--text-muted); font-weight: 700; }
-  .carg-q-foot { display: flex; justify-content: flex-end; margin-top: 16px; }
-  .carg-qrow-x { width: 30px; height: 30px; border-radius: var(--radius-sm); border: none; background: transparent; color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background var(--duration-fast), color var(--duration-fast); }
-  .carg-qrow-x:hover { background: var(--red-bg); color: var(--red); }
-  .carg-qrow-x:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215,64,9,.18); }
-  .carg-qrow-x svg { width: 16px; height: 16px; }
 
   @media (max-width: 760px) {
     .carg-newform__grid { grid-template-columns: repeat(2, 1fr); }
@@ -752,7 +745,6 @@
   let activeMode = 'masivo';      // 'masivo' | 'manual'
   let selectedFile = null;
   let parseResults = null;
-  let inscQueue = [];             // deportistas en cola para inscripción manual
   let newDraft = {};              // borrador del form "nuevo deportista"
 
   /* ─── Evento activo ─── */
@@ -936,7 +928,7 @@
         activeTipo = val;
         activeMode = 'masivo';
         selectedFile = null; parseResults = null;
-        inscQueue = []; newDraft = {};
+        newDraft = {};
         document.querySelectorAll('#tipoTabs .naowee-tab').forEach((t) => {
           const on = t.dataset.tab === val;
           t.classList.toggle('naowee-tab--selected', on);
@@ -1756,76 +1748,6 @@
       </div>
     `;
     bindManualSearch(cfg);
-  }
-
-  function renderQueue(cfg) {
-    const body = document.getElementById('queueBody');
-    const foot = document.getElementById('queueFoot');
-    const count = document.getElementById('qCount');
-    if (!body) return;
-    if (count) count.textContent = `(${inscQueue.length})`;
-    if (inscQueue.length === 0) {
-      body.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state__icon">${I.users}</div>
-          <p class="empty-state__title">Aún no has agregado deportistas</p>
-          <p class="empty-state__desc">Busca en el SUID o registra uno nuevo para armar la lista de inscripción.</p>
-        </div>`;
-      foot.innerHTML = '';
-      return;
-    }
-    const heads = ['Origen', 'Tipo doc', 'Nro documento', 'Nombres y apellidos', 'Sexo', 'Deporte', 'Prueba', 'Departamento', ''];
-    const rows = inscQueue.map((a, i) => `
-      <tr>
-        <td>${a.origen === 'SUID' ? '<span class="naowee-badge naowee-badge--informative naowee-badge--quiet">SUID</span>' : '<span class="naowee-badge naowee-badge--brand">Nuevo</span>'}</td>
-        <td>${esc(a.tipoDoc)}</td>
-        <td>${esc(a.nroDoc)}</td>
-        <td>${esc(a.nombre)}</td>
-        <td>${esc(a.sexo)}</td>
-        <td>${esc(a.deporte)}</td>
-        <td>${esc(a.prueba || '—')}</td>
-        <td>${esc(a.depto)}</td>
-        <td style="text-align:right"><button class="carg-qrow-x" type="button" data-i="${i}" aria-label="Quitar de la lista">${I.trash}</button></td>
-      </tr>`).join('');
-    body.innerHTML = `
-      <div class="carg-data-scroll">
-        <table class="naowee-table--in-card">
-          <thead><tr>${heads.map((h) => `<th>${h}</th>`).join('')}</tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>`;
-    foot.innerHTML = `<button class="naowee-btn naowee-btn--loud" id="commitQueueBtn">${I.check} Inscribir ${inscQueue.length} deportista${inscQueue.length !== 1 ? 's' : ''}</button>`;
-    body.querySelectorAll('.carg-qrow-x').forEach((b) => b.addEventListener('click', () => { inscQueue.splice(parseInt(b.dataset.i, 10), 1); renderQueue(cfg); }));
-    document.getElementById('commitQueueBtn').addEventListener('click', () => commitQueue(cfg));
-  }
-
-  function addToQueue(a) {
-    if (inscQueue.some((x) => x.nroDoc === a.nroDoc && x.tipoDoc === a.tipoDoc)) { flash('Ese deportista ya está en la lista.'); return false; }
-    inscQueue.push(a);
-    return true;
-  }
-
-  function commitQueue(cfg) {
-    const n = inscQueue.length;
-    if (!n) return;
-    applyUpload(selectedEventId, 'insc', n);
-    const ts = nowStamp();
-    addUploadRecord(selectedEventId, { tipo: 'Inscripciones', n, modeLabel: 'Manual', timestamp: ts });
-    addFileVersion(selectedEventId, 'insc', {
-      fileName: 'Inscripción manual', n, modeLabel: 'Manual', timestamp: ts,
-      columns: cfg.columns,
-      rows: inscQueue.map((a) => ({ organizacion: a.organizacion || '—', tipoDoc: a.tipoDoc, nroDoc: a.nroDoc, nombre: a.nombre, sexo: a.sexo, deporte: a.deporte, prueba: a.prueba || '—', depto: a.depto, correo: a.correo || '—' }))
-    });
-    /* FUENTE DE VERDAD: los inscritos entran al roster del evento → quedan
-       disponibles para ranking/resultados y medallería. */
-    addInscritos(selectedEventId, inscQueue.map((a) => ({
-      tipoDoc: a.tipoDoc, nroDoc: a.nroDoc, nombre: a.nombre, sexo: a.sexo,
-      deporte: a.deporte, prueba: a.prueba || '', depto: a.depto, organizacion: a.organizacion || '', correo: a.correo || '',
-      origen: a.origen || 'Manual'
-    })));
-    flash(`✓ ${n} deportista${n !== 1 ? 's' : ''} inscrito${n !== 1 ? 's' : ''} correctamente.`, 'success');
-    inscQueue = []; newDraft = {};
-    renderTabPanel();
   }
 
   function bindManualSearch(cfg) {
