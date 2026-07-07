@@ -366,6 +366,36 @@ export function addFileVersion(eventId, tipo, record) {
   return version;
 }
 
+/** Elimina UNA fila de una versión (carga). Ajusta n y el contador del evento
+ *  (delta −1). Si la versión queda sin filas, se elimina completa. */
+export function removeFileRow(eventId, tipo, version, rowIdx) {
+  let all;
+  try { all = JSON.parse(sessionStorage.getItem(FILES_KEY) || '{}'); } catch { return false; }
+  const list = all[eventId] && all[eventId][tipo];
+  if (!list) return false;
+  const v = list.find((x) => x.version === version);
+  if (!v || !Array.isArray(v.rows) || rowIdx < 0 || rowIdx >= v.rows.length) return false;
+  v.rows.splice(rowIdx, 1);
+  v.n = v.rows.length;
+  if (v.rows.length === 0) list.splice(list.indexOf(v), 1);
+  sessionStorage.setItem(FILES_KEY, JSON.stringify(all));
+  applyUpload(eventId, tipo, -1);   // el evento pierde ese registro en su conteo
+  return true;
+}
+
+/** Reemplaza los valores (por columna) de UNA fila de una versión. n no cambia. */
+export function updateFileRow(eventId, tipo, version, rowIdx, patch) {
+  let all;
+  try { all = JSON.parse(sessionStorage.getItem(FILES_KEY) || '{}'); } catch { return false; }
+  const list = all[eventId] && all[eventId][tipo];
+  if (!list) return false;
+  const v = list.find((x) => x.version === version);
+  if (!v || !Array.isArray(v.rows) || rowIdx < 0 || rowIdx >= v.rows.length) return false;
+  v.rows[rowIdx] = { ...v.rows[rowIdx], ...patch };
+  sessionStorage.setItem(FILES_KEY, JSON.stringify(all));
+  return true;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    ROSTER STORE — INSCRITOS por evento (fuente de verdad de participantes)
    sessionStorage key: 'naowee-eventos-roster'

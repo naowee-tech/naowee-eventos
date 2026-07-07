@@ -9,12 +9,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="shared/tokens.css?v=0.4.0">
+<link rel="stylesheet" href="shared/tokens.css?v=0.9.1">
 <link rel="stylesheet" href="shared/shell.css?v=0.4.5">
-<link rel="stylesheet" href="shared/list-components.css?v=0.9.0">
-<link rel="stylesheet" href="shared/forms.css?v=0.9.0">
-<link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.9.0" defer></script>
+<link rel="stylesheet" href="shared/list-components.css?v=0.9.1">
+<link rel="stylesheet" href="shared/forms.css?v=0.9.1">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.9.1">
+<script src="shared/naowee-footer.js?v=0.9.1" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -184,6 +184,11 @@
   .ev-row__icon-act { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: var(--radius-md); color: var(--text-secondary); transition: background var(--duration-fast), color var(--duration-fast); }
   .ev-row__icon-act svg { width: 16px; height: 16px; }
   .ev-row__icon-act:hover { background: var(--accent-bg); color: var(--accent); }
+  /* Indicio de alcance (Nacional/Internacional) en Lugar (tabla) y cabecera (card) */
+  .ev-place { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
+  .ev-place__txt { font-size: 13px; color: var(--text-primary); }
+  .ev-alcance { text-transform: none; letter-spacing: 0; }
+  .event-card__badges { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 </style>
 </head>
 <body>
@@ -275,7 +280,7 @@
               <div class="event-card__sport">${ev.sport}</div>
             </div>
           </div>
-          <span class="badge s-${ev.status}">${STATUS_LABEL[ev.status]}</span>
+          <div class="event-card__badges">${alcanceBadge(ev)}<span class="badge s-${ev.status}">${STATUS_LABEL[ev.status]}</span></div>
         </div>
         <div class="event-card__meta">
           <div class="meta-row">${I.cal}<span><strong>${ev.start}</strong> — ${ev.end}</span></div>
@@ -291,6 +296,16 @@
           <span class="event-card__link">${act.label} ${I.arrow}</span>
         </div>
       </article>`;
+  }
+
+  /* Indicio de ALCANCE del torneo (feedback Doug): Nacional (neutro + banderín) vs
+     Internacional (informativo azul + globo). Badge canónico .naowee-badge — sin clase paralela. */
+  const IC_GLOBE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18z"/></svg>';
+  const IC_FLAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4"/><path d="M4 4h13l-2.5 4L17 12H4"/></svg>';
+  function alcanceBadge(ev) {
+    return ev.alcance === 'internacional'
+      ? `<span class="naowee-badge naowee-badge--informative naowee-badge--quiet ev-alcance" title="Torneo internacional">${IC_GLOBE} Internacional</span>`
+      : `<span class="naowee-badge naowee-badge--neutral naowee-badge--quiet ev-alcance" title="Torneo nacional">${IC_FLAG} Nacional</span>`;
   }
 
   function eventRow(ev) {
@@ -310,7 +325,7 @@
           <span class="ev-date ev-date--open">${ev.start}</span>
           <span class="ev-date ev-date--close">${ev.end}</span>
         </td>
-        <td class="ev-row__place">${ev.place}</td>
+        <td class="ev-row__place"><div class="ev-place">${alcanceBadge(ev)}${ev.alcance === 'internacional' ? '' : `<span class="ev-place__txt">${ev.place}</span>`}</div></td>
         <td><span class="badge s-${ev.status}">${STATUS_LABEL[ev.status]}</span></td>
         <td>
           <div class="ev-row__counts">
@@ -840,13 +855,7 @@
 
   /* Si llegamos con ?created=1 (volviendo de crear), confirma con toast. */
   if (new URLSearchParams(location.search).get('created') === '1') {
-    setTimeout(() => {
-      let toast = document.getElementById('evToast');
-      if (!toast) { toast = document.createElement('div'); toast.id = 'evToast'; toast.setAttribute('role', 'status'); document.body.appendChild(toast); }
-      toast.textContent = 'Evento creado en estado Borrador.';
-      toast.classList.add('is-visible');
-      setTimeout(() => toast.classList.remove('is-visible'), 3000);
-    }, 200);
+    setTimeout(() => window.naoweeToast('Evento creado en estado Borrador.', 'success'), 200);
   }
 
   document.title = `Naowee Eventos — Eventos (${role.label})`;

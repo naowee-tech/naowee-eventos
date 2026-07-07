@@ -137,7 +137,7 @@ const MODULE_NAME = 'Eventos';
    "Cargas realizadas" (#modeBody se apila sobre #filesMount); (4) fix setDD de openNewForm
    (selector .naowee-dropdown__value) que rompía el prellenado desde SUID; + LIGAS/CLUBES
    en catalogo.js. */
-const MODULE_VERSION = 'v0.9.0';
+const MODULE_VERSION = 'v0.9.1';
 
 (function () {
   function mount() {
@@ -181,4 +181,35 @@ const MODULE_VERSION = 'v0.9.0';
   } else {
     mount();
   }
+})();
+
+/* ═══════════════════════════════════════════════════════════════
+   Snackbar canónico (DS .naowee-snackbar): pill navy con BADGE de icono
+   semántico — verde=éxito/confirmación (feedback Doug), rojo=error,
+   azul=info, ámbar=aviso. Global reusado por TODAS las pantallas para no
+   duplicar la lógica del toast. Estilos en naowee-footer.css (#evToast).
+   ═══════════════════════════════════════════════════════════════ */
+(function () {
+  var ICONS = {
+    success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="7.5" r="1.15" fill="currentColor" stroke="none"/></svg>',
+    caution: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="8" x2="12" y2="13"/><circle cx="12" cy="16.5" r="1.15" fill="currentColor" stroke="none"/></svg>'
+  };
+  var timer = null;
+  window.naoweeToast = function (msg, type) {
+    type = ICONS[type] ? type : 'success';
+    var el = document.getElementById('evToast');
+    if (!el) { el = document.createElement('div'); el.id = 'evToast'; document.body.appendChild(el); }
+    el.className = 'evtoast evtoast--' + type;
+    el.setAttribute('role', type === 'error' ? 'alert' : 'status');
+    /* El badge ya comunica el estado → quita el "✓" redundante de mensajes de éxito. */
+    var text = (msg == null ? '' : String(msg)).replace(/^\s*[✓✔]\s*/, '');
+    el.innerHTML = '<span class="evtoast__badge">' + ICONS[type] + '</span><span class="evtoast__text"></span>';
+    el.querySelector('.evtoast__text').textContent = text;
+    void el.offsetWidth;                 /* reinicia la animación si ya estaba visible */
+    el.classList.add('is-visible');
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(function () { el.classList.remove('is-visible'); }, 3200);
+  };
 })();

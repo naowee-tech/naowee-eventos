@@ -9,11 +9,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="shared/tokens.css?v=0.4.0">
+<link rel="stylesheet" href="shared/tokens.css?v=0.9.1">
 <link rel="stylesheet" href="shared/shell.css?v=0.4.5">
-<link rel="stylesheet" href="shared/forms.css?v=0.9.0">
-<link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.9.0" defer></script>
+<link rel="stylesheet" href="shared/forms.css?v=0.9.1">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.9.1">
+<script src="shared/naowee-footer.js?v=0.9.1" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -607,7 +607,7 @@
     if (!f) return;
     f.classList.add('naowee-textfield--error');
     const m = f.querySelector('[data-msg]');
-    if (m) { m.innerHTML = '<span class="naowee-helper naowee-helper--negative naowee-helper--loud"><span class="naowee-helper__text"><span class="naowee-helper__badge"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="6" fill="#c4031d"/><path d="M3.75 6h4.5" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg></span><span>' + msg + '</span></span></span>'; m.style.display = 'block'; m.setAttribute('aria-live', 'polite'); }
+    if (m) { m.innerHTML = '<span class="naowee-helper naowee-helper--negative naowee-helper--loud"><span class="naowee-helper__text"><span class="naowee-helper__badge"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="6" style="fill:var(--field-border-error)"/><path d="M3.75 6h4.5" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg></span><span>' + msg + '</span></span></span>'; m.style.display = 'block'; m.setAttribute('aria-live', 'polite'); }
     if (name === 'inicio') dpInicio.setError(true);
     if (name === 'fin') dpFin.setError(true);
     if (name === 'departamento') ddDepto.setError(true);
@@ -805,16 +805,12 @@
     };
   }
 
-  function toast(msg) {
-    let t = document.getElementById('evToast');
-    if (!t) { t = document.createElement('div'); t.id = 'evToast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
-    t.textContent = msg; t.classList.add('is-visible');
-    setTimeout(() => t.classList.remove('is-visible'), 2600);
-  }
+  /* Snackbar canónico (DS): window.naoweeToast en naowee-footer.js. */
+  function toast(msg, type = 'info') { window.naoweeToast(msg, type); }
 
   function doSave() {
     addDraft(buildDraft());
-    toast('Evento creado en estado Borrador.');
+    toast('Evento creado en estado Borrador.', 'success');
     setTimeout(() => { window.location.href = `${eventosHref}&created=1`; }, 700);
   }
   document.getElementById('saveBtn').addEventListener('click', () => {
@@ -828,7 +824,7 @@
       toast('Continuando con datos incompletos (modo demo).');
       doSave();
     } else {
-      toast('Revisa los campos marcados. Vuelve a tocar Guardar para continuar.');
+      toast('Revisa los campos marcados. Vuelve a tocar Guardar para continuar.', 'caution');
     }
   });
   document.getElementById('cancelBtn').addEventListener('click', () => { window.location.href = eventosHref; });

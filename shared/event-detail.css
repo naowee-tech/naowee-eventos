@@ -21,8 +21,10 @@
 /* (1) Header del evento (chevron de retroceso + nombre + badge inline, acciones a la derecha) */
 .det-head { display: flex; align-items: center; justify-content: space-between; gap: 16px 18px; padding: 20px 24px 18px; flex-wrap: wrap; }
 .det-head__id { display: flex; gap: 12px; align-items: center; min-width: 0; flex: 1 1 auto; }
-.det-back { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; flex-shrink: 0; border-radius: var(--radius-md); color: var(--accent); background: transparent; border: none; cursor: pointer; transition: background var(--duration-normal), color var(--duration-fast); -webkit-tap-highlight-color: transparent; }
-.det-back svg { width: 24px; height: 24px; }
+/* Botón "volver" = mute canónico (transparente + accent, hover accent-bg).
+   Icono FINO (stroke 1.6) y 20px para que lea como icon-button, no un glifo grueso. */
+.det-back { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; flex-shrink: 0; border-radius: var(--radius-md); color: var(--accent); background: transparent; border: none; cursor: pointer; transition: background var(--duration-normal), color var(--duration-fast); -webkit-tap-highlight-color: transparent; }
+.det-back svg { width: 20px; height: 20px; stroke-width: 1.6; }
 .det-back:hover { background: var(--accent-bg); }
 .det-back:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); }
 .det-head__name { font-size: 23px; font-weight: 800; letter-spacing: -.4px; color: var(--text-primary); margin: 0; line-height: 1.2; min-width: 0; }
@@ -37,12 +39,19 @@
 .meta-strip__val { font-size: 14px; font-weight: 700; color: var(--text-primary); line-height: 1.4; word-break: break-word; }
 
 /* (3) Bloque inferior: gestor asignado (columna angosta) + descripción (columna ancha). */
-.det-foot { display: grid; grid-template-columns: minmax(0, 250px) 1fr; gap: 0; padding: 20px 24px 22px; }
+/* La 1ª columna del foot = exactamente UNA columna de la meta-strip, para que el
+   divisor vertical del foot caiga sobre la 1ª línea de grid de la meta (ritmo
+   vertical alineado). Meta por defecto = 4 col → foot 1fr 3fr; evento-detalle
+   (5 col en desktop) lo sobre-escribe a 1fr 4fr. Sin margin-left → el borde queda
+   exacto en la línea de grid, no corrido. */
+.det-foot { display: grid; grid-template-columns: 1fr 3fr; gap: 0; padding: 20px 24px 22px; }
 .det-foot__block { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-.det-foot__block + .det-foot__block { border-left: 1px solid var(--border); padding-left: 28px; margin-left: 4px; }
+.det-foot__block + .det-foot__block { border-left: 1px solid var(--border); padding-left: 28px; }
 .det-foot__lbl { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--text-muted); }
 .det-foot__lbl svg { width: 13px; height: 13px; flex-shrink: 0; }
 .det-foot__desc { font-size: 13.5px; color: var(--text-secondary); font-weight: 400; line-height: 1.65; margin: 0; max-width: 62ch; }
+/* Sin descripción: placeholder honesto (no un texto genérico inventado). */
+.det-foot__desc--empty { color: var(--text-muted); font-style: italic; }
 
 /* Gestor asignado: campo limpio (avatar pequeño + nombre + rol). */
 .gestor-field { display: flex; align-items: center; gap: 11px; min-width: 0; }

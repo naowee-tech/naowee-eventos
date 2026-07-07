@@ -9,16 +9,16 @@
 /* ── Searchbox canónico ── */
 .naowee-searchbox { position: relative; flex: 1; min-width: 240px; max-width: 380px; width: 100%; }
 .naowee-searchbox__input-wrap {
-  display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 12px;
-  background: #fff; border: 1px solid var(--border-dark); border-radius: var(--radius-full);
+  display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 12px;
+  background: var(--surface); border: 1px solid var(--border-dark); border-radius: var(--radius-full);
   transition: border-color var(--duration-normal) var(--easing-smoothout),
               box-shadow var(--duration-normal) var(--easing-smoothout);
   overflow: hidden; font-feature-settings: 'case' 1;
 }
-.naowee-searchbox__input-wrap:hover { border-color: #b9bed6; }
+.naowee-searchbox__input-wrap:hover { border-color: var(--field-border-hover); }
 .naowee-searchbox__input-wrap:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(215, 64, 9, .15); }
-.naowee-searchbox__icon { width: 18px; height: 18px; flex-shrink: 0; color: var(--text-muted); display: flex; align-items: center; justify-content: center; }
-.naowee-searchbox__icon svg { width: 18px; height: 18px; }
+.naowee-searchbox__icon { width: 20px; height: 20px; flex-shrink: 0; color: var(--text-muted); display: flex; align-items: center; justify-content: center; }
+.naowee-searchbox__icon svg { width: 20px; height: 20px; }
 .naowee-searchbox__input { flex: 1; min-width: 0; height: 100%; border: none; background: transparent; outline: none; font-family: inherit; font-size: 14px; font-weight: 400; color: var(--text-primary); padding: 0; }
 .naowee-searchbox__input::placeholder { color: var(--text-muted); }
 .naowee-searchbox__input::-webkit-search-decoration,
@@ -26,7 +26,7 @@
 .naowee-searchbox__input::-webkit-search-results-button,
 .naowee-searchbox__input::-webkit-search-results-decoration { -webkit-appearance: none; appearance: none; display: none; }
 .naowee-searchbox__clear { width: 24px; height: 24px; border-radius: var(--radius-md); border: none; background: transparent; color: var(--text-muted); display: none; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: background var(--duration-fast), color var(--duration-fast); }
-.naowee-searchbox__clear svg { width: 18px; height: 18px; }
+.naowee-searchbox__clear svg { width: 20px; height: 20px; }
 .naowee-searchbox__clear:hover { background: var(--bg-soft); color: var(--text-secondary); }
 .naowee-searchbox--has-value .naowee-searchbox__clear { display: flex; }
 /* Tamaño medium (40px) — canónico DS */
@@ -171,7 +171,7 @@
    horizontal; mantenemos overflow-y visible para los focus-rings de fila. */
 .naowee-table-card__table-wrap { overflow-x: clip; overflow-y: visible; }
 .naowee-table--in-card { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; }
-.naowee-table--in-card thead th { text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase; color: var(--text-secondary); background: #f4f5f9; padding: 12px 18px; border: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.naowee-table--in-card thead th { text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase; color: var(--text-secondary); background: var(--th-bg); padding: 12px 18px; border: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .naowee-table--in-card thead th:first-child { border-top-left-radius: var(--radius-lg); border-bottom-left-radius: var(--radius-lg); }
 .naowee-table--in-card thead th:last-child { border-top-right-radius: var(--radius-lg); border-bottom-right-radius: var(--radius-lg); }
 .naowee-table--in-card tbody td { padding: 16px 14px; font-size: 13px; color: var(--text-primary); border-bottom: 1px solid var(--border); vertical-align: middle; }

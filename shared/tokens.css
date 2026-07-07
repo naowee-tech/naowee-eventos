@@ -19,6 +19,7 @@
   --surface: #ffffff;
   --bg: #ffffff;
   --bg-soft: #f5f6fa;
+  --th-bg: #f4f5f9;              /* fondo de encabezados de tabla / pills gris (DS gray-100) */
 
   /* ─── Bordes ─── */
   --border: #e7e9f3;
@@ -30,7 +31,7 @@
 
   /* ─── Semánticos / estados ─── */
   --green: #1f8923;            --green-bg: #e6f4e7;   --green-border: #b7dfb9;
-  --blue-info: #1f78d1;        --blue-bg: #eef5ff;
+  --blue-info: #1f78d1;        --blue-bg: #eef5ff;     --blue-border: #c0d8f8;
   --orange-bg: #fff3e6;        --orange-border: #ffbf75;
   --red: #c0392b;              --red-bg: #fff0ee;     --red-border: #ffc4bb;
   --purple: #7c3aed;           --purple-bg: #f3eeff;

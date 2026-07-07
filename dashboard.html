@@ -9,10 +9,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="shared/tokens.css?v=0.4.0">
+<link rel="stylesheet" href="shared/tokens.css?v=0.9.1">
 <link rel="stylesheet" href="shared/shell.css?v=0.4.5">
-<link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.9.0" defer></script>
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.9.1">
+<script src="shared/naowee-footer.js?v=0.9.1" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -250,22 +250,18 @@
   .view-toggle__btn.is-active { color: var(--accent); }
   .view-toggle__btn svg { width: 17px; height: 17px; }
 
-  /* ─── Searchbox canónico (port .naowee-searchbox del DS) ──────────────
-     Estructura, estados e ícono de "clear" replicados 1:1 desde IVC
-     (prototype/profesional/bandeja.html) y el DS (design-system.css):
-       · input-wrap pill con focus accent
-       · ícono de lupa (gris) a la izquierda
-       · botón clear = X de dos <line> en color icon-secondary (GRIS),
-         NO la ✕ azul nativa del navegador. Aparece solo con --has-value.
-     Mapeado a los tokens locales del módulo. ── */
+  /* ─── Searchbox canónico (port .naowee-searchbox del DS) — inline porque
+     dashboard NO carga list-components.css (es autocontenido). Valores alineados
+     al componente compartido: input-wrap 48px, borde hover --field-border-hover,
+     ícono/clear 20px, tokens del módulo. ── */
   .naowee-searchbox {
     position: relative; flex: 1; min-width: 240px; max-width: 380px;
     width: 100%;
   }
   .naowee-searchbox__input-wrap {
     display: flex; align-items: center; gap: 8px;
-    height: 42px; padding: 0 12px;
-    background: #fff;
+    height: 48px; padding: 0 12px;
+    background: var(--surface);
     border: 1px solid var(--border-dark);
     border-radius: var(--radius-full);
     transition: border-color var(--duration-normal) var(--easing-smoothout),
@@ -273,17 +269,17 @@
     overflow: hidden;
     font-feature-settings: 'case' 1;
   }
-  .naowee-searchbox__input-wrap:hover { border-color: #b9bed6; }
+  .naowee-searchbox__input-wrap:hover { border-color: var(--field-border-hover); }
   .naowee-searchbox__input-wrap:focus-within {
     border-color: var(--accent);
     box-shadow: 0 0 0 3px rgba(215, 64, 9, .15);
   }
   .naowee-searchbox__icon {
-    width: 18px; height: 18px; flex-shrink: 0;
+    width: 20px; height: 20px; flex-shrink: 0;
     color: var(--text-muted);
     display: flex; align-items: center; justify-content: center;
   }
-  .naowee-searchbox__icon svg { width: 18px; height: 18px; }
+  .naowee-searchbox__icon svg { width: 20px; height: 20px; }
   .naowee-searchbox__input {
     flex: 1; min-width: 0; height: 100%;
     border: none; background: transparent; outline: none;
@@ -291,13 +287,10 @@
     color: var(--text-primary); padding: 0;
   }
   .naowee-searchbox__input::placeholder { color: var(--text-muted); }
-  /* Suprimir el control "clear" nativo del navegador (la ✕ azul de WebKit
-     en inputs type=search) — usamos el botón canónico propio. */
   .naowee-searchbox__input::-webkit-search-decoration,
   .naowee-searchbox__input::-webkit-search-cancel-button,
   .naowee-searchbox__input::-webkit-search-results-button,
   .naowee-searchbox__input::-webkit-search-results-decoration { -webkit-appearance: none; appearance: none; display: none; }
-  /* Botón clear canónico: X gris, oculto por defecto. */
   .naowee-searchbox__clear {
     width: 24px; height: 24px; border-radius: var(--radius-md);
     border: none; background: transparent;
@@ -306,7 +299,7 @@
     cursor: pointer; flex-shrink: 0;
     transition: background var(--duration-fast), color var(--duration-fast);
   }
-  .naowee-searchbox__clear svg { width: 18px; height: 18px; }
+  .naowee-searchbox__clear svg { width: 20px; height: 20px; }
   .naowee-searchbox__clear:hover { background: var(--bg-soft); color: var(--text-secondary); }
   .naowee-searchbox--has-value .naowee-searchbox__clear { display: flex; }
 
@@ -442,7 +435,7 @@
   .naowee-table--in-card { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; }
   .naowee-table--in-card thead th {
     text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase;
-    color: var(--text-secondary); background: #f4f5f9;
+    color: var(--text-secondary); background: var(--th-bg);
     padding: 12px 16px; border: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   /* Anchos de columna del dashboard (5 cols: Evento·Fechas·Lugar·Estado·Progreso).
@@ -1204,15 +1197,9 @@
     window.location.href = `evento-detalle.html?id=${encodeURIComponent(id)}&role=${getRoleFromQuery()}`;
   }
 
-  /* Toast genérico (secciones aún no construidas en esta fase). */
-  let _t = null;
+  /* Toast genérico (secciones aún no construidas en esta fase) — snackbar canónico. */
   function flashDetail(ev, msg) {
-    let toast = document.getElementById('evToast');
-    if (!toast) { toast = document.createElement('div'); toast.id = 'evToast'; toast.setAttribute('role', 'status'); document.body.appendChild(toast); }
-    toast.textContent = msg || `Detalle de "${ev.name}" — pantalla disponible en una próxima fase de la demo.`;
-    toast.classList.add('is-visible');
-    clearTimeout(_t);
-    _t = setTimeout(() => toast.classList.remove('is-visible'), 2800);
+    window.naoweeToast(msg || `Detalle de "${ev.name}" — pantalla disponible en una próxima fase de la demo.`, 'info');
   }
 
   /* ─── Bootstrap ─── */

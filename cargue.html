@@ -9,13 +9,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="shared/tokens.css?v=0.4.0">
+<link rel="stylesheet" href="shared/tokens.css?v=0.9.1">
 <link rel="stylesheet" href="shared/shell.css?v=0.4.5">
-<link rel="stylesheet" href="shared/list-components.css?v=0.9.0">
-<link rel="stylesheet" href="shared/event-detail.css?v=0.4.0">
-<link rel="stylesheet" href="shared/forms.css?v=0.9.0">
-<link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.9.0" defer></script>
+<link rel="stylesheet" href="shared/list-components.css?v=0.9.1">
+<link rel="stylesheet" href="shared/event-detail.css?v=0.9.1">
+<link rel="stylesheet" href="shared/forms.css?v=0.9.1">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.9.1">
+<script src="shared/naowee-footer.js?v=0.9.1" defer></script>
 <!-- SheetJS: lectura/escritura real de .xlsx para el cargue masivo (validación real por fila). -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -137,7 +137,7 @@
 
   /* ── Modo Manual Ranking / Medallería (grid) ── */
   .carg-manual-grid { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: var(--radius-xl); overflow: hidden; }
-  .carg-manual-grid__header { display: grid; column-gap: 12px; padding: 10px 16px; background: #f4f5f9; font-size: 11px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase; color: var(--text-secondary); border-bottom: 1px solid var(--border); }
+  .carg-manual-grid__header { display: grid; column-gap: 12px; padding: 10px 16px; background: var(--th-bg); font-size: 11px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase; color: var(--text-secondary); border-bottom: 1px solid var(--border); }
   .carg-manual-grid__header.g-ranking { grid-template-columns: 1fr 150px 150px; }
   .carg-manual-grid__header.g-medalleria { grid-template-columns: 1fr 80px 80px 80px 90px; }
   .carg-manual-row { display: grid; column-gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface); align-items: center; }
@@ -170,9 +170,15 @@
   /* Form "nuevo deportista" (panel inline canónico) */
   .carg-newform { margin-top: 8px; }
   .carg-newform[hidden] { display: none; }
-  .carg-newform__inner { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-soft); padding: 18px 18px 16px; animation: fadeIn .25s ease both; }
-  .carg-newform__title { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 14px; display: flex; align-items: center; gap: 7px; }
-  .carg-newform__title svg { width: 16px; height: 16px; color: var(--accent); }
+  /* Panel sutil: superficie blanca + borde hairline + sombra tenue (en vez del gris
+     lleno pesado). Aire generoso y radio grande = se siente ligero, no un cajón. */
+  .carg-newform__inner { border: 1px solid var(--border); border-radius: var(--radius-xl); background: var(--surface); padding: 22px 24px 20px; box-shadow: var(--shadow-sm); animation: fadeIn .25s ease both; }
+  /* Encabezado con jerarquía de TÍTULO: tile de icono + título + subtítulo + divisor. */
+  .carg-newform__head { display: flex; align-items: flex-start; gap: 12px; padding-bottom: 16px; margin-bottom: 18px; border-bottom: 1px solid var(--border); }
+  .carg-newform__ico { flex-shrink: 0; width: 34px; height: 34px; border-radius: var(--radius-md); background: var(--accent-bg); color: var(--accent); display: inline-flex; align-items: center; justify-content: center; }
+  .carg-newform__ico svg { width: 18px; height: 18px; }
+  .carg-newform__title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0; line-height: 1.3; }
+  .carg-newform__sub { font-size: 12.5px; color: var(--text-secondary); margin: 3px 0 0; line-height: 1.45; }
   .carg-newform__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
   .carg-newform__grid .carg-field--wide { grid-column: span 2; }
   .carg-newform__foot { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 16px; }
@@ -219,6 +225,18 @@
   .carg-data-scroll .naowee-table--in-card tbody td { white-space: nowrap; }
   .carg-data-scroll .naowee-table--in-card .num { text-align: center; font-feature-settings: 'tnum'; }
   .carg-file__table-foot { font-size: 11.5px; color: var(--text-muted); margin-top: 10px; }
+  /* Acciones por fila (editar/borrar) en "Cargas realizadas". */
+  /* Columna de acciones fija a la derecha → editar/borrar siempre visibles aunque
+     la tabla scrollee horizontalmente. */
+  .carg-file__acts-th { width: 1%; position: sticky; right: 0; z-index: 1; background: var(--th-bg); }
+  .carg-file__acts { white-space: nowrap; text-align: right; position: sticky; right: 0; background: var(--surface); box-shadow: -8px 0 8px -6px rgba(40, 40, 52, .10); }
+  .carg-file__act { width: 28px; height: 28px; border: none; background: transparent; border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: background var(--duration-fast), color var(--duration-fast); }
+  .carg-file__act svg { width: 15px; height: 15px; }
+  .carg-file__act:hover { background: var(--accent-bg); color: var(--accent); }
+  .carg-file__act--del:hover { background: var(--red-bg); color: var(--red); }
+  .carg-file__act--save:hover { background: var(--green-bg); color: var(--green); }
+  .carg-file__edit-input { width: 100%; min-width: 90px; height: 32px; padding: 0 8px; border: 1px solid var(--border-dark); border-radius: var(--radius-sm); font-family: inherit; font-size: 13px; color: var(--text-primary); background: var(--surface); }
+  .carg-file__edit-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(215,64,9,.12); }
 
   /* ── Toast (inyectado) ── */
 
@@ -275,7 +293,7 @@
   .oversight-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 22px; flex-wrap: wrap; }
   .oversight-head__title h2 { font-size: 22px; font-weight: 800; letter-spacing: -.4px; color: var(--text-primary); margin: 0 0 4px; }
   .oversight-head__title p { font-size: 13px; color: var(--text-secondary); margin: 0; }
-  .oversight-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: var(--radius-full); background: var(--blue-bg); color: var(--blue-info); font-size: 11.5px; font-weight: 700; flex-shrink: 0; border: 1px solid #c0d8f8; }
+  .oversight-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: var(--radius-full); background: var(--blue-bg); color: var(--blue-info); font-size: 11.5px; font-weight: 700; flex-shrink: 0; border: 1px solid var(--blue-border); }
   .oversight-badge svg { width: 14px; height: 14px; }
   .ov-gestor-chip { display: inline-flex; align-items: center; gap: 7px; }
   .ov-gestor-av { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: 700; flex-shrink: 0; }
@@ -378,6 +396,16 @@
   .carg-podio-slot { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 13px 14px; display: flex; flex-direction: column; gap: 11px; margin-bottom: 11px; }
   .carg-podio-slot__head { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--text-primary); }
   .carg-podio-slot__medal { font-size: 18px; }
+  /* Slot ocupado por el deportista colombiano (su puesto = su posición registrada):
+     read-only, no duplicable ni editable. Los demás slots son rivales ficticios. */
+  .carg-podio-slot--owned { border-color: var(--accent); background: var(--accent-bg); }
+  .carg-podio-slot__owned { display: flex; align-items: center; gap: 10px; }
+  .carg-podio-slot__owned-flag { font-size: 22px; line-height: 1; flex-shrink: 0; }
+  .carg-podio-slot__owned-name { font-size: 13.5px; font-weight: 700; color: var(--text-primary); }
+  .carg-podio-slot__owned-tag { font-size: 12px; color: var(--accent); font-weight: 600; margin-top: 1px; }
+  .carg-podio-slot__fields { display: flex; flex-direction: column; gap: 11px; }
+  /* El display:flex de arriba pisa el display:none del atributo [hidden] → restaurarlo. */
+  .carg-podio-slot__owned[hidden], .carg-podio-slot__fields[hidden] { display: none; }
   .carg-intl-drawer__foot { padding: 16px 22px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; }
   @media (max-width: 600px) {
     .carg-intl-drawer__panel { width: 100%; top: auto; height: 88vh; border-radius: var(--radius-xl) var(--radius-xl) 0 0; transform: translateY(100%); }
@@ -429,9 +457,13 @@
     .naowee-segment--sm { flex: 1; }
     .naowee-segment--sm .naowee-segment__item { flex: 1; }
   }
-  .carg-eq-form { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-soft); padding: 18px 18px 16px; }
-  .carg-eq-form__title { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 14px; display: flex; align-items: center; gap: 7px; }
-  .carg-eq-form__title svg { width: 16px; height: 16px; color: var(--accent); }
+  /* Panel unificado con "Registrar nuevo deportista": superficie blanca + hairline +
+     sombra tenue (no gris lleno) + encabezado tipo título con tile de icono. */
+  .carg-eq-form { border: 1px solid var(--border); border-radius: var(--radius-xl); background: var(--surface); padding: 22px 24px 20px; box-shadow: var(--shadow-sm); }
+  .carg-eq-form__head { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .carg-eq-form__ico { flex-shrink: 0; width: 34px; height: 34px; border-radius: var(--radius-md); background: var(--accent-bg); color: var(--accent); display: inline-flex; align-items: center; justify-content: center; }
+  .carg-eq-form__ico svg { width: 18px; height: 18px; }
+  .carg-eq-form__title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0; line-height: 1.3; }
   .carg-eq-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
   .carg-eq-fixed { height: 44px; display: flex; align-items: center; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); font-size: 14px; font-weight: 600; color: var(--text-primary); }
   .carg-eq-medalfield { display: flex; flex-direction: column; gap: 6px; }
@@ -439,8 +471,8 @@
   .carg-eq-foot { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 16px; }
 
   /* Integrantes del equipo (asociar participantes — sin inscripción) */
-  .carg-eq-members { margin-top: 8px; border-top: 1px dashed var(--border-dark); padding-top: 14px; }
-  .carg-eq-members__title { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .3px; margin-bottom: 10px; }
+  .carg-eq-members { margin-top: 22px; border-top: 1px dashed var(--border-dark); padding-top: 20px; }
+  .carg-eq-members__title { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .3px; margin-bottom: 12px; }
   .carg-eq-members__row { display: grid; grid-template-columns: 1fr 170px auto; gap: 10px; align-items: end; }
   .carg-eq-members__opt { font-weight: 500; color: var(--text-muted); text-transform: none; letter-spacing: 0; }
   /* Selector de integrantes = combobox de deportistas INSCRITOS (roster del evento). */
@@ -528,7 +560,7 @@
 
 <script type="module">
   import { mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher, getRoleFromQuery, getIcon, ROLES, homeForRole } from './shared/sidebar.js';
-  import { allEvents, STATUS_LABEL, applyUpload, addUploadRecord, getFileVersions, addFileVersion, addInscritos, removeInscrito, updateInscrito, getResultPositions, setResultPosition, positionKey, GESTOR_MAP, resolveGestorId, eventsForGestor, gestorIdForRole } from './shared/events-data.js';
+  import { allEvents, STATUS_LABEL, applyUpload, addUploadRecord, getFileVersions, addFileVersion, removeFileRow, updateFileRow, addInscritos, removeInscrito, updateInscrito, getResultPositions, setResultPosition, positionKey, GESTOR_MAP, resolveGestorId, eventsForGestor, gestorIdForRole } from './shared/events-data.js';
   import { GESTORES, DEPORTES_POR_TIPO, DEPARTAMENTOS } from './shared/catalogo.js';
   import { effectiveRoster } from './shared/roster-data.js';
 
@@ -567,7 +599,8 @@
     bang: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
     userPlus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>',
     users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
-    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
+    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+    pencil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>'
   };
 
   /* ─── Config por tipo (label, plantilla, columnas de la planilla) ─── */
@@ -869,18 +902,9 @@
 
   /* ─── Toast ─── */
   let _toastT = null;
-  function flash(msg, type = 'info') {
-    /* Toast canónico del DS (#evToast en naowee-footer.css): pill neutro oscuro.
-       No se pintan colores semánticos (el DS no los define); el éxito se comunica
-       con el "✓" del mensaje. role=alert para errores. */
-    let toast = document.getElementById('evToast');
-    if (!toast) { toast = document.createElement('div'); toast.id = 'evToast'; document.body.appendChild(toast); }
-    toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
-    toast.textContent = msg;
-    toast.classList.add('is-visible');
-    clearTimeout(_toastT);
-    _toastT = setTimeout(() => { toast.classList.remove('is-visible'); }, 3200);
-  }
+  /* Snackbar canónico (DS): badge de icono semántico. Los mensajes sin tipo son
+     confirmaciones → 'success' (verde). Ver window.naoweeToast en naowee-footer.js. */
+  function flash(msg, type = 'success') { window.naoweeToast(msg, type); }
 
   /* ─── Utilidad ─── */
   function esc(str) {
@@ -1065,7 +1089,7 @@
           </div>
           <div class="det-foot__block">
             <span class="det-foot__lbl">${I.doc} Descripción</span>
-            <p class="det-foot__desc">${esc(ev.descripcion || 'Evento del calendario oficial gestionado en Naowee Eventos. La operación (inscripciones, resultados y medallería) se realiza por cargue mientras el evento esté activo.')}</p>
+            <p class="det-foot__desc${ev.descripcion ? '' : ' det-foot__desc--empty'}">${ev.descripcion ? esc(ev.descripcion) : 'Sin descripción.'}</p>
           </div>
         </div>
       </section>
@@ -1676,7 +1700,10 @@
           </div>
         </div>
         <div class="carg-eq-form" id="eqForm">
-          <div class="carg-eq-form__title">${I.userPlus} Nuevo ${isMed ? 'equipo con medalla' : 'resultado de equipo'}</div>
+          <div class="carg-eq-form__head">
+            <span class="carg-eq-form__ico">${I.userPlus}</span>
+            <h4 class="carg-eq-form__title">Nuevo ${isMed ? 'equipo con medalla' : 'resultado de equipo'}</h4>
+          </div>
           <div class="carg-eq-grid">
             ${multi
               ? ddFieldHTML('deporte', 'Deporte', 'Selecciona…', true)
@@ -1920,16 +1947,27 @@
     const slot = (n, medal) => `
       <div class="carg-podio-slot" data-slot="${n}">
         <div class="carg-podio-slot__head"><span class="carg-podio-slot__medal">${medal}</span> ${n}.º lugar</div>
-        <div class="carg-intl-field">
-          <label>País del participante</label>
-          <div class="naowee-dropdown" data-dd-pais="${n}">
-            <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox"><span class="naowee-dropdown__value is-placeholder" data-dd-val>Selecciona país…</span><span class="naowee-dropdown__chevron">${I.chevD}</span></button>
-            <div class="naowee-dropdown__menu" role="listbox"></div>
+        <!-- Estado OCUPADO por el colombiano (su posición = este puesto): read-only. -->
+        <div class="carg-podio-slot__owned" data-owned="${n}" hidden>
+          <span class="carg-podio-slot__owned-flag">🇨🇴</span>
+          <div>
+            <div class="carg-podio-slot__owned-name" data-owned-name="${n}">—</div>
+            <div class="carg-podio-slot__owned-tag">Este puesto es del deportista colombiano · su marca se toma de arriba</div>
           </div>
         </div>
-        <div class="carg-intl-row2">
-          <div class="carg-intl-field"><label>Nombre</label><input class="carg-intl-input" data-slot-nombre="${n}" placeholder="Nombre del participante"></div>
-          <div class="carg-intl-field"><label data-slot-marca-label="${n}">Marca</label><input class="carg-intl-input" data-slot-marca="${n}" placeholder="ej: 10.4 s"></div>
+        <!-- Estado editable (rival ficticio): país (sin Colombia) + nombre + marca. -->
+        <div class="carg-podio-slot__fields" data-fields="${n}">
+          <div class="carg-intl-field">
+            <label>País del participante</label>
+            <div class="naowee-dropdown" data-dd-pais="${n}">
+              <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox"><span class="naowee-dropdown__value is-placeholder" data-dd-val>Selecciona país…</span><span class="naowee-dropdown__chevron">${I.chevD}</span></button>
+              <div class="naowee-dropdown__menu" role="listbox"></div>
+            </div>
+          </div>
+          <div class="carg-intl-row2">
+            <div class="carg-intl-field"><label>Nombre</label><input class="carg-intl-input" data-slot-nombre="${n}" placeholder="Nombre del participante"></div>
+            <div class="carg-intl-field"><label data-slot-marca-label="${n}">Marca</label><input class="carg-intl-input" data-slot-marca="${n}" placeholder="ej: 10.4 s"></div>
+          </div>
         </div>
       </div>`;
     return `
@@ -2018,7 +2056,8 @@
     };
     [1, 2, 3].forEach((n) => {
       const dd = drawer.querySelector(`[data-dd-pais="${n}"]`);
-      setupDropdown(dd, PAISES, () => paisState[n], (val) => { paisState[n] = val; });
+      /* Sin Colombia: el podio son RIVALES ficticios; al colombiano lo ocupa su propio puesto. */
+      setupDropdown(dd, PAISES.filter((p) => p.value !== 'CO'), () => paisState[n], (val) => { paisState[n] = val; });
     });
     const setVal = (sel, val) => { const e = drawer.querySelector(sel); if (e) e.value = val || ''; };
     const clearForm = () => {
@@ -2040,6 +2079,7 @@
       const colM = drawer.querySelector('#colMarca'); if (colM) colM.placeholder = rm.ph;
       [1, 2, 3].forEach((n) => { const l = drawer.querySelector(`[data-slot-marca-label="${n}"]`); if (l) l.textContent = rm.label; const i2 = drawer.querySelector(`[data-slot-marca="${n}"]`); if (i2) i2.placeholder = rm.ph; });
       if (intlData[id]) fillForm(intlData[id]); else clearForm();   // Editar reabre CON lo capturado
+      syncOwnedSlots();                    // bloquea el slot del colombiano según su posición
       drawer.hidden = false;
       void drawer.offsetWidth;           // reflow → commit del estado cerrado para que la transición del panel/overlay anime
       drawer.classList.add('is-open');
@@ -2051,27 +2091,44 @@
     if (intlEscHandler) document.removeEventListener('keydown', intlEscHandler);
     intlEscHandler = (e) => { if (e.key === 'Escape' && !drawer.hidden) close(); };
     document.addEventListener('keydown', intlEscHandler);
-    /* Si el colombiano quedó en el podio (1-3), pre-carga 🇨🇴 + su nombre en ese slot. */
+    /* El slot del podio que coincide con la posición del colombiano LO OCUPA él
+       (read-only): no se puede duplicar ni poner a otro ahí; los demás = rivales.
+       Evita registrarlo en primer lugar (o cualquier puesto) en dos sitios a la vez. */
     const colPosEl = drawer.querySelector('#colPos');
-    colPosEl.addEventListener('input', () => {
+    function syncOwnedSlots() {
       const p = parseInt(colPosEl.value, 10);
-      if (!(p >= 1 && p <= 3) || !currentId) return;
-      const nombreEl = drawer.querySelector(`[data-slot-nombre="${p}"]`);
-      if (nombreEl && !nombreEl.value && !paisState[p]) {
-        const r = rows.find((x) => x.id === currentId);
-        setPais(p, 'CO'); nombreEl.value = r ? r.nombre : '';
-        const mEl = drawer.querySelector(`[data-slot-marca="${p}"]`), cm = drawer.querySelector('#colMarca');
-        if (mEl && !mEl.value && cm && cm.value) mEl.value = cm.value;
-      }
-    });
+      const r = currentId ? rows.find((x) => x.id === currentId) : null;
+      [1, 2, 3].forEach((n) => {
+        const owned = (p === n);
+        const ownedEl = drawer.querySelector(`[data-owned="${n}"]`);
+        const fieldsEl = drawer.querySelector(`[data-fields="${n}"]`);
+        if (ownedEl) ownedEl.hidden = !owned;
+        if (fieldsEl) fieldsEl.hidden = owned;
+        drawer.querySelector(`[data-slot="${n}"]`)?.classList.toggle('carg-podio-slot--owned', owned);
+        if (owned) {
+          const nm = drawer.querySelector(`[data-owned-name="${n}"]`); if (nm) nm.textContent = r ? r.nombre : '';
+          setPais(n, ''); setVal(`[data-slot-nombre="${n}"]`, ''); setVal(`[data-slot-marca="${n}"]`, '');
+        }
+      });
+    }
+    colPosEl.addEventListener('input', syncOwnedSlots);
     drawer.querySelector('#intlSaveBtn').addEventListener('click', () => {
       if (!currentId) return;
       const pos = (drawer.querySelector('#colPos').value || '').trim();
       if (!pos) { flash('Ingresa la posición del deportista colombiano.', 'error'); drawer.querySelector('#colPos').focus(); return; }
+      const colMarca = (drawer.querySelector('#colMarca').value || '').trim();
+      const rCol = rows.find((x) => x.id === currentId);
       const podio = {};
-      [1, 2, 3].forEach((n) => { podio[n] = { pais: paisState[n], nombre: (drawer.querySelector(`[data-slot-nombre="${n}"]`).value || '').trim(), marca: (drawer.querySelector(`[data-slot-marca="${n}"]`).value || '').trim() }; });
+      [1, 2, 3].forEach((n) => {
+        if (String(pos) === String(n)) {
+          /* El puesto del colombiano lo ocupa él (no un rival): Colombia + su nombre + su marca. */
+          podio[n] = { pais: 'CO', nombre: rCol ? rCol.nombre : '', marca: colMarca };
+        } else {
+          podio[n] = { pais: paisState[n], nombre: (drawer.querySelector(`[data-slot-nombre="${n}"]`).value || '').trim(), marca: (drawer.querySelector(`[data-slot-marca="${n}"]`).value || '').trim() };
+        }
+      });
       const wasDone = intlDone.has(currentId);
-      intlData[currentId] = { pos, marca: (drawer.querySelector('#colMarca').value || '').trim(), podio };
+      intlData[currentId] = { pos, marca: colMarca, podio };
       intlDone.add(currentId);
       const row = container.querySelector(`.carg-intl-athlete[data-athlete="${currentId}"]`);
       if (row) {
@@ -2459,7 +2516,13 @@
     formEl.removeAttribute('hidden');
     formEl.innerHTML = `
       <div class="carg-newform__inner">
-        <div class="carg-newform__title">${I.userPlus} ${prefill.origen === 'SUID' ? 'Deportista del SUID — completa e inscribe' : 'Registrar nuevo deportista'}</div>
+        <div class="carg-newform__head">
+          <span class="carg-newform__ico">${I.userPlus}</span>
+          <div>
+            <h4 class="carg-newform__title">${prefill.origen === 'SUID' ? 'Deportista del SUID' : 'Registrar nuevo deportista'}</h4>
+            <p class="carg-newform__sub">${prefill.origen === 'SUID' ? 'Datos traídos del SUID; complétalos y confirma la inscripción.' : 'Crea el deportista y queda inscrito en el evento al instante.'}</p>
+          </div>
+        </div>
         <div class="carg-newform__grid">
           ${ddFieldHTML('tipoDoc', 'Tipo de documento', 'Selecciona…', true)}
           ${tfFieldHTML('nroDoc', 'Número de documento', 'Ej: 1052342871', true)}
@@ -2679,7 +2742,7 @@
 
   function fileCardHTML(v, open) {
     return `
-      <div class="carg-file ${open ? 'is-open' : ''}" data-file>
+      <div class="carg-file ${open ? 'is-open' : ''}" data-file data-ver="${v.version}">
         <button class="carg-file__head" type="button" aria-expanded="${open ? 'true' : 'false'}">
           <span class="carg-file__ico">${I.fileSheet}</span>
           <span class="carg-file__meta">
@@ -2694,12 +2757,17 @@
       </div>`;
   }
 
+  /* Editable = evento no finalizado (gateOpen). Cada fila lleva editar/borrar. */
   function fileTableHTML(v) {
     const cols = v.columns || [];
     const rows = v.rows || [];
-    const thead = cols.map((c) => `<th class="${c.num ? 'num' : ''}">${c.l}</th>`).join('');
-    const tbody = rows.map((row) => `
-      <tr>${cols.map((c) => `<td class="${c.num ? 'num' : ''}">${esc(row[c.k] ?? '—')}</td>`).join('')}</tr>
+    const actTh = gateOpen ? '<th class="carg-file__acts-th" aria-label="Acciones"></th>' : '';
+    const thead = cols.map((c) => `<th class="${c.num ? 'num' : ''}">${c.l}</th>`).join('') + actTh;
+    const tbody = rows.map((row, i) => `
+      <tr data-row="${i}">${cols.map((c) => `<td class="${c.num ? 'num' : ''}" data-col="${esc(c.k)}">${esc(row[c.k] ?? '—')}</td>`).join('')}${gateOpen ? `<td class="carg-file__acts">
+        <button type="button" class="carg-file__act" data-edit-row aria-label="Editar fila" title="Editar">${I.pencil}</button>
+        <button type="button" class="carg-file__act carg-file__act--del" data-del-row aria-label="Borrar fila" title="Borrar">${I.trash}</button>
+      </td>` : ''}</tr>
     `).join('');
     return `
       <div class="carg-data-scroll">
@@ -2711,6 +2779,38 @@
       <div class="carg-file__table-foot">${rows.length} fila${rows.length !== 1 ? 's' : ''} · ${cols.length} columnas de la plantilla. Desliza horizontalmente para ver todas.</div>`;
   }
 
+  /* Re-render SOLO de "Cargas realizadas" (no toca el formulario de captura). */
+  function remountFiles() {
+    const m = document.getElementById('filesMount');
+    if (!m) return;
+    m.innerHTML = filesHTML();
+    bindFiles();
+  }
+  /* Edición inline de una fila ya guardada: cada celda → input; guardar/cancelar. */
+  function enterRowEdit(card, tr) {
+    const ver = Number(card.dataset.ver), idx = Number(tr.dataset.row);
+    const storeTipo = TIPO_CFG[activeTipo].storeTipo;
+    const v = getFileVersions(selectedEventId, storeTipo).find((x) => x.version === ver);
+    if (!v || !v.rows[idx]) return;
+    const rowData = v.rows[idx];
+    tr.querySelectorAll('td[data-col]').forEach((td) => {
+      const k = td.dataset.col, val = rowData[k] == null ? '' : String(rowData[k]);
+      td.innerHTML = `<input class="carg-file__edit-input" data-edit-col="${esc(k)}" value="${esc(val)}">`;
+    });
+    const acts = tr.querySelector('.carg-file__acts');
+    if (acts) {
+      acts.innerHTML = `<button type="button" class="carg-file__act carg-file__act--save" data-save-row title="Guardar">${I.check}</button><button type="button" class="carg-file__act" data-cancel-row title="Cancelar">${I.x}</button>`;
+      acts.querySelector('[data-save-row]').addEventListener('click', () => {
+        const patch = {};
+        tr.querySelectorAll('[data-edit-col]').forEach((inp) => { patch[inp.dataset.editCol] = inp.value.trim(); });
+        updateFileRow(selectedEventId, storeTipo, ver, idx, patch);
+        remountFiles();
+        flash('Fila actualizada.', 'success');
+      });
+      acts.querySelector('[data-cancel-row]').addEventListener('click', remountFiles);
+      const first = tr.querySelector('.carg-file__edit-input'); if (first) first.focus();
+    }
+  }
   function bindFiles() {
     document.querySelectorAll('[data-file]').forEach((card) => {
       const head = card.querySelector('.carg-file__head');
@@ -2718,6 +2818,16 @@
         const open = card.classList.toggle('is-open');
         head.setAttribute('aria-expanded', String(open));
       });
+      /* Acciones por fila (solo si el evento es editable: gateOpen). */
+      card.querySelectorAll('[data-edit-row]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); enterRowEdit(card, b.closest('tr')); }));
+      card.querySelectorAll('[data-del-row]').forEach((b) => b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const tr = b.closest('tr'), ver = Number(card.dataset.ver), idx = Number(tr.dataset.row);
+        if (!window.confirm('¿Borrar este registro de la carga? Se descontará del conteo del evento.')) return;
+        removeFileRow(selectedEventId, TIPO_CFG[activeTipo].storeTipo, ver, idx);
+        remountFiles();
+        flash('Registro borrado.', 'success');
+      }));
     });
   }
 

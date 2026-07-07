@@ -9,13 +9,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="shared/tokens.css?v=0.4.0">
+<link rel="stylesheet" href="shared/tokens.css?v=0.9.1">
 <link rel="stylesheet" href="shared/shell.css?v=0.4.5">
-<link rel="stylesheet" href="shared/list-components.css?v=0.9.0">
-<link rel="stylesheet" href="shared/event-detail.css?v=0.4.0">
-<link rel="stylesheet" href="shared/forms.css?v=0.9.0">
-<link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.9.0" defer></script>
+<link rel="stylesheet" href="shared/list-components.css?v=0.9.1">
+<link rel="stylesheet" href="shared/event-detail.css?v=0.9.1">
+<link rel="stylesheet" href="shared/forms.css?v=0.9.1">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.9.1">
+<script src="shared/naowee-footer.js?v=0.9.1" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -209,6 +209,9 @@
      es min-width y no pisa esos breakpoints. cargue.html mantiene 4 (no se toca). */
   @media (min-width: 721px) {
     .meta-strip { grid-template-columns: repeat(5, 1fr); }
+    /* Foot alineado a la meta de 5 col: Gestor = 1/5 → su divisor cae sobre la
+       1ª línea de grid de la meta-strip (ritmo vertical alineado). */
+    .det-foot { grid-template-columns: 1fr 4fr; }
   }
 </style>
 </head>
@@ -351,7 +354,7 @@
         </div>
         <div class="det-foot__block">
           <span class="det-foot__lbl">${I.doc} Descripción</span>
-          <p class="det-foot__desc">${ev.descripcion || 'Evento del calendario oficial gestionado en Naowee Eventos; la operación (inscripciones, resultados y medallería) se realiza por cargue una vez el evento está Activo.'}</p>
+          <p class="det-foot__desc${ev.descripcion ? '' : ' det-foot__desc--empty'}">${ev.descripcion ? escH(ev.descripcion) : 'Sin descripción.'}</p>
         </div>
       </div>`;
   }
@@ -699,14 +702,8 @@
 
   /* ─── Toast placeholder (cargues = Fase 4) ─── */
   let _t = null;
-  function flash(msg) {
-    let toast = document.getElementById('evToast');
-    if (!toast) { toast = document.createElement('div'); toast.id = 'evToast'; toast.setAttribute('role', 'status'); document.body.appendChild(toast); }
-    toast.textContent = msg;
-    toast.classList.add('is-visible');
-    clearTimeout(_t);
-    _t = setTimeout(() => toast.classList.remove('is-visible'), 2800);
-  }
+  /* Snackbar canónico (DS): window.naoweeToast en naowee-footer.js. */
+  function flash(msg, type = 'info') { window.naoweeToast(msg, type); }
 
   function bind() {
     document.querySelectorAll('[data-gate]').forEach((el) => {
@@ -1011,7 +1008,7 @@
     const f = mFieldEl(name); if (!f) return;
     f.classList.add('naowee-textfield--error');
     const m = f.querySelector('[data-msg]');
-    if (m) { m.innerHTML='<span class="naowee-helper naowee-helper--negative naowee-helper--loud"><span class="naowee-helper__text"><span class="naowee-helper__badge"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="6" fill="#c4031d"/><path d="M3.75 6h4.5" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg></span><span>'+msg+'</span></span></span>'; m.style.display='block'; m.setAttribute('aria-live','polite'); }
+    if (m) { m.innerHTML='<span class="naowee-helper naowee-helper--negative naowee-helper--loud"><span class="naowee-helper__text"><span class="naowee-helper__badge"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="6" style="fill:var(--field-border-error)"/><path d="M3.75 6h4.5" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg></span><span>'+msg+'</span></span></span>'; m.style.display='block'; m.setAttribute('aria-live','polite'); }
     if (name==='m-inicio' && mDpInstances['m-inicio']) mDpInstances['m-inicio'].setError(true);
     if (name==='m-fin'    && mDpInstances['m-fin'])    mDpInstances['m-fin'].setError(true);
     if (doWiggle) mWiggle(mControlEl(f));
@@ -1305,7 +1302,7 @@
         flash('Continuando con datos incompletos (modo demo).');
         doSaveEdit();
       } else {
-        flash('Revisa los campos marcados. Vuelve a tocar Guardar para continuar.');
+        flash('Revisa los campos marcados. Vuelve a tocar Guardar para continuar.', 'caution');
       }
     });
 
@@ -1368,7 +1365,7 @@
 
     closeEditModal();
     render();
-    flash('Cambios guardados.');
+    flash('Cambios guardados.', 'success');
   }
 
   /* ── Abrir / Cerrar modal ── */

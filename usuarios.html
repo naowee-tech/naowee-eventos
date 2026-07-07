@@ -9,12 +9,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="shared/tokens.css?v=0.4.0">
+<link rel="stylesheet" href="shared/tokens.css?v=0.9.1">
 <link rel="stylesheet" href="shared/shell.css?v=0.4.5">
-<link rel="stylesheet" href="shared/list-components.css?v=0.9.0">
-<link rel="stylesheet" href="shared/forms.css?v=0.9.0">
-<link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.9.0" defer></script>
+<link rel="stylesheet" href="shared/list-components.css?v=0.9.1">
+<link rel="stylesheet" href="shared/forms.css?v=0.9.1">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.9.1">
+<script src="shared/naowee-footer.js?v=0.9.1" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -94,7 +94,7 @@
   /* Celdas con contenido largo truncan con ellipsis */
   .naowee-table.naowee-table--in-card tbody td { max-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* Correo standalone en td (col 3) */
-  .naowee-table.naowee-table--in-card tbody td span[style*="font-size:12.5px"] { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .naowee-table.naowee-table--in-card tbody td .row-email { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--text-secondary); }
   /* Rol label trunca */
   .row-rol-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
   /* Columna Acciones: overflow visible para que tooltip sobresalga */
@@ -168,7 +168,7 @@
   .naowee-btn.naowee-btn--small,
   .naowee-btn.naowee-btn--icon.naowee-btn--small { height: 32px; }
   .naowee-btn.naowee-btn--icon:focus-visible {
-    outline: none; box-shadow: 0 0 0 3px rgba(215,64,9,.22);
+    outline: none; box-shadow: 0 0 0 3px rgba(215,64,9,.15);
   }
 
   /* ─── Row actions ─── */
@@ -179,9 +179,9 @@
   .naowee-tooltip { position: relative; display: inline-flex; }
   .naowee-tooltip__content {
     position: absolute; z-index: 9999;
-    background: rgba(28,28,40,.88);
+    background: var(--text-primary);
     color: #fff;
-    border-radius: 5px;
+    border-radius: var(--radius-sm);
     padding: 4px 8px;
     font-size: 11.5px; font-weight: 500; font-family: 'Inter', sans-serif;
     white-space: nowrap;
@@ -192,7 +192,7 @@
   }
   .naowee-tooltip__content::after {
     content: ''; position: absolute;
-    border: 5px solid transparent; border-top-color: rgba(28,28,40,.88);
+    border: 5px solid transparent; border-top-color: var(--text-primary);
     top: 100%; left: 50%; transform: translateX(-50%);
   }
   .naowee-tooltip:hover .naowee-tooltip__content,
@@ -604,7 +604,7 @@
     return '<tr>' +
       '<td data-label="Usuario">' + buildPersonaCell(u) + '</td>' +
       '<td data-label="Rol"><span class="row-rol-label">' + escHtml(ROL_LABELS[u.rol] || u.rol) + '</span></td>' +
-      '<td data-label="Correo"><span style="font-size:12.5px;color:var(--text-secondary);font-family:\'Inter\',sans-serif;">' + escHtml(u.correo) + '</span></td>' +
+      '<td data-label="Correo"><span class="row-email">' + escHtml(u.correo) + '</span></td>' +
       '<td data-label="Estado">' + buildEstadoBadge(u.estado) + '</td>' +
       '<td data-label="Acceso">' + accesoHtml + '</td>' +
       '<td data-label="" style="text-align:center;">' + buildRowActions(u) + '</td>' +
@@ -1117,25 +1117,8 @@
     });
   })();
 
-  /* ─── Toast canónico ─── */
-  var _toastTimer = null;
-  function showToast(msg, variant) {
-    var toast = document.getElementById('evToast');
-    if (!toast) {
-      toast = document.createElement('div');
-      toast.id = 'evToast';
-      toast.setAttribute('role', 'status');
-      document.body.appendChild(toast);
-    }
-    toast.textContent = msg;
-    /* Variante success: fondo verde oscuro */
-    if (variant === 'success') toast.style.background = 'var(--green, #1f8923)';
-    else if (variant === 'error') toast.style.background = 'var(--red, #c0392b)';
-    else toast.style.background = '';
-    toast.classList.add('is-visible');
-    clearTimeout(_toastTimer);
-    _toastTimer = setTimeout(function () { toast.classList.remove('is-visible'); }, 2800);
-  }
+  /* ─── Toast (snackbar canónico DS · window.naoweeToast) ─── */
+  function showToast(msg, variant) { window.naoweeToast(msg, variant || 'info'); }
 
   /* ─── Utils ─── */
   function escHtml(s) {

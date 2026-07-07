@@ -9,12 +9,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="shared/tokens.css?v=0.4.0">
+<link rel="stylesheet" href="shared/tokens.css?v=0.9.1">
 <link rel="stylesheet" href="shared/shell.css?v=0.4.5">
-<link rel="stylesheet" href="shared/list-components.css?v=0.9.0">
-<link rel="stylesheet" href="shared/forms.css?v=0.9.0">
-<link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.9.0" defer></script>
+<link rel="stylesheet" href="shared/list-components.css?v=0.9.1">
+<link rel="stylesheet" href="shared/forms.css?v=0.9.1">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.9.1">
+<script src="shared/naowee-footer.js?v=0.9.1" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -138,14 +138,7 @@
   }
 
   /* Toast */
-  #evToast {
-    position: fixed; bottom: 88px; left: 50%; transform: translateX(-50%) translateY(10px);
-    background: #282834; color: #fff; font-size: 13px; font-weight: 500;
-    padding: 10px 20px; border-radius: var(--radius-full);
-    white-space: nowrap; opacity: 0; pointer-events: none;
-    transition: opacity .22s ease, transform .22s ease; z-index: 2000;
-  }
-  #evToast.is-visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+  /* #evToast: estilos del snackbar canónico viven en naowee-footer.css (compartido). */
 
   @keyframes fadeInUp {
     from { opacity: 0; transform: translateY(16px); }
@@ -898,15 +891,8 @@ document.getElementById('calModalSave').addEventListener('click', () => {
   showToast(`Evento "${titulo}" publicado en el calendario.`);
 });
 
-/* ─── Toast ─── */
-let toastTimer = null;
-function showToast(msg) {
-  const t = document.getElementById('evToast');
-  t.textContent = msg;
-  t.classList.add('is-visible');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('is-visible'), 3200);
-}
+/* ─── Toast (snackbar canónico DS · window.naoweeToast) ─── */
+function showToast(msg, type = 'success') { window.naoweeToast(msg, type); }
 </script>
 </body>
 </html>
