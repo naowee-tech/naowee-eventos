@@ -106,21 +106,51 @@ export const DEPORTES_POR_TIPO = {
 };
 
 /* ─── Catálogos de ORGANIZACIONES por tipo (para "Organizaciones invitadas"
-   en la edición del evento). El buscador filtra por el tipo elegido: Liga →
-   ligas del país; Club → clubes; Departamento/Municipio usan sus catálogos. ─── */
+   en la edición del evento). Cada liga/club lleva su `depto` (dato canónico,
+   NO se parsea del nombre) para poder ACOTAR el catálogo a la(s) sede(s) del
+   evento: si el evento es en Antioquia, solo se ofrecen ligas/clubes de
+   Antioquia. Multi-sede → unión de los departamentos del evento. ─── */
 export const LIGAS = [
-  'Liga del Valle', 'Liga Antioqueña', 'Liga de Bogotá', 'Liga de Santander',
-  'Liga de Cundinamarca', 'Liga del Atlántico', 'Liga de Risaralda', 'Liga de Nariño',
-  'Liga del Cauca', 'Liga de Boyacá', 'Liga de Caldas', 'Liga del Tolima',
-  'Liga de Bolívar', 'Liga del Meta', 'Liga de Córdoba', 'Liga de Sucre',
-  'Liga del Huila', 'Liga del Quindío', 'Liga del Magdalena', 'Liga de Norte de Santander'
+  { nombre: 'Liga del Valle', depto: 'Valle del Cauca' },
+  { nombre: 'Liga Antioqueña', depto: 'Antioquia' },
+  { nombre: 'Liga de Bogotá', depto: 'Bogotá D.C.' },
+  { nombre: 'Liga de Santander', depto: 'Santander' },
+  { nombre: 'Liga de Cundinamarca', depto: 'Cundinamarca' },
+  { nombre: 'Liga del Atlántico', depto: 'Atlántico' },
+  { nombre: 'Liga de Risaralda', depto: 'Risaralda' },
+  { nombre: 'Liga de Nariño', depto: 'Nariño' },
+  { nombre: 'Liga del Cauca', depto: 'Cauca' },
+  { nombre: 'Liga de Boyacá', depto: 'Boyacá' },
+  { nombre: 'Liga de Caldas', depto: 'Caldas' },
+  { nombre: 'Liga del Tolima', depto: 'Tolima' },
+  { nombre: 'Liga de Bolívar', depto: 'Bolívar' },
+  { nombre: 'Liga del Meta', depto: 'Meta' },
+  { nombre: 'Liga de Córdoba', depto: 'Córdoba' },
+  { nombre: 'Liga de Sucre', depto: 'Sucre' },
+  { nombre: 'Liga del Huila', depto: 'Huila' },
+  { nombre: 'Liga del Quindío', depto: 'Quindío' },
+  { nombre: 'Liga del Magdalena', depto: 'Magdalena' },
+  { nombre: 'Liga de Norte de Santander', depto: 'Norte de Santander' }
 ];
 export const CLUBES = [
-  'Club Deportivo Cali', 'Atlético Nacional', 'Millonarios FC', 'Independiente Santa Fe',
-  'América de Cali', 'Junior FC', 'Club Aqua Valle', 'Atlético Bucaramanga',
-  'Deportivo Pereira', 'Once Caldas', 'Club Los Andes', 'Club Náutico de Bogotá',
-  'Club Halcones de Barranquilla', 'Club Cóndores de Nariño', 'Club Titanes de Córdoba',
-  'Club Deportivo Popular', 'Club Sporting Medellín', 'Club Real Cartagena'
+  { nombre: 'Club Deportivo Cali', depto: 'Valle del Cauca' },
+  { nombre: 'Atlético Nacional', depto: 'Antioquia' },
+  { nombre: 'Millonarios FC', depto: 'Bogotá D.C.' },
+  { nombre: 'Independiente Santa Fe', depto: 'Bogotá D.C.' },
+  { nombre: 'América de Cali', depto: 'Valle del Cauca' },
+  { nombre: 'Junior FC', depto: 'Atlántico' },
+  { nombre: 'Club Aqua Valle', depto: 'Valle del Cauca' },
+  { nombre: 'Atlético Bucaramanga', depto: 'Santander' },
+  { nombre: 'Deportivo Pereira', depto: 'Risaralda' },
+  { nombre: 'Once Caldas', depto: 'Caldas' },
+  { nombre: 'Club Los Andes', depto: 'Cundinamarca' },
+  { nombre: 'Club Náutico de Bogotá', depto: 'Bogotá D.C.' },
+  { nombre: 'Club Halcones de Barranquilla', depto: 'Atlántico' },
+  { nombre: 'Club Cóndores de Nariño', depto: 'Nariño' },
+  { nombre: 'Club Titanes de Córdoba', depto: 'Córdoba' },
+  { nombre: 'Club Deportivo Popular', depto: 'Antioquia' },
+  { nombre: 'Club Sporting Medellín', depto: 'Antioquia' },
+  { nombre: 'Club Real Cartagena', depto: 'Bolívar' }
 ];
 
 /* ─── Cascada Departamento → Municipio (hoja `Listas`: `departamento` 33 ·
@@ -174,6 +204,33 @@ export const MUNICIPIOS_POR_DEPTO = {
 
 export function municipiosDeDepto(depto) {
   return MUNICIPIOS_POR_DEPTO[depto] || [];
+}
+
+/* ─── Scoping por sede del evento (multi-departamental) ───
+   Todos aceptan un array de departamentos; con array vacío devuelven el
+   catálogo completo (evento sin ubicación definida = sin acotar). */
+export function ligasDeDeptos(deptos) {
+  const set = new Set(deptos || []);
+  return (set.size ? LIGAS.filter((l) => set.has(l.depto)) : LIGAS).map((l) => l.nombre);
+}
+export function clubesDeDeptos(deptos) {
+  const set = new Set(deptos || []);
+  return (set.size ? CLUBES.filter((c) => set.has(c.depto)) : CLUBES).map((c) => c.nombre);
+}
+export function municipiosDeDeptos(deptos) {
+  if (!deptos || !deptos.length) {
+    return [...new Set(Object.values(MUNICIPIOS_POR_DEPTO).flat())].sort((a, b) => a.localeCompare(b, 'es'));
+  }
+  const out = [];
+  deptos.forEach((d) => municipiosDeDepto(d).forEach((m) => out.push(m)));
+  return out;
+}
+/* Resolución inversa (para marcar organizaciones fuera del alcance geográfico). */
+export function deptoDeLiga(nombre) { const l = LIGAS.find((x) => x.nombre === nombre); return l ? l.depto : ''; }
+export function deptoDeClub(nombre) { const c = CLUBES.find((x) => x.nombre === nombre); return c ? c.depto : ''; }
+export function deptoDeMunicipio(nombre) {
+  for (const [d, list] of Object.entries(MUNICIPIOS_POR_DEPTO)) { if (list.includes(nombre)) return d; }
+  return '';
 }
 
 /* Helpers de cascada. */

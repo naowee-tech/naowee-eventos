@@ -178,10 +178,16 @@
 .naowee-dropdown__trigger:hover { border-color: var(--field-border-hover); }
 /* Tamaño medium (40px) — canónico DS */
 .naowee-dropdown--medium .naowee-dropdown__trigger { min-height: 40px; }
+/* Tamaño small (32px) — canónico DS (.naowee-dropdown--small), para toolbars de filtro */
+.naowee-dropdown--small .naowee-dropdown__trigger { min-height: 32px; padding: 0 10px; gap: 6px; font-size: 12px; border-radius: var(--radius-sm); }
+.naowee-dropdown--small .naowee-dropdown__chevron { width: 16px; height: 16px; }
 .naowee-dropdown__trigger:focus-visible,
 .naowee-dropdown.is-open .naowee-dropdown__trigger {
   outline: none; border-width: 2px; border-color: var(--accent); padding: 0 11px;
 }
+/* En small, al abrir/enfocar el borde crece a 2px → compensa el padding para que no salte */
+.naowee-dropdown--small.is-open .naowee-dropdown__trigger,
+.naowee-dropdown--small .naowee-dropdown__trigger:focus-visible { padding: 0 9px; }
 /* Chevron en naranja al hover + abierto (paridad IVC). */
 .naowee-dropdown__trigger:hover .naowee-dropdown__chevron,
 .naowee-dropdown.is-open .naowee-dropdown__chevron { color: var(--accent); }
@@ -225,6 +231,25 @@
 .naowee-dropdown__opt.is-selected .naowee-dropdown__opt-check { opacity: 1; }
 .naowee-dropdown__opt-emoji { font-size: 16px; flex-shrink: 0; }
 .naowee-dropdown__empty { padding: 14px; font-size: 12.5px; color: var(--text-muted); text-align: center; }
+
+/* ── MULTI-selección (departamentos/municipios): checkbox a la izquierda, el
+   menú se mantiene abierto al elegir; agrupación por encabezado (municipios
+   por depto). Reusado por evento-crear y el modal de editar de evento-detalle. ── */
+.naowee-dropdown__opt--multi { gap: 10px; }
+.naowee-dropdown__opt--multi .dd-check-box {
+  width: 18px; height: 18px; flex: 0 0 auto; border: 1.5px solid var(--border-dark);
+  border-radius: var(--radius-sm); display: inline-flex; align-items: center; justify-content: center;
+  color: #fff; transition: background var(--duration-fast), border-color var(--duration-fast);
+}
+.naowee-dropdown__opt--multi .dd-check-box svg { width: 12px; height: 12px; }
+.naowee-dropdown__opt--multi.is-checked { background: transparent; color: var(--text-primary); font-weight: 500; }
+.naowee-dropdown__opt--multi.is-checked .dd-check-box { background: var(--accent); border-color: var(--accent); }
+.naowee-dropdown__opt--multi.is-checked:hover { background: var(--bg-soft); }
+.dd-group-hd {
+  padding: 8px 14px 4px; font-size: 11px; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--text-secondary); position: sticky; top: 0; background: var(--surface);
+}
+.lbl-opt { font-weight: 500; color: var(--text-muted); }
 
 /* ── Helper canónico (DS .naowee-helper) — error de campo: variante negative loud ── */
 .naowee-helper { display: flex; align-items: flex-start; gap: 6px; width: 100%; padding-top: 4px; font-family: inherit; }

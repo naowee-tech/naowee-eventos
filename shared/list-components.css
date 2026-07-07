@@ -31,6 +31,13 @@
 .naowee-searchbox--has-value .naowee-searchbox__clear { display: flex; }
 /* Tamaño medium (40px) — canónico DS */
 .naowee-searchbox--medium .naowee-searchbox__input-wrap { height: 40px; }
+/* Tamaño small (32px) — canónico DS (.naowee-searchbox--small), para toolbars de filtro */
+.naowee-searchbox--small .naowee-searchbox__input-wrap { height: 32px; padding: 0 10px; gap: 6px; }
+.naowee-searchbox--small .naowee-searchbox__input { font-size: 13px; }
+.naowee-searchbox--small .naowee-searchbox__icon,
+.naowee-searchbox--small .naowee-searchbox__icon svg { width: 16px; height: 16px; }
+.naowee-searchbox--small .naowee-searchbox__clear { width: 20px; height: 20px; }
+.naowee-searchbox--small .naowee-searchbox__clear svg { width: 15px; height: 15px; }
 
 /* ── Paginación canónica (DS .naowee-pagination) — port a tokens, tamaño medium ── */
 .naowee-pagination { display: flex; align-items: center; gap: 16px; font-family: inherit; font-feature-settings: 'case' 1; }

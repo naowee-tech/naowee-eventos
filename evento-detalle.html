@@ -11,11 +11,11 @@
 
 <link rel="stylesheet" href="shared/tokens.css?v=0.4.0">
 <link rel="stylesheet" href="shared/shell.css?v=0.4.5">
-<link rel="stylesheet" href="shared/list-components.css?v=0.4.2">
+<link rel="stylesheet" href="shared/list-components.css?v=0.9.0">
 <link rel="stylesheet" href="shared/event-detail.css?v=0.4.0">
-<link rel="stylesheet" href="shared/forms.css?v=0.4.3">
+<link rel="stylesheet" href="shared/forms.css?v=0.9.0">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.8.5" defer></script>
+<script src="shared/naowee-footer.js?v=0.9.0" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -194,6 +194,12 @@
   .cfg-orgs { display: flex; flex-wrap: wrap; gap: 8px; }
   .cfg-org { display: inline-flex; align-items: center; gap: 8px; padding: 6px 8px 6px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-full); font-size: 13px; font-weight: 600; color: var(--text-primary); }
   .cfg-org__tipo { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--accent); background: var(--accent-bg); padding: 2px 7px; border-radius: var(--radius-full); }
+  /* Organización fuera del alcance geográfico del evento (la sede cambió tras invitarla). */
+  .cfg-org--out { border-color: var(--orange-border); background: var(--orange-bg); }
+  .cfg-org__flag { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: #b45309; }
+  .cfg-org__flag svg { width: 13px; height: 13px; }
+  .cfg-scope-hint { margin: 0 0 12px; font-size: 12.5px; color: var(--text-secondary); }
+  .cfg-scope-hint strong { color: var(--text-primary); font-weight: 600; }
   .cfg-msg { margin-top: 14px; }
 
   /* La meta-strip de ESTE detalle tiene 5 campos (se sumó "Alcance" en v0.7.1):
@@ -237,11 +243,12 @@
     mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher,
     getRoleFromQuery, ROLES
   } from './shared/sidebar.js?v=0.4.5';
-  import { allEvents, STATUS_LABEL, getUploadHistory, updateEvent } from './shared/events-data.js?v=0.4.2';
+  import { allEvents, STATUS_LABEL, getUploadHistory, updateEvent, placeLabel, placeTitle, eventDeptos, eventMunicipios } from './shared/events-data.js?v=0.9.0';
   /* Módulo LIGHT: el detalle NO carga catálogo deportivo (deportes/pruebas
      viven solo como columnas de los archivos de cargue — Fase 4). Solo se
      usa el catálogo de gestores para mostrar el responsable asignado. */
-  import { PERFILES_ASIGNABLES, DEPARTAMENTOS, municipiosDeDepto, DEPORTES_POR_TIPO, LIGAS, CLUBES, MUNICIPIOS_POR_DEPTO } from './shared/catalogo.js?v=0.4.5';
+  import { PERFILES_ASIGNABLES, DEPARTAMENTOS, municipiosDeDepto, DEPORTES_POR_TIPO, LIGAS, CLUBES, MUNICIPIOS_POR_DEPTO,
+           ligasDeDeptos, clubesDeDeptos, municipiosDeDeptos, deptoDeLiga, deptoDeClub, deptoDeMunicipio } from './shared/catalogo.js?v=0.9.0';
 
   /* ─── Iconos (stroke currentColor, paridad módulo). Solo los usados en
      el container consolidado + Seguimiento + acciones del header. ─── */
@@ -312,7 +319,7 @@
         </div>
         <div class="meta-strip__col">
           <span class="meta-strip__lbl">${I.pin} Lugar</span>
-          <span class="meta-strip__val">${ev.place}</span>
+          <span class="meta-strip__val" title="${escH(placeTitle(ev))}">${escH(placeLabel(ev))}</span>
         </div>
         <div class="meta-strip__col">
           <span class="meta-strip__lbl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Alcance</span>
@@ -418,12 +425,32 @@
      Editable por ADMIN; lectura para el resto. Persiste vía updateEvent → allEvents(). */
   const DEPORTES_FLAT = Object.values(DEPORTES_POR_TIPO).flat()
     .map((d) => ({ nombre: d.label, emoji: d.emoji || '', pruebas: d.pruebas || [] }));
-  const ORG_TIPOS = ['Liga', 'Departamento', 'Municipio', 'Club'];
-  /* El buscador de organizaciones trae el catálogo del TIPO elegido (feedback Doug):
-     Liga → ligas del país · Club → clubes · Departamento/Municipio → sus catálogos. */
-  const ALL_MUNICIPIOS = [...new Set(Object.values(MUNICIPIOS_POR_DEPTO).flat())].sort((a, b) => a.localeCompare(b, 'es'));
-  const orgCatalogFor = (tipo) => tipo === 'Liga' ? LIGAS : tipo === 'Club' ? CLUBES : tipo === 'Departamento' ? DEPARTAMENTOS : tipo === 'Municipio' ? ALL_MUNICIPIOS : [];
+  /* Tipos de organización invitables. "Departamento" se OCULTA cuando el evento
+     tiene UN solo departamento (queda implícito: ya se sabe cuál); visible si es
+     multi-departamental o si aún no tiene ubicación definida (feedback Doug). */
+  const orgTiposFor = (deptos) => ['Liga', ...(deptos.length === 1 ? [] : ['Departamento']), 'Municipio', 'Club'];
+  /* El buscador de organizaciones trae el catálogo del TIPO elegido, ACOTADO a
+     la(s) sede(s) del evento (feedback Doug): si el evento es en Antioquia, solo
+     ligas/clubes/municipios de Antioquia. Multi-sede → unión. Sin sede → todo. */
+  const orgCatalogFor = (tipo, deptos) =>
+      tipo === 'Liga' ? ligasDeDeptos(deptos)
+    : tipo === 'Club' ? clubesDeDeptos(deptos)
+    : tipo === 'Departamento' ? (deptos.length ? deptos.slice() : DEPARTAMENTOS)
+    : tipo === 'Municipio' ? municipiosDeDeptos(deptos)
+    : [];
   const phOrgFor = (tipo) => tipo === 'Liga' ? 'Busca una liga…' : tipo === 'Departamento' ? 'Busca un departamento…' : tipo === 'Municipio' ? 'Busca un municipio…' : 'Busca un club…';
+  /* ¿La organización ya invitada queda dentro del alcance geográfico del evento?
+     (Si la sede cambia después de invitar, se MARCA — no se borra dato guardado.) */
+  const orgEnAlcance = (o, deptos) => {
+    if (!deptos.length) return true;
+    if (o.tipo === 'Liga') return deptos.includes(deptoDeLiga(o.nombre));
+    if (o.tipo === 'Club') return deptos.includes(deptoDeClub(o.nombre));
+    if (o.tipo === 'Departamento') return deptos.includes(o.nombre);
+    /* Municipio: chequeo directo contra los municipios de la(s) sede(s) — a prueba
+       de homónimos (evita el reverse-lookup de primer match de deptoDeMunicipio). */
+    if (o.tipo === 'Municipio') return municipiosDeDeptos(deptos).includes(o.nombre);
+    return true;
+  };
   const escH = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const ICON_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
   const ICON_CHEVD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
@@ -464,12 +491,20 @@
             </div>`; }).join('') : `<div class="cfg-empty">Aún no hay deportes asociados.${canEdit ? ' Agrega los deportes y sus competencias.' : ''}</div>`}
         </div>
       </section>`;
+    const evDeptos = eventDeptos(ev);
+    const anyOut = orgs.some((o) => !orgEnAlcance(o, evDeptos));
+    /* Sede del evento acota las organizaciones (feedback Doug). El placeholder del
+       tipo refleja si "Departamento" aplica (oculto cuando hay 1 solo depto). */
+    const scopeHint = evDeptos.length
+      ? `<p class="cfg-scope-hint">Solo organizaciones de: <strong>${escH(evDeptos.join(', '))}</strong></p>`
+      : '';
     const orgsSec = intl ? '' : `
       <section class="det-section cfg-section" aria-labelledby="cfg-org-title" style="animation-delay:.14s">
         <div class="det-section__head">${I.org}<h3 id="cfg-org-title">Organizaciones invitadas</h3></div>
+        ${canEdit ? scopeHint : ''}
         ${canEdit ? `<div class="cfg-addrow">${ddMarkupCfg('cfgTipo', 'Liga', 'cfg-dd--tipo')}${ddMarkupCfg('cfgOrg', 'Busca una liga…', 'cfg-dd--org')}<button type="button" class="naowee-btn naowee-btn--loud" id="cfgAddOrg" disabled>${ICON_PLUS} Invitar</button></div>` : ''}
-        <div class="cfg-orgs">${orgs.length ? orgs.map((o, i) => `<span class="cfg-org"><span class="cfg-org__tipo">${escH(o.tipo)}</span> ${escH(o.nombre)}${canEdit ? `<button type="button" class="cfg-chip__x" data-rm-org="${i}" aria-label="Quitar organización">${ICON_XM}</button>` : ''}</span>`).join('') : `<div class="cfg-empty">Aún no hay organizaciones invitadas.</div>`}</div>
-        ${canEdit && orgs.length ? `<div class="naowee-message naowee-message--caution cfg-msg"><div class="naowee-message__header"><span class="naowee-message__icon">${ICON_WARN}</span><span class="naowee-message__body">Al quitar una organización con inscritos, resultados o medallas ya cargados, el sistema validará antes de eliminarla.</span></div></div>` : ''}
+        <div class="cfg-orgs">${orgs.length ? orgs.map((o, i) => { const out = !orgEnAlcance(o, evDeptos); return `<span class="cfg-org${out ? ' cfg-org--out' : ''}"${out ? ' title="Fuera del alcance geográfico actual del evento"' : ''}><span class="cfg-org__tipo">${escH(o.tipo)}</span> ${escH(o.nombre)}${out ? `<span class="cfg-org__flag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> fuera del alcance</span>` : ''}${canEdit ? `<button type="button" class="cfg-chip__x" data-rm-org="${i}" aria-label="Quitar organización">${ICON_XM}</button>` : ''}</span>`; }).join('') : `<div class="cfg-empty">Aún no hay organizaciones invitadas.</div>`}</div>
+        ${canEdit && anyOut ? `<div class="naowee-message naowee-message--caution cfg-msg"><div class="naowee-message__header"><span class="naowee-message__icon">${ICON_WARN}</span><span class="naowee-message__body">Hay organizaciones fuera del alcance geográfico actual (la sede del evento cambió). Revisa si siguen aplicando.</span></div></div>` : (canEdit && orgs.length ? `<div class="naowee-message naowee-message--caution cfg-msg"><div class="naowee-message__header"><span class="naowee-message__icon">${ICON_WARN}</span><span class="naowee-message__body">Al quitar una organización con inscritos, resultados o medallas ya cargados, el sistema validará antes de eliminarla.</span></div></div>` : '')}
       </section>`;
     return deportesSec + orgsSec;
   }
@@ -611,10 +646,11 @@
     let pickedTipo = 'Liga';
     let pickedOrg = '';
     const orgBtn = page.querySelector('#cfgAddOrg');
+    const cfgDeptos = eventDeptos(ev);   /* sede(s) del evento → acota el catálogo */
     const syncOrgBtn = () => { if (orgBtn) orgBtn.disabled = !pickedOrg; };
-    /* Buscador de organizaciones: su catálogo depende del tipo elegido. */
-    const orgSearch = cfgSearchDropdown(page.querySelector('[data-dd="cfgOrg"]'), () => orgCatalogFor(pickedTipo), (v) => { pickedOrg = v; syncOrgBtn(); });
-    cfgDropdown(page.querySelector('[data-dd="cfgTipo"]'), ORG_TIPOS.map((t) => ({ value: t, label: t })), (o) => {
+    /* Buscador de organizaciones: catálogo = tipo elegido ACOTADO a la(s) sede(s). */
+    const orgSearch = cfgSearchDropdown(page.querySelector('[data-dd="cfgOrg"]'), () => orgCatalogFor(pickedTipo, cfgDeptos), (v) => { pickedOrg = v; syncOrgBtn(); });
+    cfgDropdown(page.querySelector('[data-dd="cfgTipo"]'), orgTiposFor(cfgDeptos).map((t) => ({ value: t, label: t })), (o) => {
       pickedTipo = o.value; pickedOrg = '';
       if (orgSearch) orgSearch.reset(phOrgFor(o.value));   // al cambiar de tipo, limpia la organización elegida
       syncOrgBtn();
@@ -729,12 +765,15 @@
 
   /* Snapshot comparable de los campos editables (para detectar cambios). */
   function mSnapshot() {
+    /* Ubicación multi → se serializa ORDENADA para que revertir re-deshabilite Guardar. */
+    const deps = (mState.departamentos || []).slice().sort();
+    const munis = (mState.municipios || []).map((m) => `${m.depto}${'›'}${m.nombre}`).sort();
     return JSON.stringify({
       nombre: (mState.nombre || '').trim(),
       inicio: mState.inicio ? mState.inicio.getTime() : null,
       fin: mState.fin ? mState.fin.getTime() : null,
-      departamento: mState.departamento || '',
-      municipio: mState.municipio || '',
+      departamentos: deps,
+      municipios: munis,
       gestorId: mState.gestorId || '',
       descripcion: (mState.descripcion || '').trim()
     });
@@ -762,7 +801,7 @@
   }
 
   /* ── Dropdown del modal ── */
-  function setupMDropdown(name, opts, onSelect, getSelected, container) {
+  function setupMDropdown(name, opts, onSelect, getSelected, container, cfg = {}) {
     const root = container || document.getElementById('evEditModal');
     const dd = root.querySelector(`[data-dd="${name}"]`);
     if (!dd) return null;
@@ -770,16 +809,28 @@
     const valEl = dd.querySelector('[data-dd-val]');
     const trigger = dd.querySelector('.naowee-dropdown__trigger');
     const sheetTitle = dd.getAttribute('data-sheet-title') || 'Selecciona';
+    const multi = !!cfg.multi;   /* multi-select: checkbox + no cierra al elegir + grupos opcionales */
 
     function paint() {
       const sel = getSelected ? getSelected() : null;
       const sheetHead = `<div class="naowee-dropdown__sheet-head"><span class="naowee-dropdown__sheet-title">${sheetTitle}</span><button type="button" class="naowee-dropdown__sheet-close" data-close aria-label="Cerrar">${ICON_XM}</button></div>`;
-      const body = opts.length
-        ? opts.map((o) => `<button type="button" class="naowee-dropdown__opt ${o.value===sel?'is-selected':''}" data-val="${o.value}">${o.emoji?`<span class="naowee-dropdown__opt-emoji">${o.emoji}</span>`:''}${o.html||`<span>${o.label}</span>`}<span class="naowee-dropdown__opt-check">${ICON_CHECK_M}</span></button>`).join('')
-        : `<div class="naowee-dropdown__empty">Sin opciones disponibles</div>`;
-      menu.innerHTML = sheetHead + body;
+      const renderOpt = (o) => {
+        const checked = multi ? cfg.isSelected(o.value) : (o.value === sel);
+        return `<button type="button" class="naowee-dropdown__opt ${multi ? 'naowee-dropdown__opt--multi' : ''} ${checked ? (multi ? 'is-checked' : 'is-selected') : ''}" data-val="${o.value}">${multi ? `<span class="dd-check-box">${checked ? ICON_CHECK_M : ''}</span>` : ''}${o.emoji ? `<span class="naowee-dropdown__opt-emoji">${o.emoji}</span>` : ''}${o.html || `<span>${o.label}</span>`}${multi ? '' : `<span class="naowee-dropdown__opt-check">${ICON_CHECK_M}</span>`}</button>`;
+      };
+      const groupsData = (multi && cfg.groups) ? cfg.groups() : null;
+      const flat = groupsData ? groupsData.flatMap((g) => g.opts) : opts;
+      let bodyRows;
+      if (groupsData) {
+        bodyRows = groupsData.length
+          ? groupsData.map((g) => `<div class="dd-group-hd">${g.label}</div>${g.opts.map(renderOpt).join('')}`).join('')
+          : `<div class="naowee-dropdown__empty">Elige un departamento primero</div>`;
+      } else {
+        bodyRows = flat.length ? flat.map(renderOpt).join('') : `<div class="naowee-dropdown__empty">Sin opciones disponibles</div>`;
+      }
+      menu.innerHTML = sheetHead + bodyRows;
       menu.querySelectorAll('.naowee-dropdown__opt').forEach((btn) => {
-        btn.addEventListener('click', (e) => { e.stopPropagation(); const chosen = opts.find((o) => o.value===btn.dataset.val); onSelect(chosen); close(); });
+        btn.addEventListener('click', (e) => { e.stopPropagation(); const chosen = flat.find((o) => o.value===btn.dataset.val); if (!chosen) return; onSelect(chosen); if (multi) paint(); else close(); });
       });
       menu.querySelector('[data-close]')?.addEventListener('click', (e) => { e.stopPropagation(); close(); });
     }
@@ -808,6 +859,7 @@
       setDisabled(d) { dd.classList.toggle('naowee-dropdown--disabled', d); },
       setError(e) { dd.classList.toggle('naowee-dropdown--error', e); },
       setOpts(next) { opts = next; },
+      repaint() { paint(); },
       close
     };
   }
@@ -1054,18 +1106,20 @@
           <span class="naowee-textfield__msg" data-msg style="display:none"></span>
         </div>
 
-        <!-- Departamento / Municipio: NO aplican en eventos internacionales -->
-        <div data-field="m-departamento">
+        <!-- Departamento(s) / Municipio(s): MULTI (multi-departamental/municipal).
+             NO aplican en eventos internacionales; solo lectura si Activo/Finalizado
+             (se muestra el resumen del lugar). -->
+        <div data-field="m-departamento" ${(lugarLocked && !intl) ? 'class="col-2"' : ''}>
           <label class="naowee-textfield__label ${(lugarLocked||intl)?'lbl-locked':''}" id="mlbl-depto">
-            ${(lugarLocked||intl)?ICON_LOCK+' ':''}${intl ? 'Alcance' : 'Departamento'}
+            ${(lugarLocked||intl)?ICON_LOCK+' ':''}${intl ? 'Alcance' : (lugarLocked ? 'Lugar' : 'Departamento(s)')}
           </label>
           ${intl
             ? `<div class="field-readonly-val">🌐 Internacional — el lugar no aplica</div>`
             : lugarLocked
-              ? `<div class="field-readonly-val">${ev.departamento || (ev.place||'').split(', ').slice(-1)[0] || ev.place || '—'}</div>`
-              : `<div class="naowee-dropdown" data-dd="m-departamento" data-sheet-title="Departamento">
+              ? `<div class="field-readonly-val">${escH(placeLabel(ev))}</div>`
+              : `<div class="naowee-dropdown" data-dd="m-departamento" data-sheet-title="Departamentos">
                   <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-labelledby="mlbl-depto">
-                    <span class="naowee-dropdown__value is-placeholder" data-dd-val>Selecciona un departamento…</span>
+                    <span class="naowee-dropdown__value is-placeholder" data-dd-val>Selecciona departamentos…</span>
                     <span class="naowee-dropdown__chevron">${ddChevIcon}</span>
                   </button>
                   <div class="naowee-dropdown__menu" role="listbox"></div>
@@ -1074,21 +1128,16 @@
           <span class="naowee-textfield__msg" data-msg style="display:none"></span>
         </div>
 
-        <!-- Municipio (locked si Activo/Finalizado; oculto en internacional) -->
-        <div data-field="m-municipio" id="mMuniField" ${(lugarLocked && !intl)?'':'hidden'}>
-          <label class="naowee-textfield__label ${lugarLocked?'lbl-locked':''}" id="mlbl-muni">
-            ${lugarLocked?ICON_LOCK+' ':''}Municipio
-          </label>
-          ${lugarLocked
-            ? `<div class="field-readonly-val">${ev.municipio || (ev.place||'').split(', ')[0] || '—'}</div>`
-            : `<div class="naowee-dropdown" data-dd="m-municipio" data-sheet-title="Municipio">
-                <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-labelledby="mlbl-muni">
-                  <span class="naowee-dropdown__value is-placeholder" data-dd-val>Selecciona un municipio…</span>
-                  <span class="naowee-dropdown__chevron">${ddChevIcon}</span>
-                </button>
-                <div class="naowee-dropdown__menu" role="listbox"></div>
-              </div>`
-          }
+        <!-- Municipio(s): opcional, multi, agrupado por depto. Oculto si locked/internacional. -->
+        <div data-field="m-municipio" id="mMuniField" hidden>
+          <label class="naowee-textfield__label" id="mlbl-muni">Municipio(s) <span class="lbl-opt">· opcional</span></label>
+          <div class="naowee-dropdown" data-dd="m-municipio" data-sheet-title="Municipios">
+            <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-labelledby="mlbl-muni">
+              <span class="naowee-dropdown__value is-placeholder" data-dd-val>Municipios (opcional)…</span>
+              <span class="naowee-dropdown__chevron">${ddChevIcon}</span>
+            </button>
+            <div class="naowee-dropdown__menu" role="listbox"></div>
+          </div>
           <span class="naowee-textfield__msg" data-msg style="display:none"></span>
         </div>
 
@@ -1132,13 +1181,14 @@
     const lockPlace  = isActivo;
     const allLocked  = isFinal;
 
-    /* Precargar estado del modal desde ev */
+    /* Precargar estado del modal desde ev. Ubicación MULTI: se normaliza desde
+       las arrays estructuradas o, si es un evento legacy, desde ev.place. */
     mState = {
       nombre: ev.name,
       inicio: parseDate(ev.start),
       fin:    parseDate(ev.end),
-      departamento: ev.departamento || (ev.place ? ev.place.split(', ').pop() : ''),
-      municipio:    ev.municipio    || (ev.place ? ev.place.split(', ')[0]    : ''),
+      departamentos: eventDeptos(ev).slice(),
+      municipios:    eventMunicipios(ev).map((m) => ({ depto: m.depto, nombre: m.nombre })),
       gestorId: ev.gestorId || ((() => { return (GESTOR_MAP[ev.id] || 'g-andrea'); })()),
       descripcion: ev.descripcion || ''
     };
@@ -1191,41 +1241,41 @@
     if (mState.fin) mDpInstances['m-fin'].setValue(mState.fin);
     else mDpInstances['m-fin'].setValue(null);
 
-    /* Lugar (solo si Borrador) */
+    /* Lugar (solo si Borrador) — cascada MULTI departamento(s) → municipio(s). */
     if (!lockPlace) {
       const deptoOpts = DEPARTAMENTOS.map((d) => ({ value:d, label:d }));
       const mMuniField = document.getElementById('mMuniField');
+      const MSEP = '›';
       let ddMDepto, ddMMunicipio;
+      const syncDeptoLbl = () => { const n = mState.departamentos.length; if (ddMDepto) ddMDepto.setLabel(n===0?'Selecciona departamentos…':n===1?mState.departamentos[0]:`${n} departamentos`, n===0); };
+      const syncMuniLbl = () => { const n = mState.municipios.length; if (ddMMunicipio) ddMMunicipio.setLabel(n===0?'Municipios (opcional)…':n===1?mState.municipios[0].nombre:`${n} municipios`, n===0); };
+      const muniGroups = () => mState.departamentos.map((d) => ({ label: d, opts: municipiosDeDepto(d).map((m) => ({ value: `${d}${MSEP}${m}`, label: m })) }));
 
       ddMMunicipio = setupMDropdown('m-municipio', [], (o) => {
-        mState.municipio = o.value;
-        ddMMunicipio.setLabel(o.label, false);
-        mClearError('m-municipio');
-        syncDirty();
-      }, () => mState.municipio);
+        const i = o.value.indexOf(MSEP);
+        const depto = o.value.slice(0, i), nombre = o.value.slice(i + 1);
+        const at = mState.municipios.findIndex((m) => m.depto === depto && m.nombre === nombre);
+        if (at >= 0) mState.municipios.splice(at, 1); else mState.municipios.push({ depto, nombre });
+        syncMuniLbl(); mClearError('m-municipio'); syncDirty();
+      }, null, undefined, {
+        multi: true,
+        groups: muniGroups,
+        isSelected: (v) => { const i = v.indexOf(MSEP); return mState.municipios.some((m) => m.depto === v.slice(0, i) && m.nombre === v.slice(i + 1)); }
+      });
 
       ddMDepto = setupMDropdown('m-departamento', deptoOpts, (o) => {
-        mState.departamento = o.value;
-        ddMDepto.setLabel(o.label, false);
-        mClearError('m-departamento');
-        mState.municipio = '';
-        const next = municipiosDeDepto(o.value).map((m) => ({ value:m, label:m }));
-        if (ddMMunicipio) { ddMMunicipio.setOpts(next); ddMMunicipio.setLabel('Selecciona un municipio…', true); }
-        mClearError('m-municipio');
-        if (mMuniField) mMuniField.hidden = false;
-        syncDirty();
-      }, () => mState.departamento);
+        const i = mState.departamentos.indexOf(o.value);
+        if (i >= 0) { mState.departamentos.splice(i, 1); mState.municipios = mState.municipios.filter((m) => m.depto !== o.value); }
+        else mState.departamentos.push(o.value);
+        syncDeptoLbl(); mClearError('m-departamento');
+        if (mMuniField) mMuniField.hidden = mState.departamentos.length === 0;
+        syncMuniLbl(); syncDirty();
+      }, null, undefined, { multi: true, isSelected: (v) => mState.departamentos.includes(v) });
 
-      /* Precargar depto si ya había uno */
-      if (mState.departamento && ddMDepto) {
-        ddMDepto.setLabel(mState.departamento, false);
-        const muniOpts = municipiosDeDepto(mState.departamento).map((m) => ({ value:m, label:m }));
-        if (ddMMunicipio) {
-          ddMMunicipio.setOpts(muniOpts);
-          if (mMuniField) mMuniField.hidden = false;
-          if (mState.municipio) ddMMunicipio.setLabel(mState.municipio, false);
-        }
-      }
+      /* Precargar valores existentes */
+      syncDeptoLbl();
+      if (mState.departamentos.length && mMuniField) mMuniField.hidden = false;
+      syncMuniLbl();
     }
 
     /* Gestor — perfiles de la plataforma con su rol (paridad con evento-crear).
@@ -1275,8 +1325,8 @@
     if (!isFinal && !mState.fin) fail('m-fin','Selecciona la fecha de fin.');
     if (!inicioLocked() && mState.inicio && mState.fin && mState.fin < mState.inicio) fail('m-fin','La fecha de fin debe ser igual o posterior al inicio.');
     const mIntl = ev.alcance === 'internacional';   /* internacional → no se exige lugar */
-    if (!isActivo && !isFinal && !mIntl && !mState.departamento) fail('m-departamento','Selecciona el departamento.');
-    if (!isActivo && !isFinal && !mIntl && mState.departamento && !mState.municipio) fail('m-municipio','Selecciona el municipio.');
+    /* Nacional editable: ≥1 departamento; municipios OPCIONALES (multi-sede). */
+    if (!isActivo && !isFinal && !mIntl && !mState.departamentos.length) fail('m-departamento','Selecciona al menos un departamento.');
 
     if (firstErr) {
       const f = mFieldEl(firstErr);
@@ -1292,10 +1342,15 @@
     if (!inicioLocked() && mState.inicio) patch.start = fmtDateM(mState.inicio);
     if (!isFinal && mState.fin) patch.end = fmtDateM(mState.fin);
     if (!isActivo && !isFinal && ev.alcance !== 'internacional') {
-      if (mState.departamento && mState.municipio) {
-        patch.place = `${mState.municipio}, ${mState.departamento}`;
-        patch.departamento = mState.departamento;
-        patch.municipio = mState.municipio;
+      if (mState.departamentos.length) {
+        const departamentos = mState.departamentos.slice();
+        const municipios = mState.municipios.slice();
+        patch.departamentos = departamentos;
+        patch.municipios = municipios;
+        patch.place = placeLabel({ alcance: 'nacional', departamentos, municipios });   /* string derivado */
+        /* espejos singulares (retro-compat con lectores viejos) */
+        patch.departamento = departamentos[0] || null;
+        patch.municipio = (municipios[0] && municipios[0].nombre) || null;
       }
     }
     if (mState.gestorId) patch.gestorId = mState.gestorId;

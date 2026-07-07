@@ -11,11 +11,11 @@
 
 <link rel="stylesheet" href="shared/tokens.css?v=0.4.0">
 <link rel="stylesheet" href="shared/shell.css?v=0.4.5">
-<link rel="stylesheet" href="shared/list-components.css?v=0.4.2">
+<link rel="stylesheet" href="shared/list-components.css?v=0.9.0">
 <link rel="stylesheet" href="shared/event-detail.css?v=0.4.0">
-<link rel="stylesheet" href="shared/forms.css?v=0.4.3">
+<link rel="stylesheet" href="shared/forms.css?v=0.9.0">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.4.0">
-<script src="shared/naowee-footer.js?v=0.8.5" defer></script>
+<script src="shared/naowee-footer.js?v=0.9.0" defer></script>
 <!-- SheetJS: lectura/escritura real de .xlsx para el cargue masivo (validación real por fila). -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -55,8 +55,12 @@
   .carg-tabs-card__head h3 { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0; }
 
   /* Tab bar (3 tabs) — .naowee-tabs canónico (proporcional, underline ::after).
-     Bleed horizontal (-20px = padding del card) → el divider va de borde a borde. */
-  .carg-tabs { margin: 0 -20px 20px; }
+     Bleed horizontal (-20px = padding del card) → el divider va de borde a borde.
+     padding lateral 12px → el fondo del hover del tab (accent-bg, llena los 48px) NO
+     queda pegado al borde del card; el divider sigue de borde a borde (vive en el
+     border-box, que el bleed -20px lleva hasta los bordes del container). */
+  .carg-tabs { margin: 0 -20px 20px; padding: 0 12px; }
+  .carg-tabs .naowee-tab { padding: 0 8px; }
 
   /* ── Sub-segmento Masivo/Manual — CENTRADO bajo los tabs ── */
   .carg-mode-bar { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
@@ -407,7 +411,24 @@
   .carg-tally-empty { font-size: 12.5px; color: var(--text-muted); margin: 0; }
 
   /* ═══ Captura de EQUIPOS (deportes de conjunto) — feedback reunión 03-jul ═══ */
-  .carg-eq-scopebar { display: flex; justify-content: center; margin-bottom: 18px; }
+  /* Toggle "tipo de entidad" contextual en el header de la tarjeta (feedback Doug:
+     NO un segmento gemelo centrado). Segment pequeño + etiqueta, alineado a la
+     derecha del título de la tarjeta. */
+  .carg-scope-toggle { display: inline-flex; align-items: center; gap: 9px; flex-shrink: 0; }
+  .carg-scope-toggle__lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-secondary); white-space: nowrap; }
+  .naowee-segment--sm { height: 32px; padding: 3px; border-radius: var(--radius-md); }
+  .naowee-segment--sm .naowee-segment__pill { top: 3px; bottom: 3px; }
+  .naowee-segment--sm .naowee-segment__item { padding: 0 12px; font-size: 12px; }
+  .carg-card__head--toggle { justify-content: flex-end; margin-bottom: 16px; }
+  /* El bloque título crece para empujar el toggle a la derecha, alineado arriba
+     con el título; en pantallas angostas el toggle baja y ocupa el ancho. */
+  #scopeBody .carg-card__head > div:not(.carg-scope-toggle) { flex: 1 1 260px; min-width: 0; }
+  #scopeBody .carg-scope-toggle { align-self: flex-start; }
+  @media (max-width: 560px) {
+    .carg-scope-toggle { width: 100%; justify-content: space-between; }
+    .naowee-segment--sm { flex: 1; }
+    .naowee-segment--sm .naowee-segment__item { flex: 1; }
+  }
   .carg-eq-form { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-soft); padding: 18px 18px 16px; }
   .carg-eq-form__title { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 14px; display: flex; align-items: center; gap: 7px; }
   .carg-eq-form__title svg { width: 16px; height: 16px; color: var(--accent); }
@@ -421,6 +442,16 @@
   .carg-eq-members { margin-top: 8px; border-top: 1px dashed var(--border-dark); padding-top: 14px; }
   .carg-eq-members__title { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .3px; margin-bottom: 10px; }
   .carg-eq-members__row { display: grid; grid-template-columns: 1fr 170px auto; gap: 10px; align-items: end; }
+  .carg-eq-members__opt { font-weight: 500; color: var(--text-muted); text-transform: none; letter-spacing: 0; }
+  /* Selector de integrantes = combobox de deportistas INSCRITOS (roster del evento). */
+  .carg-eq-memsel { position: relative; }
+  .carg-eq-memmenu { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20; max-height: 220px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); }
+  .carg-eq-memmenu[hidden] { display: none; }
+  .carg-eq-memopt { display: flex; flex-direction: column; gap: 1px; width: 100%; text-align: left; padding: 8px 12px; border: none; background: transparent; cursor: pointer; font-family: inherit; }
+  .carg-eq-memopt:hover { background: var(--accent-bg); }
+  .carg-eq-memopt__nm { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .carg-eq-memopt__meta { font-size: 11.5px; color: var(--text-secondary); }
+  .carg-eq-memmenu__empty { padding: 12px 14px; font-size: 12.5px; color: var(--text-muted); line-height: 1.4; }
   .carg-eq-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
   .carg-eq-chip { display: inline-flex; align-items: center; gap: 8px; padding: 5px 6px 5px 12px; border: 1px solid var(--border); border-radius: var(--radius-full); background: var(--surface); font-size: 12.5px; font-weight: 600; color: var(--text-primary); }
   .carg-eq-chip__doc { color: var(--text-secondary); font-size: 11.5px; font-weight: 500; }
@@ -758,10 +789,7 @@
           <button class="naowee-btn naowee-btn--loud naowee-btn--sm" id="goEqBtn" type="button">${I.layers} Ir a Equipos · conjunto</button>
         </div>
       </div>`;
-    container.querySelector('#goEqBtn')?.addEventListener('click', () => {
-      const eqTab = document.querySelector('#scopeSegment .naowee-segment__item[data-val="eq"]');
-      if (eqTab) eqTab.click();
-    });
+    container.querySelector('#goEqBtn')?.addEventListener('click', () => setManualScope('eq'));
   }
 
   /* Nota de muestreo: la captura manual trabaja sobre una muestra de los inscritos
@@ -780,20 +808,37 @@
   const _normDep = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
   const CONJUNTO_SET = new Set((DEPORTES_POR_TIPO.Conjunto || []).map((d) => _normDep(d.label)));
   const isConjuntoDeporte = (dep) => CONJUNTO_SET.has(_normDep(dep));
-  /* ¿El evento es MULTIDEPORTE? (puede incluir disciplinas de conjunto). */
+  /* ¿El evento es MULTIDEPORTE? (heurística del sport, para el fallback sin catálogo). */
   const eventEsMultideporte = (e) => _normDep(e && e.sport).startsWith('multideporte');
-  /* ¿El evento admite deportes de conjunto? (multideporte, deporte de conjunto en el
-     encabezado, o la etiqueta "· Conjunto" del sport). Feedback reunión 03-jul: los
-     deportes de conjunto se registran POR EQUIPO, sin inscripción previa. */
+  /* Catálogo deportivo CONFIGURADO del evento (ev.deportes, lo asocia el ADMIN en la
+     edición). Es la fuente de verdad; el sport es solo fallback cuando no hay catálogo. */
+  const _catalogDeportes = (e) => (Array.isArray(e && e.deportes) && e.deportes.length)
+    ? e.deportes.map((d) => ({ label: d.deporte, emoji: d.emoji || '', pruebas: (d.competencias && d.competencias.length) ? d.competencias : ['EQUIPOS'] }))
+    : null;
+  /* ¿El evento admite deportes de CONJUNTO? Prioriza el catálogo configurado; si no hay,
+     cae al sport (multideporte / deporte de conjunto en el encabezado / etiqueta "·Conjunto").
+     Feedback reunión 03-jul: los de conjunto se registran POR EQUIPO. */
   const eventAdmiteConjunto = (e) => {
     if (!e) return false;
+    const cat = _catalogDeportes(e);
+    if (cat) return cat.some((d) => isConjuntoDeporte(d.label));
     if (eventEsMultideporte(e)) return true;
     const head = String(e.sport || '').split('·')[0].trim();
     return isConjuntoDeporte(head) || _normDep(e.sport).includes('conjunto');
   };
-  /* Deportes de conjunto disponibles para el evento: multideporte → todos;
-     evento de un solo deporte de conjunto → ese deporte. */
+  /* ¿Tiene deportes INDIVIDUALES? (decide modo dual vs puro conjunto). */
+  const eventHasIndividual = (e) => {
+    if (!e) return true;
+    const cat = _catalogDeportes(e);
+    if (cat) return cat.some((d) => !isConjuntoDeporte(d.label));
+    if (eventEsMultideporte(e)) return true;
+    const head = String(e.sport || '').split('·')[0].trim();
+    return !(isConjuntoDeporte(head) || _normDep(e.sport).includes('conjunto'));
+  };
+  /* Deportes de conjunto disponibles para el flujo de equipos (del catálogo si existe). */
   const conjuntoDeportesForEvent = (e) => {
+    const cat = _catalogDeportes(e);
+    if (cat) { const cj = cat.filter((d) => isConjuntoDeporte(d.label)); if (cj.length) return cj; }
     const all = DEPORTES_POR_TIPO.Conjunto || [];
     if (eventEsMultideporte(e)) return all;
     const head = String((e && e.sport) || '').split('·')[0].trim();
@@ -1136,7 +1181,7 @@
        → estado vacío también por la vía masiva (no basta con la plantilla).
        EXCEPCIÓN (reunión 03-jul): los eventos de PURO conjunto se registran por
        equipo sin inscripción previa → no se bloquean por roster vacío. */
-    const pureConjunto = eventAdmiteConjunto(ev) && !eventEsMultideporte(ev);
+    const pureConjunto = eventAdmiteConjunto(ev) && !eventHasIndividual(ev);
     /* Puro conjunto: la carga masiva por-persona NO aplica (el registro es por equipo;
        la masiva de equipos vive en backend/S3). Se redirige al modo Manual · Equipos,
        único flujo coherente en la demo → evita el callejón de la plantilla individual. */
@@ -1397,45 +1442,59 @@
   function renderManual(container, cfg) {
     if (cfg.manualMode === 'search') { renderManualSearch(container, cfg); return; }
     const kind = activeTipo === 'medalleria' ? 'medalleria' : 'ranking';
-    /* Deportes de conjunto → captura POR EQUIPO (sin inscripción previa). Tiene
-       prioridad sobre el flujo internacional (igual que la vía masiva) para que un
-       evento de conjunto internacional también llegue a la captura por equipos.
-       Multideporte: sub-segmento Individuales|Equipos; puro conjunto: solo equipos. */
-    if (eventAdmiteConjunto(ev)) {
-      if (eventEsMultideporte(ev)) renderManualDual(container, cfg, kind);
-      else renderManualEquipo(container, cfg, kind);
-      return;
-    }
-    /* Internacional (ranking, eventos individuales): flujo de ficticios. */
-    if (activeTipo === 'ranking' && ev && ev.alcance === 'internacional') { renderManualRankingIntl(container); return; }
+    const admiteConj = eventAdmiteConjunto(ev);
+    const hasInd = eventHasIndividual(ev);
+    /* Internacional (ranking, eventos SIN conjunto): flujo de ficticios. */
+    if (activeTipo === 'ranking' && ev && ev.alcance === 'internacional' && !admiteConj) { renderManualRankingIntl(container); return; }
+    /* Deportes de conjunto (según el CATÁLOGO del evento) → captura POR EQUIPO.
+       Mixto (conjunto + individual) → sub-segmento Individuales|Equipos; puro conjunto
+       → solo equipos. Tiene prioridad sobre el internacional. */
+    if (admiteConj && hasInd) { renderManualDual(container, cfg, kind); return; }
+    if (admiteConj) { renderManualEquipo(container, cfg, kind); return; }
     if (activeTipo === 'medalleria') renderManualMedalleria(container, cfg);
     else renderManualGrid(container, cfg);
   }
 
   /* Eventos multideporte: el manual permite capturar INDIVIDUALES (roster) o
      EQUIPOS (conjunto). Un sub-segmento canónico alterna entre ambos. */
-  function renderManualDual(container, cfg, kind) {
-    container.innerHTML = `
-      <div class="carg-eq-scopebar">
-        <div class="naowee-segment" data-segmented id="scopeSegment" role="tablist" aria-label="Individuales o equipos">
-          <span class="naowee-segment__pill" aria-hidden="true"></span>
-          <button class="naowee-segment__item" data-val="ind" type="button" role="tab" id="scopeTabInd" aria-selected="${manualScope === 'ind'}">Individuales</button>
-          <button class="naowee-segment__item" data-val="eq" type="button" role="tab" id="scopeTabEq" aria-selected="${manualScope === 'eq'}">Equipos · conjunto</button>
-        </div>
+  /* Cambio de sub-modo centralizado: lo usan el toggle contextual Y el CTA del
+     empty-state (para no depender del DOM del segmento). */
+  let _repaintDual = null;
+  function setManualScope(val) {
+    if (val === manualScope) return;
+    manualScope = val;
+    if (_repaintDual) _repaintDual();
+  }
+  /* Toggle "tipo de entidad": NO es un segmento gemelo centrado (feedback Doug).
+     Vive como sub-control contextual, etiquetado, en el header de la tarjeta de
+     captura — jerarquía clara frente al segmento primario Masivo/Manual. */
+  const scopeToggleHTML = () => `
+    <div class="carg-scope-toggle">
+      <span class="carg-scope-toggle__lbl">Registrar</span>
+      <div class="naowee-segment naowee-segment--sm" data-segmented id="scopeSegment" role="tablist" aria-label="Individuales o equipos">
+        <span class="naowee-segment__pill" aria-hidden="true"></span>
+        <button class="naowee-segment__item" data-val="ind" type="button" role="tab">Individuales</button>
+        <button class="naowee-segment__item" data-val="eq" type="button" role="tab">Equipos</button>
       </div>
-      <div id="scopeBody" role="tabpanel" aria-labelledby="scopeTabInd"></div>`;
+    </div>`;
+  function injectScopeToggle(root) {
+    const card = root.querySelector('.carg-card');
+    if (!card || card.querySelector('#scopeSegment')) return;
+    let head = card.querySelector('.carg-card__head');
+    if (!head) { head = document.createElement('div'); head.className = 'carg-card__head carg-card__head--toggle'; card.insertBefore(head, card.firstChild); }
+    head.insertAdjacentHTML('beforeend', scopeToggleHTML());
+    bindSegment(card.querySelector('#scopeSegment'), () => manualScope, (val) => setManualScope(val));
+  }
+  function renderManualDual(container, cfg, kind) {
+    container.innerHTML = '<div id="scopeBody"></div>';
     const body = container.querySelector('#scopeBody');
     const paint = () => {
-      body.setAttribute('aria-labelledby', manualScope === 'eq' ? 'scopeTabEq' : 'scopeTabInd');
       if (manualScope === 'eq') renderManualEquipo(body, cfg, kind);
       else if (kind === 'medalleria') renderManualMedalleria(body, cfg);
       else renderManualGrid(body, cfg);
+      injectScopeToggle(body);   // el toggle vive dentro de la tarjeta que se acaba de pintar
     };
-    bindSegment(container.querySelector('#scopeSegment'), () => manualScope, (val) => {
-      if (val === manualScope) return;
-      manualScope = val;
-      paint();
-    });
+    _repaintDual = paint;
     paint();
   }
 
@@ -1613,7 +1672,7 @@
         <div class="naowee-message naowee-message--informative" style="margin-bottom:16px">
           <div class="naowee-message__header">
             <span class="naowee-message__icon"><svg viewBox="0 0 16 16" fill="none"><path d="M7 7h2v4H7z" fill="currentColor"/><circle cx="8" cy="5" r="1" fill="currentColor"/></svg></span>
-            <span class="naowee-message__body">Evento con <strong>deportes de conjunto</strong>: registra el ${isMed ? 'la medalla del' : 'resultado del'} <strong>equipo</strong> (no hace falta inscribir a cada integrante). ${isMed ? 'La medalla de equipo es <strong>una sola</strong>.' : ''} Puedes asociar a los participantes en el mismo formulario.</span>
+            <span class="naowee-message__body">Evento con <strong>deportes de conjunto</strong>: registra el ${isMed ? 'la medalla del' : 'resultado del'} <strong>equipo</strong> (no hace falta inscribir a cada integrante). ${isMed ? 'La medalla de equipo es <strong>una sola</strong>.' : ''} Asocia a sus integrantes <strong>eligiéndolos de los deportistas inscritos</strong>.</span>
           </div>
         </div>
         <div class="carg-eq-form" id="eqForm">
@@ -1636,11 +1695,16 @@
               : `${tfFieldHTML('posicion', 'Posición', 'ej: 1', true)}${tfFieldHTML('marca', 'Resultado / Marca', 'ej: 3-1 · 3-0 sets', false)}`}
           </div>
           <div class="carg-eq-members">
-            <div class="carg-eq-members__title">Integrantes del equipo · opcional</div>
-            <div class="carg-eq-members__row">
-              <div class="carg-field naowee-textfield"><label class="naowee-textfield__label">Nombre del integrante</label><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" type="text" id="memNombre" placeholder="Nombre y apellidos" autocomplete="off"></div></div>
-              <div class="carg-field naowee-textfield"><label class="naowee-textfield__label">Documento</label><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" type="text" id="memDoc" placeholder="ej: CC 1052…" autocomplete="off"></div></div>
-              <button class="naowee-btn naowee-btn--ghost naowee-btn--sm" type="button" id="memAdd">${I.userPlus} Agregar</button>
+            <div class="carg-eq-members__title">Integrantes del equipo <span class="carg-eq-members__opt">· elígelos de los inscritos · opcional</span></div>
+            <div class="carg-eq-memsel">
+              <div class="naowee-searchbox" id="memSearchBox">
+                <div class="naowee-searchbox__input-wrap">
+                  <span class="naowee-searchbox__icon">${I.search}</span>
+                  <input class="naowee-searchbox__input" type="search" id="memSearch" placeholder="Busca un inscrito por nombre o documento…" autocomplete="off">
+                  <button class="naowee-searchbox__clear" id="memClear" type="button" aria-label="Limpiar">${I.x}</button>
+                </div>
+              </div>
+              <div class="carg-eq-memmenu" id="memMenu" hidden></div>
             </div>
             <div class="carg-eq-chips" id="memChips"></div>
           </div>
@@ -1666,8 +1730,13 @@
     const tallyEl = container.querySelector('#eqOrgTally');
     const chipsEl = container.querySelector('#memChips');
     const pruebaSlot = container.querySelector('[data-prueba-slot]');
-    const memNombre = container.querySelector('#memNombre');
-    const memDoc = container.querySelector('#memDoc');
+    const memSearch = container.querySelector('#memSearch');
+    const memMenu = container.querySelector('#memMenu');
+    const memBox = container.querySelector('#memSearchBox');
+    const memClear = container.querySelector('#memClear');
+    /* Roster de inscritos → los integrantes se ELIGEN de aquí (feedback Doug), no a mano. */
+    const rosterPool = effectiveRoster(ev);
+    const _nq = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
     /* Prueba = campo fijo derivado del deporte (conjunto → 'EQUIPOS'). */
     const setPruebaDisplay = () => {
@@ -1680,7 +1749,17 @@
     if (multi) {
       setupDropdown(container.querySelector('[data-dd="deporte"]'), deportes.map((d) => ({ value: d.label, label: d.label, emoji: d.emoji })), () => form.deporte, (v) => { form.deporte = v; form.prueba = pruebasDe(v)[0] || 'EQUIPOS'; setPruebaDisplay(); syncAdd(); });
     }
-    const orgDd = setupDropdown(container.querySelector('[data-dd="organizacion"]'), ORGS_LIST, () => form.organizacion, (v) => { form.organizacion = v; syncAdd(); });
+    const orgDd = setupDropdown(container.querySelector('[data-dd="organizacion"]'), ORGS_LIST, () => form.organizacion, (v) => {
+      form.organizacion = v;
+      /* Los integrantes pertenecen a la organización del equipo: al cambiarla, purga los que ya no correspondan. */
+      if (v && form.integrantes.length) {
+        const before = form.integrantes.length;
+        form.integrantes = form.integrantes.filter((m) => (m.organizacion || '') === v);
+        const dropped = before - form.integrantes.length;
+        if (dropped) { renderChips(); flash(`Se quitaron ${dropped} integrante${dropped !== 1 ? 's' : ''} que no pertenecen a ${v}.`, 'caution'); }
+      }
+      syncAdd();
+    });
 
     if (isMed) {
       const picker = container.querySelector('#eqMedalPicker');
@@ -1695,19 +1774,37 @@
       container.querySelector('[data-tf="marca"] .naowee-textfield__input').addEventListener('input', (e) => { form.marca = e.target.value; });
     }
 
-    /* ── Integrantes (asociar participantes al grupo) ── */
+    /* ── Integrantes: se ELIGEN de los deportistas INSCRITOS del evento (roster) ── */
     const renderChips = () => {
       chipsEl.innerHTML = form.integrantes.map((m, i) => `<span class="carg-eq-chip">${esc(m.nombre)}${m.doc ? ` <span class="carg-eq-chip__doc">${esc(m.doc)}</span>` : ''}<button type="button" class="carg-eq-chip__x" data-rm="${i}" aria-label="Quitar integrante">${I.x}</button></span>`).join('');
       chipsEl.querySelectorAll('[data-rm]').forEach((b) => b.addEventListener('click', () => { form.integrantes.splice(Number(b.dataset.rm), 1); renderChips(); }));
     };
-    const addMember = () => {
-      const nombre = (memNombre.value || '').trim();
-      if (!nombre) { flash('Escribe el nombre del integrante.', 'error'); memNombre.focus(); return; }
-      form.integrantes.push({ nombre, doc: (memDoc.value || '').trim() });
-      memNombre.value = ''; memDoc.value = ''; renderChips(); memNombre.focus();
+    const isMemAdded = (p) => form.integrantes.some((m) => m.id === p.id);
+    const renderMemMenu = () => {
+      if (!rosterPool.length) { memMenu.innerHTML = '<div class="carg-eq-memmenu__empty">Aún no hay deportistas inscritos. Inscríbelos en la pestaña <strong>Inscripciones</strong>; el equipo se puede registrar y asociarlos luego.</div>'; memMenu.hidden = false; return; }
+      const q = _nq(memSearch.value);
+      let pool = rosterPool.filter((p) => !isMemAdded(p));
+      if (form.organizacion) pool = pool.filter((p) => (p.organizacion || '') === form.organizacion);   // integrantes de la organización elegida
+      if (q) pool = pool.filter((p) => _nq(`${p.nombre} ${rosterDoc(p)}`).includes(q));
+      if (form.organizacion && !pool.length && !q) { memMenu.innerHTML = `<div class="carg-eq-memmenu__empty">No hay inscritos de <strong>${esc(form.organizacion)}</strong> sin asignar.</div>`; memMenu.hidden = false; return; }
+      const items = pool.slice(0, 40);
+      memMenu.innerHTML = items.length
+        ? items.map((p) => `<button type="button" class="carg-eq-memopt" data-mid="${esc(p.id)}"><span class="carg-eq-memopt__nm">${esc(p.nombre)}</span><span class="carg-eq-memopt__meta">${esc(rosterDoc(p))}${p.organizacion ? ' · ' + esc(p.organizacion) : ''}</span></button>`).join('')
+        : '<div class="carg-eq-memmenu__empty">Sin inscritos que coincidan.</div>';
+      memMenu.hidden = false;
+      memMenu.querySelectorAll('.carg-eq-memopt').forEach((b) => b.addEventListener('click', () => {
+        const p = rosterPool.find((x) => x.id === b.dataset.mid); if (!p) return;
+        form.integrantes.push({ id: p.id, nombre: p.nombre, doc: rosterDoc(p), organizacion: p.organizacion || '' });
+        memSearch.value = ''; memBox.classList.remove('naowee-searchbox--has-value'); memMenu.hidden = true;
+        renderChips(); memSearch.focus();
+      }));
     };
-    container.querySelector('#memAdd').addEventListener('click', addMember);
-    memDoc.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addMember(); } });
+    memSearch.addEventListener('focus', renderMemMenu);
+    memSearch.addEventListener('input', () => { memBox.classList.toggle('naowee-searchbox--has-value', memSearch.value.length > 0); renderMemMenu(); });
+    memClear.addEventListener('click', () => { memSearch.value = ''; memBox.classList.remove('naowee-searchbox--has-value'); renderMemMenu(); memSearch.focus(); });
+    /* Cierra el menú al hacer clic fuera; auto-limpia el listener tras re-render. */
+    function onMemDocClick(e) { if (!memBox.isConnected) { document.removeEventListener('click', onMemDocClick); return; } if (!e.target.closest('.carg-eq-memsel')) memMenu.hidden = true; }
+    document.addEventListener('click', onMemDocClick);
 
     /* ── Lista de equipos por guardar (staged) + medallero en vivo ── */
     const compKey = (t) => `${_normDep(t.deporte)}·${_normDep(t.prueba)}`;
@@ -2151,9 +2248,9 @@
         <div class="carg-files__title">${I.users} Deportistas inscritos <span class="carg-insc-count">(${all.length})</span></div>
         ${all.length ? `
         <div class="carg-insc-filters">
-          <div class="naowee-dropdown" data-dd="fDeporte"><button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox"><span class="naowee-dropdown__value ${inscFilter.deporte ? '' : 'is-placeholder'}" data-dd-val>${esc(inscFilter.deporte || 'Todos los deportes')}</span><span class="naowee-dropdown__chevron">${I.chevD}</span></button><div class="naowee-dropdown__menu" role="listbox"></div></div>
-          <div class="naowee-dropdown" data-dd="fPrueba"><button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox"><span class="naowee-dropdown__value ${inscFilter.prueba ? '' : 'is-placeholder'}" data-dd-val>${esc(inscFilter.prueba || 'Todas las competencias')}</span><span class="naowee-dropdown__chevron">${I.chevD}</span></button><div class="naowee-dropdown__menu" role="listbox"></div></div>
-          <div class="naowee-searchbox" id="fSearch"><div class="naowee-searchbox__input-wrap"><span class="naowee-searchbox__icon">${I.search}</span><input class="naowee-searchbox__input" type="search" id="fInput" placeholder="Documento, correo o nombre…" value="${esc(inscFilter.q)}" autocomplete="off"><button class="naowee-searchbox__clear" id="fClear" type="button" aria-label="Limpiar">${I.x}</button></div></div>
+          <div class="naowee-dropdown naowee-dropdown--small" data-dd="fDeporte"><button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox"><span class="naowee-dropdown__value ${inscFilter.deporte ? '' : 'is-placeholder'}" data-dd-val>${esc(inscFilter.deporte || 'Todos los deportes')}</span><span class="naowee-dropdown__chevron">${I.chevD}</span></button><div class="naowee-dropdown__menu" role="listbox"></div></div>
+          <div class="naowee-dropdown naowee-dropdown--small" data-dd="fPrueba"><button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox"><span class="naowee-dropdown__value ${inscFilter.prueba ? '' : 'is-placeholder'}" data-dd-val>${esc(inscFilter.prueba || 'Todas las competencias')}</span><span class="naowee-dropdown__chevron">${I.chevD}</span></button><div class="naowee-dropdown__menu" role="listbox"></div></div>
+          <div class="naowee-searchbox naowee-searchbox--small" id="fSearch"><div class="naowee-searchbox__input-wrap"><span class="naowee-searchbox__icon">${I.search}</span><input class="naowee-searchbox__input" type="search" id="fInput" placeholder="Documento, correo o nombre…" value="${esc(inscFilter.q)}" autocomplete="off"><button class="naowee-searchbox__clear" id="fClear" type="button" aria-label="Limpiar">${I.x}</button></div></div>
         </div>
         <div class="carg-data-scroll">
           <table class="naowee-table--in-card">
@@ -2347,7 +2444,8 @@
        ADMIN configuró el catálogo (ev.deportes), solo esos aparecen; si es UNO, queda FIJO
        (sin opción de cambiarlo). Sin catálogo configurado → fallback al catálogo completo. */
     const evCat = Array.isArray(ev && ev.deportes) ? ev.deportes : [];
-    const depList = evCat.length ? evCat.map((d) => ({ value: d.deporte, label: `${d.emoji ? d.emoji + ' ' : ''}${d.deporte}`.trim(), emoji: d.emoji || '' })) : DEPORTES_LIST;
+    /* label SIN emoji: el dropdown ya pinta o.emoji aparte (si se incluye en el label → emoji doble). */
+    const depList = evCat.length ? evCat.map((d) => ({ value: d.deporte, label: d.deporte, emoji: d.emoji || '' })) : DEPORTES_LIST;
     const pruebasForEv = (dep) => { if (evCat.length) { const d = evCat.find((x) => x.deporte === dep); return ((d && d.competencias) || []).map((p) => ({ value: p, label: p })); } return pruebasFor(dep); };
     const lockedDep = evCat.length === 1 ? evCat[0].deporte : null;
     if (lockedDep) newDraft.deporte = lockedDep;

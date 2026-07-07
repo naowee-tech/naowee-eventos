@@ -93,6 +93,67 @@ export const STATUS_LABEL = { borrador: 'Borrador', activo: 'Activo', finalizado
 export function pct(done, total) { return total > 0 ? Math.round((done / total) * 100) : 0; }
 
 /* ═══════════════════════════════════════════════════════════════
+   UBICACIÓN DEL EVENTO — multi-departamental / multi-municipal
+   Fuente estructurada: ev.departamentos:[] + ev.municipios:[{depto,nombre}].
+   `ev.place` se mantiene como STRING DERIVADO guardado (retro-compat: la
+   lista/tabla/calendario/dashboard solo lo muestran). Los eventos base
+   (solo `place`) y los borradores viejos (departamento/municipio singular)
+   se normalizan aquí para que todo lea de un mismo helper.
+   ═══════════════════════════════════════════════════════════════ */
+export function eventDeptos(ev) {
+  if (!ev) return [];
+  if (Array.isArray(ev.departamentos)) return ev.departamentos;
+  if (ev.departamento) return [ev.departamento];
+  /* Legacy: parsear del place "Municipio, Departamento" (el depto es lo último).
+     Un place de un solo token (ej. 'Bogotá D.C.') ES el departamento. */
+  if (ev.place && ev.place !== 'Internacional' && ev.place !== 'Por definir') {
+    const parts = ev.place.split(', ');
+    return parts.length > 1 ? [parts[parts.length - 1]] : [ev.place];
+  }
+  return [];
+}
+export function eventMunicipios(ev) {
+  if (!ev) return [];
+  if (Array.isArray(ev.municipios)) return ev.municipios;
+  if (ev.municipio) return [{ depto: ev.departamento || '', nombre: ev.municipio }];
+  if (ev.place && ev.place.includes(', ') && ev.place !== 'Internacional') {
+    const parts = ev.place.split(', ');
+    return [{ depto: parts[parts.length - 1], nombre: parts.slice(0, -1).join(', ') }];
+  }
+  return [];
+}
+/** String de "Lugar" derivado de la ubicación estructurada (con fallback a ev.place). */
+export function placeLabel(ev) {
+  if (!ev) return '';
+  if (ev.alcance === 'internacional') return 'Internacional';
+  const deps = eventDeptos(ev);
+  if (!deps.length) return ev.place || 'Por definir';
+  const munis = eventMunicipios(ev);
+  if (deps.length === 1) {
+    const d = deps[0];
+    const m = munis.filter((x) => (x.depto || '') === d || !x.depto).map((x) => x.nombre);
+    if (m.length === 1) return `${m[0]}, ${d}`;
+    if (m.length > 1) return `${m[0]} +${m.length - 1}, ${d}`;
+    return d;
+  }
+  const totalMun = munis.length;
+  return totalMun
+    ? `${deps.length} departamentos · ${totalMun} municipio${totalMun > 1 ? 's' : ''}`
+    : `${deps.length} departamentos`;
+}
+/** Detalle completo de la ubicación (para tooltip/title): lista deptos y municipios. */
+export function placeTitle(ev) {
+  if (!ev || ev.alcance === 'internacional') return placeLabel(ev);
+  const deps = eventDeptos(ev);
+  if (deps.length <= 1) return placeLabel(ev);
+  const munis = eventMunicipios(ev);
+  return deps.map((d) => {
+    const m = munis.filter((x) => x.depto === d).map((x) => x.nombre);
+    return m.length ? `${d} (${m.join(', ')})` : d;
+  }).join(' · ');
+}
+
+/* ═══════════════════════════════════════════════════════════════
    MODELO DE ASIGNACIÓN — Gestor ↔ Evento
    Fuente única compartida por eventos.html, evento-detalle.html y
    cargue.html (oversight). evento-detalle.html ya importa GESTORES
