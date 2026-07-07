@@ -81,17 +81,47 @@
   .carg-card__title { font-size: 14.5px; font-weight: 700; color: var(--text-primary); margin: 0; }
   .carg-card__sub { font-size: 12.5px; color: var(--text-secondary); margin: 4px 0 0; line-height: 1.4; }
 
-  /* ── Plantilla CTA strip ── */
-  .carg-template-strip {
-    display: flex; align-items: center; justify-content: space-between; gap: 14px;
-    padding: 14px 18px; border: 1px solid var(--border); border-radius: var(--radius-lg);
-    background: var(--bg-soft); margin-bottom: 22px; flex-wrap: wrap;
+  /* ── Plantilla oficial: file-card elevado ── */
+  .carg-template-card {
+    display: flex; align-items: center; justify-content: space-between; gap: 18px;
+    padding: 16px 18px; background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card); margin-bottom: 22px; flex-wrap: wrap;
+    transition: transform var(--duration-normal) var(--easing-smoothout),
+                box-shadow var(--duration-normal) var(--easing-smoothout);
   }
-  .carg-template-strip__info { display: flex; align-items: center; gap: 12px; min-width: 0; }
-  .carg-template-strip__ico { color: var(--green); flex-shrink: 0; display: flex; }
-  .carg-template-strip__ico svg { width: 22px; height: 22px; }
-  .carg-template-strip__text { font-size: 13px; color: var(--text-primary); font-weight: 500; min-width: 0; }
-  .carg-template-strip__hint { font-size: 11.5px; color: var(--text-secondary); margin-top: 1px; }
+  .carg-template-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .carg-template-card__doc { display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1 1 320px; }
+  /* Tile de documento (neutral) */
+  .carg-template-card__tile {
+    flex: none; display: inline-flex; align-items: center; justify-content: center;
+    width: 48px; height: 48px; border-radius: var(--radius-md);
+    background: var(--bg-soft); border: 1px solid var(--border); color: var(--text-secondary);
+  }
+  .carg-template-card__tile svg { width: 24px; height: 24px; }
+  .carg-template-card__meta { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .carg-template-card__eyebrow {
+    font-size: 10.5px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .carg-template-card__name {
+    margin: 0; font-size: 15px; font-weight: 700; color: var(--text-primary);
+    line-height: 1.2; overflow-wrap: anywhere;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .carg-template-card__tags { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .carg-template-card__hint { font-size: 11.5px; color: var(--text-secondary); line-height: 1.35; min-width: 0; }
+  .carg-template-card__cta { flex: none; }
+
+  @media (max-width: 640px) {
+    .carg-template-card { flex-direction: column; align-items: stretch; gap: 14px; }
+    .carg-template-card__doc { flex: 1 1 auto; align-items: flex-start; }
+    .carg-template-card__cta { width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .carg-template-card { transition: none; }
+    .carg-template-card:hover { transform: none; }
+  }
 
   /* ── Hint / nota del uploader ── */
   .carg-upload-hint { font-size: 11.5px; color: var(--text-muted); margin-top: 8px; display: flex; align-items: flex-start; gap: 6px; }
@@ -1229,6 +1259,10 @@
       rosterEmptyState(container, activeTipo === 'medalleria' ? 'Las medallas' : 'Los resultados');
       return;
     }
+    const _plName = esc(cfg.plantilla);
+    const _plDot = _plName.lastIndexOf('.');
+    const _plBase = _plDot > 0 ? _plName.slice(0, _plDot) : _plName;
+    const _plExt = _plDot > 0 ? _plName.slice(_plDot + 1) : '';
     container.innerHTML = `
       <div class="carg-card" id="uploadCard">
         <div class="carg-card__head">
@@ -1238,15 +1272,19 @@
           </div>
         </div>
 
-        <div class="carg-template-strip">
-          <div class="carg-template-strip__info">
-            <span class="carg-template-strip__ico">${I.fileSheet}</span>
-            <div>
-              <div class="carg-template-strip__text">Plantilla oficial: <strong>${esc(cfg.plantilla)}</strong></div>
-              <div class="carg-template-strip__hint">La estructura está bloqueada — solo llena los datos. No modifiques columnas ni formato.</div>
+        <div class="carg-template-card">
+          <div class="carg-template-card__doc">
+            <span class="carg-template-card__tile">${I.fileSheet}</span>
+            <div class="carg-template-card__meta">
+              <span class="carg-template-card__eyebrow">Plantilla oficial</span>
+              <h3 class="carg-template-card__name">${_plBase}${_plExt ? `<span class="naowee-badge naowee-badge--neutral naowee-badge--quiet">${_plExt.toUpperCase()}</span>` : ''}</h3>
+              <div class="carg-template-card__tags">
+                <span class="naowee-badge naowee-badge--neutral naowee-badge--quiet">${I.lock} Estructura bloqueada</span>
+                <span class="carg-template-card__hint">Solo llena los datos — no modifiques columnas ni formato.</span>
+              </div>
             </div>
           </div>
-          <button class="naowee-btn naowee-btn--ghost naowee-btn--sm" type="button" id="dlPlantilla">
+          <button class="naowee-btn naowee-btn--loud naowee-btn--sm carg-template-card__cta" type="button" id="dlPlantilla">
             ${I.download} Descargar plantilla
           </button>
         </div>
