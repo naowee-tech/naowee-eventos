@@ -137,7 +137,7 @@ const MODULE_NAME = 'Eventos';
    "Cargas realizadas" (#modeBody se apila sobre #filesMount); (4) fix setDD de openNewForm
    (selector .naowee-dropdown__value) que rompía el prellenado desde SUID; + LIGAS/CLUBES
    en catalogo.js. */
-const MODULE_VERSION = 'v0.9.1';
+const MODULE_VERSION = 'v0.9.2';
 
 (function () {
   function mount() {
