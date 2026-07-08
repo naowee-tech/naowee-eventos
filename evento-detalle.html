@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="shared/event-detail.css?v=0.9.1">
 <link rel="stylesheet" href="shared/forms.css?v=0.9.3">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.9.1">
-<script src="shared/naowee-footer.js?v=0.9.3" defer></script>
+<script src="shared/naowee-footer.js?v=0.9.4" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -540,24 +540,29 @@
   /* Variante MULTI-select de cfgDropdown: cada opción es un checkbox, el menú se
      mantiene ABIERTO al elegir, y los ya agregados salen deshabilitados. onChange se
      dispara en cada toggle (para sincronizar el botón "Agregar N deportes"). */
-  function cfgMultiDropdown(dd, opts, pickedSet, onChange) {
+  function cfgMultiDropdown(dd, opts, pickedSet, onChange, cfg = {}) {
     if (!dd) return;
     const menu = dd.querySelector('.naowee-dropdown__menu');
     const valEl = dd.querySelector('[data-dd-val]');
     const trigger = dd.querySelector('.naowee-dropdown__trigger');
-    const placeholder = valEl.textContent;
+    let placeholder = valEl.textContent;
+    /* opts puede ser array O función (catálogo dinámico, p.ej. orgs por tipo). */
+    const getOpts = () => (typeof opts === 'function' ? opts() : opts);
+    const triggerText = cfg.triggerText || ((n) => `${n} deporte${n > 1 ? 's' : ''} seleccionado${n > 1 ? 's' : ''}`);
+    const searchPh = cfg.searchPh || 'Buscar deporte…';
     const CHK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
     function updateTrigger() {
       const n = pickedSet.size;
       if (!n) { valEl.textContent = placeholder; valEl.classList.add('is-placeholder'); }
-      else { valEl.textContent = `${n} deporte${n > 1 ? 's' : ''} seleccionado${n > 1 ? 's' : ''}`; valEl.classList.remove('is-placeholder'); }
+      else { valEl.textContent = triggerText(n); valEl.classList.remove('is-placeholder'); }
     }
     const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
     let q = '';
     function paintList() {
       const listEl = menu.querySelector('[data-dep-list]');
       if (!listEl) return;
-      const f = q ? opts.filter((o) => norm(o.label).includes(norm(q))) : opts;
+      const list = getOpts();
+      const f = q ? list.filter((o) => norm(o.label).includes(norm(q))) : list;
       listEl.innerHTML = f.length
         ? f.map((o) => {
             const checked = pickedSet.has(o.value);
@@ -580,7 +585,7 @@
       }));
     }
     function paint() {
-      menu.innerHTML = '<div class="cfg-dd-search"><input type="text" class="cfg-dd-search__input" placeholder="Buscar deporte…" autocomplete="off"></div><div data-dep-list></div>';
+      menu.innerHTML = `<div class="cfg-dd-search"><input type="text" class="cfg-dd-search__input" placeholder="${searchPh}" autocomplete="off"></div><div data-dep-list></div>`;
       const inp = menu.querySelector('.cfg-dd-search__input');
       inp.addEventListener('click', (e) => e.stopPropagation());
       inp.addEventListener('input', () => { q = inp.value; paintList(); });
@@ -594,6 +599,7 @@
       if (willOpen) { q = ''; paint(); dd.classList.add('is-open'); dd.closest('.cfg-section')?.classList.add('cfg-section--front'); }
     });
     updateTrigger();
+    return { reset(ph) { if (ph !== undefined) placeholder = ph; pickedSet.clear(); updateTrigger(); } };
   }
   /* Dropdown de catálogo CON BUSCADOR acento-insensible (organizaciones por tipo).
      getOpts() devuelve el catálogo vigente (depende del tipo); onSelect(valor) al elegir. */
@@ -662,21 +668,29 @@
       cur[i].competencias.splice(j, 1); persistCfg({ deportes: cur });
     }));
     let pickedTipo = 'Liga';
-    let pickedOrg = '';
+    /* Multi-selector de organizaciones (feedback Doug): elige varias y invítalas de una. */
+    const pickedOrgs = new Set();
     const orgBtn = page.querySelector('#cfgAddOrg');
     const cfgDeptos = eventDeptos(ev);   /* sede(s) del evento → acota el catálogo */
-    const syncOrgBtn = () => { if (orgBtn) orgBtn.disabled = !pickedOrg; };
-    /* Buscador de organizaciones: catálogo = tipo elegido ACOTADO a la(s) sede(s). */
-    const orgSearch = cfgSearchDropdown(page.querySelector('[data-dd="cfgOrg"]'), () => orgCatalogFor(pickedTipo, cfgDeptos), (v) => { pickedOrg = v; syncOrgBtn(); });
+    const syncOrgBtn = () => { if (!orgBtn) return; const n = pickedOrgs.size; orgBtn.disabled = n === 0; orgBtn.innerHTML = `${ICON_PLUS} ${n > 1 ? 'Invitar ' + n : 'Invitar'}`; };
+    /* Catálogo = tipo elegido ACOTADO a la(s) sede(s); las ya invitadas salen "ya agregado". */
+    const orgOpts = () => orgCatalogFor(pickedTipo, cfgDeptos).map((name) => ({ value: name, label: name, added: getOrgs(ev).some((o) => o.tipo === pickedTipo && o.nombre === name) }));
+    const orgMulti = cfgMultiDropdown(page.querySelector('[data-dd="cfgOrg"]'), orgOpts, pickedOrgs, syncOrgBtn, {
+      triggerText: (n) => n > 1 ? `${n} organizaciones seleccionadas` : '1 organización seleccionada',
+      searchPh: 'Buscar organización…'
+    });
     cfgDropdown(page.querySelector('[data-dd="cfgTipo"]'), orgTiposFor(cfgDeptos).map((t) => ({ value: t, label: t })), (o) => {
-      pickedTipo = o.value; pickedOrg = '';
-      if (orgSearch) orgSearch.reset(phOrgFor(o.value));   // al cambiar de tipo, limpia la organización elegida
+      pickedTipo = o.value;
+      if (orgMulti) orgMulti.reset(phOrgFor(o.value));   // al cambiar de tipo, limpia las organizaciones elegidas
       syncOrgBtn();
     });
     const addOrg = () => {
-      if (!pickedOrg) { flash('Busca y selecciona una organización.'); return; }
-      if (getOrgs(ev).some((o) => o.tipo === pickedTipo && o.nombre === pickedOrg)) { flash('Esa organización ya está invitada.'); return; }
-      persistCfg({ organizaciones: [...getOrgs(ev), { tipo: pickedTipo, nombre: pickedOrg }] });
+      if (!pickedOrgs.size) { flash('Selecciona al menos una organización.'); return; }
+      const cur = getOrgs(ev);
+      const isDup = (name) => cur.some((o) => o.tipo === pickedTipo && o.nombre === name);
+      const toAdd = [...pickedOrgs].filter((name) => !isDup(name)).map((name) => ({ tipo: pickedTipo, nombre: name }));
+      if (!toAdd.length) { flash('Esas organizaciones ya están invitadas.'); return; }
+      persistCfg({ organizaciones: [...cur, ...toAdd] });
     };
     orgBtn?.addEventListener('click', addOrg);
     page.querySelectorAll('[data-rm-org]').forEach((b) => b.addEventListener('click', () => {
