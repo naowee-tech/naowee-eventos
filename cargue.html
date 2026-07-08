@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="shared/event-detail.css?v=0.9.1">
 <link rel="stylesheet" href="shared/forms.css?v=0.9.3">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.9.1">
-<script src="shared/naowee-footer.js?v=0.9.3" defer></script>
+<script src="shared/naowee-footer.js?v=0.9.4" defer></script>
 <!-- SheetJS: lectura/escritura real de .xlsx para el cargue masivo (validación real por fila). -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -546,6 +546,10 @@
   .carg-eq-noteams__ico svg { width: 32px; height: 32px; }
   .carg-eq-noteams__t { font-size: 14px; font-weight: 700; color: var(--text-primary); margin: 6px 0 0; }
   .carg-eq-noteams__d { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin: 0 0 8px; max-width: 420px; }
+  /* Fila de resultado ya registrado (editable inline + quitar) */
+  .carg-reg-row__end { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .carg-reg-row__end .carg-manual-input { flex: 1; min-width: 0; }
+  .carg-reg-row__end .carg-eq-del { flex: none; }
   .carg-eq-inline-inp:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(215, 64, 9, .12); }
   /* Buscador + grupos dentro de un dropdown (setupDropdown cfg:{search,groups}) */
   .carg-dd-search { position: sticky; top: 0; z-index: 2; background: var(--surface); padding: 8px 8px 6px; border-bottom: 1px solid var(--border); }
@@ -643,8 +647,8 @@
 
 <script type="module">
   import { mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher, getRoleFromQuery, getIcon, ROLES, homeForRole } from './shared/sidebar.js';
-  import { allEvents, STATUS_LABEL, applyUpload, addUploadRecord, getFileVersions, addFileVersion, removeFileRow, updateFileRow, addInscritos, removeInscrito, updateInscrito, getResultPositions, setResultPosition, positionKey, GESTOR_MAP, resolveGestorId, eventsForGestor, gestorIdForRole } from './shared/events-data.js';
-  import { GESTORES, DEPORTES_POR_TIPO, DEPARTAMENTOS } from './shared/catalogo.js';
+  import { allEvents, STATUS_LABEL, applyUpload, addUploadRecord, getFileVersions, addFileVersion, removeFileRow, updateFileRow, addInscritos, removeInscrito, updateInscrito, getResultPositions, setResultPosition, removeResultPosition, positionKey, GESTOR_MAP, resolveGestorId, eventsForGestor, gestorIdForRole } from './shared/events-data.js';
+  import { GESTORES, DEPORTES_POR_TIPO, DEPARTAMENTOS, deptoDeLiga, deptoDeClub } from './shared/catalogo.js';
   import { effectiveRoster } from './shared/roster-data.js';
 
   /* ─── Params ─── */
@@ -756,16 +760,18 @@
   /* Genera y descarga el .xlsx oficial (solo encabezados — el usuario llena los datos). */
   function downloadTemplate(cfg) {
     if (typeof XLSX === 'undefined') { flash('No se pudo generar la plantilla (librería no disponible).', 'error'); return; }
-    const cols = TEMPLATE_COLS[activeTipo] || [];
+    const cols = eqMasivo ? eqMasivo.cols : (TEMPLATE_COLS[activeTipo] || []);
+    const fname = eqMasivo ? eqMasivo.plantilla : cfg.plantilla;
     const ws = XLSX.utils.aoa_to_sheet([cols.map((c) => c.h)]);
     ws['!cols'] = cols.map((c) => ({ wch: Math.max(12, c.h.length + 2) }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Datos');
-    XLSX.writeFile(wb, cfg.plantilla);
+    XLSX.writeFile(wb, fname);
   }
 
   /* Validación REAL del archivo subido contra TEMPLATE_COLS[tipo]. */
   function validateUpload(aoa, tipo) {
+    if (eqMasivo) return validateUploadTeam(aoa);   // conjunto → validación por equipo
     const cols = TEMPLATE_COLS[tipo] || [];
     const norm = (s) => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
     const header = (aoa[0] || []).map(norm);
@@ -800,6 +806,103 @@
     if (tipo === 'inscripciones') return { organizacion: get('organizacion'), tipoDoc: get('tipoDoc'), nroDoc: get('nroDoc'), nombre, sexo: get('sexo'), deporte: get('deporte'), prueba: get('prueba'), depto: get('departamento'), correo: get('correo') };
     if (tipo === 'ranking') return { organizacion: get('organizacion'), deporte: get('deporte'), prueba: get('prueba'), nombre, nroDoc: get('nroDoc'), posicion: get('posicion'), marca: get('marca') };
     return { organizacion: get('organizacion'), depto: get('departamento'), deporte: get('deporte'), prueba: get('prueba'), oro: get('oro'), plata: get('plata'), bronce: get('bronce'), total: get('total') };
+  }
+
+  /* ═══ Masivo POR EQUIPO (deportes de conjunto) — plantilla + carga que alimenta el
+     roster compartido Ranking⇆Medallería. eqMasivo != null activa el modo equipo en
+     downloadTemplate / validateUpload / commitUpload (una sola carga masiva a la vez). ═══ */
+  let eqMasivo = null;   // { kind:'ranking'|'medalleria', intl, cols, plantilla }
+  function teamTemplateCols(kind, intl) {
+    const cols = [{ h: 'Equipo / Organización', k: 'organizacion', req: true }];
+    if (intl) cols.push({ h: 'País', k: 'pais', req: true });
+    cols.push({ h: 'Deporte', k: 'deporte', req: true }, { h: 'Prueba', k: 'prueba', req: true });
+    if (kind === 'medalleria') cols.push({ h: 'Medalla', k: 'medalla', req: true });
+    else cols.push({ h: 'Posición', k: 'posicion', req: true }, { h: 'Resultado/Marca', k: 'marca' });
+    cols.push({ h: 'Integrantes', k: 'integrantes' });
+    return cols;
+  }
+  function parseTeamMedal(v) {
+    const s = String(v || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+    if (!s) return '';
+    if (s === 'oro' || s === 'gold' || s === '1' || s === '🥇') return 'oro';
+    if (s === 'plata' || s === 'silver' || s === '2' || s === '🥈') return 'plata';
+    if (s === 'bronce' || s === 'bronze' || s === '3' || s === '🥉') return 'bronce';
+    return '';
+  }
+  function resolvePais(v) {
+    const s = String(v || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+    if (!s) return '';
+    const byVal = PAISES.find((p) => p.value.toLowerCase() === s);
+    if (byVal) return byVal.value;
+    const byLbl = PAISES.find((p) => p.label.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/^[^a-z]+/, '').trim() === s);
+    return byLbl ? byLbl.value : '';
+  }
+  /* Validación REAL del .xlsx de equipos: encabezados + requeridos + medalla/posición + dedup por competencia. */
+  function validateUploadTeam(aoa) {
+    const cols = eqMasivo.cols;
+    const norm = (s) => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+    const header = (aoa[0] || []).map(norm);
+    if (!aoa.length || header.every((h) => !h)) return { structureError: 'El archivo está vacío o no tiene encabezados. Descarga y usa la plantilla oficial.' };
+    const idx = {}, missing = [];
+    cols.forEach((c) => { const i = header.indexOf(norm(c.h)); idx[c.k] = i; if (c.req && i < 0) missing.push(c.h); });
+    if (missing.length) return { structureError: `El archivo no coincide con la plantilla oficial. Faltan columnas obligatorias: ${missing.join(', ')}.` };
+    const dataRows = aoa.slice(1).map((r, i) => ({ cells: r || [], fila: i + 2 })).filter(({ cells }) => cells.some((c) => String(c ?? '').trim() !== ''));
+    if (!dataRows.length) return { empty: true };
+    const isMed = eqMasivo.kind === 'medalleria';
+    const errors = [], valid = [], seen = {};
+    dataRows.forEach(({ cells, fila }) => {
+      const get = (k) => { const i = idx[k]; return i >= 0 ? String(cells[i] ?? '').trim() : ''; };
+      const probs = [];
+      ['organizacion', 'deporte', 'prueba'].forEach((k) => { if (!get(k)) probs.push(`falta «${(cols.find((c) => c.k === k) || {}).h}»`); });
+      let paisVal = '';
+      if (eqMasivo.intl) { paisVal = resolvePais(get('pais')); if (!paisVal) probs.push('«País» no reconocido'); }
+      let medalla = '', posicion = '';
+      if (isMed) { medalla = parseTeamMedal(get('medalla')); if (!medalla) probs.push('«Medalla» debe ser oro, plata o bronce'); }
+      else { posicion = get('posicion'); if (!posicion) probs.push('falta «Posición»'); else if (isNaN(Number(posicion.replace(',', '.')))) probs.push('«Posición» debe ser numérica'); }
+      if (probs.length) { errors.push({ fila, msg: probs.join(' · ').replace(/^./, (m) => m.toUpperCase()) }); return; }
+      const ck = `${_normDep(get('deporte'))}·${_normDep(get('prueba'))}`;
+      const dkey = isMed ? `${ck}·med·${medalla}` : `${ck}·pos·${posicion}`;
+      if (seen[dkey]) { errors.push({ fila, msg: isMed ? `Medalla ${medalla} ya asignada en esa competencia (fila ${seen[dkey]})` : `Posición ${posicion} ya usada en esa competencia (fila ${seen[dkey]})` }); return; }
+      seen[dkey] = fila;
+      valid.push({ organizacion: get('organizacion'), pais: paisVal, deporte: get('deporte'), prueba: get('prueba'), posicion, marca: get('marca'), medalla, integrantes: get('integrantes') });
+    });
+    return { total: dataRows.length, valid, errors };
+  }
+  /* Commit del masivo de equipos: upsert al roster compartido + versión de archivo. */
+  function commitUploadTeam(validRows) {
+    if (!selectedEventId || !validRows.length) return;
+    const isMed = eqMasivo.kind === 'medalleria';
+    const storeTipo = isMed ? 'med' : 'res';
+    const teams = getEqTeams(selectedEventId);
+    let _id = teams.reduce((m, t) => Math.max(m, +String(t.id || '').replace(/\D/g, '') || 0), 0);
+    const key = (t) => `${_normDep(t.deporte)}·${_normDep(t.prueba)}·${_normDep(t.organizacion)}·${t.pais || ''}`;
+    const paisLbl = (v) => (PAISES.find((p) => p.value === v) || {}).label || '';
+    let created = 0, updated = 0;
+    validRows.forEach((r) => {
+      const integ = String(r.integrantes || '').split(/[,;]/).map((s) => s.trim()).filter(Boolean).map((nm) => ({ id: '', nombre: nm, doc: '', organizacion: r.organizacion || '' }));
+      const idk = `${_normDep(r.deporte)}·${_normDep(r.prueba)}·${_normDep(r.organizacion)}·${r.pais || ''}`;
+      const t = teams.find((x) => key(x) === idk);
+      if (t) {
+        if (isMed) { t.medalla = r.medalla; t.countedMed = true; } else { t.posicion = r.posicion; t.marca = r.marca; t.countedRes = true; }
+        if (integ.length) t.integrantes = integ;
+        updated++;
+      } else {
+        teams.push({ id: 'eqt-' + (++_id), organizacion: r.organizacion, pais: r.pais || '', deporte: r.deporte, prueba: r.prueba, posicion: r.posicion || '', marca: r.marca || '', medalla: r.medalla || '', integrantes: integ, countedRes: !isMed, countedMed: isMed });
+        created++;
+      }
+    });
+    setEqTeams(selectedEventId, teams);
+    const n = validRows.length, ts = nowStamp();
+    const teamCol = (r) => eqMasivo.intl && r.pais ? `${r.organizacion} · ${paisLbl(r.pais)}` : r.organizacion;
+    const rows = validRows.map((r) => isMed
+      ? { organizacion: teamCol(r), deporte: r.deporte, prueba: r.prueba, medalla: `${MED_EMOJI[r.medalla]} ${_cap(r.medalla)}`, integrantes: r.integrantes || '—' }
+      : { organizacion: teamCol(r), deporte: r.deporte, prueba: r.prueba, posicion: r.posicion || '—', marca: r.marca || '—', integrantes: r.integrantes || '—' });
+    applyUpload(selectedEventId, storeTipo, n);
+    addUploadRecord(selectedEventId, { tipo: isMed ? 'Medallería' : 'Ranking / Resultados', n, modeLabel: 'Masivo · equipos', timestamp: ts });
+    addFileVersion(selectedEventId, storeTipo, { fileName: (selectedFile && selectedFile.name) || eqMasivo.plantilla, n, modeLabel: 'Masivo · equipos', timestamp: ts, columns: isMed ? EQ_MED_COLS : EQ_RANK_COLS, rows });
+    flash(`✓ ${n} equipo${n !== 1 ? 's' : ''} cargado${n !== 1 ? 's' : ''} en ${isMed ? 'medallería' : 'resultados'}${created && updated ? ` (${created} nuevo${created !== 1 ? 's' : ''}, ${updated} actualizado${updated !== 1 ? 's' : ''})` : ''}.`, 'success');
+    selectedFile = null; parseResults = null;
+    renderTabPanel();
   }
 
   /* ─── Mock data por tipo: SOLO sirve como base de datos SUID para la búsqueda
@@ -1295,31 +1398,19 @@
        → estado vacío también por la vía masiva (no basta con la plantilla).
        EXCEPCIÓN (reunión 03-jul): los eventos de PURO conjunto se registran por
        equipo sin inscripción previa → no se bloquean por roster vacío. */
-    const pureConjunto = eventAdmiteConjunto(ev) && !eventHasIndividual(ev);
-    /* Puro conjunto: la carga masiva por-persona NO aplica (el registro es por equipo;
-       la masiva de equipos vive en backend/S3). Se redirige al modo Manual · Equipos,
-       único flujo coherente en la demo → evita el callejón de la plantilla individual. */
-    if (activeTipo !== 'inscripciones' && pureConjunto) {
-      container.innerHTML = `
-        <div class="carg-card">
-          <div class="empty-state">
-            <div class="empty-state__icon">${I.layers}</div>
-            <p class="empty-state__title">Deporte de conjunto — se registra por equipo</p>
-            <p class="empty-state__desc">${activeTipo === 'medalleria' ? 'Las medallas' : 'Los resultados'} de conjunto no se cargan con la plantilla por deportista. Regístralos por <strong>equipo</strong> en el modo <strong>Manual</strong>.</p>
-            <button class="naowee-btn naowee-btn--loud naowee-btn--sm" id="goManualEq" type="button">${I.users} Ir a captura manual</button>
-          </div>
-        </div>`;
-      container.querySelector('#goManualEq')?.addEventListener('click', () => {
-        const m = document.querySelector('#modeSegment .naowee-segment__item[data-val="manual"]');
-        if (m) m.click();
-      });
-      return;
-    }
-    if (activeTipo !== 'inscripciones' && !effectiveRoster(ev).length) {
+    /* Conjunto + ranking/medallería → carga masiva POR EQUIPO (plantilla de equipos que
+       alimenta el roster compartido), no la plantilla por-persona. Feedback Doug. */
+    const teamMode = activeTipo !== 'inscripciones' && eventAdmiteConjunto(ev) && !eventHasIndividual(ev);
+    const teamKind = activeTipo === 'medalleria' ? 'medalleria' : 'ranking';
+    const teamIntl = !!(ev && ev.alcance === 'internacional');
+    eqMasivo = teamMode ? { kind: teamKind, intl: teamIntl, cols: teamTemplateCols(teamKind, teamIntl), plantilla: teamKind === 'medalleria' ? 'plantilla_medalleria_equipos.xlsx' : 'plantilla_resultados_equipos.xlsx' } : null;
+    /* Individual: resultados/medallería SOLO sobre inscritos (no basta la plantilla).
+       Conjunto (teamMode): los equipos no requieren inscripción → no se bloquea. */
+    if (!teamMode && activeTipo !== 'inscripciones' && !effectiveRoster(ev).length) {
       rosterEmptyState(container, activeTipo === 'medalleria' ? 'Las medallas' : 'Los resultados');
       return;
     }
-    const _plName = esc(cfg.plantilla);
+    const _plName = esc(teamMode ? eqMasivo.plantilla : cfg.plantilla);
     const _plDot = _plName.lastIndexOf('.');
     const _plBase = _plDot > 0 ? _plName.slice(0, _plDot) : _plName;
     const _plExt = _plDot > 0 ? _plName.slice(_plDot + 1) : '';
@@ -1328,7 +1419,7 @@
         <div class="carg-card__head">
           <div>
             <h3 class="carg-card__title">Cargue masivo — ${esc(cfg.label)}</h3>
-            <p class="carg-card__sub">Descarga la plantilla oficial, rellena los datos y súbela. El sistema detecta errores por fila y carga las válidas aunque otras fallen.</p>
+            <p class="carg-card__sub">${teamMode ? 'Descarga la plantilla de <strong>equipos</strong>, llena una fila por equipo y súbela. Los equipos se crean/actualizan en el roster (compartido con Manual). ' : 'Descarga la plantilla oficial, rellena los datos y súbela. '}El sistema detecta errores por fila y carga las válidas aunque otras fallen.</p>
           </div>
         </div>
 
@@ -1354,7 +1445,7 @@
           <input type="file" id="fileInput" accept=".xlsx,.xls" tabindex="-1">
           <div id="uploaderBody"></div>
           <div id="uploaderHelper"></div>
-          <div class="carg-upload-hint">${I.info}<span>${esc(cfg.hint)}</span></div>
+          <div class="carg-upload-hint">${I.info}<span>${teamMode ? 'Columnas: ' + esc(eqMasivo.cols.map((c) => c.h).join(' · ')) : esc(cfg.hint)}</span></div>
         </div>
 
         <div class="carg-analyze-row">
@@ -1535,6 +1626,7 @@
 
   /* ─── Confirmar cargue masivo → crea versión de archivo + actualiza progreso ─── */
   function commitUpload(validRows, cfg) {
+    if (eqMasivo) return commitUploadTeam(validRows);   // conjunto → upsert al roster de equipos
     if (!selectedEventId || !validRows.length) return;
     const n = validRows.length;
     const fileName = (selectedFile && selectedFile.name) || cfg.plantilla;
@@ -2769,7 +2861,7 @@
     let ddPrueba = null;
     setupDropdown(el.querySelector('[data-dd="deporte"]'), DEPORTES_LIST, () => draft.deporte, (v) => { draft.deporte = v; draft.prueba = ''; if (ddPrueba) ddPrueba.reset(); syncSave(); });
     ddPrueba = setupDropdown(el.querySelector('[data-dd="prueba"]'), () => pruebasFor(draft.deporte), () => draft.prueba, (v) => { draft.prueba = v; syncSave(); });
-    setupDropdown(el.querySelector('[data-dd="organizacion"]'), ORGS_LIST, () => draft.organizacion, (v) => { draft.organizacion = v; syncSave(); });
+    setupDropdown(el.querySelector('[data-dd="organizacion"]'), ORGS_LIST, () => draft.organizacion, (v) => { draft.organizacion = v; const d = deptoDeLiga(v) || deptoDeClub(v); if (d && DEPARTAMENTOS.includes(d)) { draft.depto = d; setDD('depto', d, DEPTOS_LIST); } syncSave(); });
     setupDropdown(el.querySelector('[data-dd="depto"]'), DEPTOS_LIST, () => draft.depto, (v) => { draft.depto = v; syncSave(); });
     const setDD = (name, val, opts) => { if (!val) return; const dd = el.querySelector(`[data-dd="${name}"]`); if (!dd) return; const o = (typeof opts === 'function' ? opts() : opts).find((x) => x.value === val); const vEl = dd.querySelector('.naowee-dropdown__value'); vEl.textContent = o ? o.label : val; vEl.classList.remove('is-placeholder'); };
     setDD('tipoDoc', draft.tipoDoc, TIPOS_DOC); setDD('sexo', draft.sexo, SEXOS); setDD('deporte', draft.deporte, DEPORTES_LIST);
@@ -2941,7 +3033,7 @@
     let ddPrueba = null;
     if (!lockedDep) setupDropdown(formEl.querySelector('[data-dd="deporte"]'), depList, () => newDraft.deporte, (v) => { newDraft.deporte = v; newDraft.prueba = ''; if (ddPrueba) ddPrueba.reset(); syncAdd(); });
     ddPrueba = setupDropdown(formEl.querySelector('[data-dd="prueba"]'), () => pruebasForEv(newDraft.deporte), () => newDraft.prueba, (v) => { newDraft.prueba = v; syncAdd(); });
-    if (nacional && !lockedOrg) setupDropdown(formEl.querySelector('[data-dd="organizacion"]'), orgList, () => newDraft.organizacion, (v) => { newDraft.organizacion = v; syncAdd(); });
+    if (nacional && !lockedOrg) setupDropdown(formEl.querySelector('[data-dd="organizacion"]'), orgList, () => newDraft.organizacion, (v) => { newDraft.organizacion = v; const d = deptoDeLiga(v) || deptoDeClub(v); if (d && DEPARTAMENTOS.includes(d)) { newDraft.depto = d; setDD('depto', d, DEPTOS_LIST); } syncAdd(); });
     setupDropdown(formEl.querySelector('[data-dd="depto"]'), DEPTOS_LIST, () => newDraft.depto, (v) => { newDraft.depto = v; syncAdd(); });
 
     /* Pre-llenado (p.ej. desde el SUID): setea valores + etiquetas de dropdown. */
@@ -2983,9 +3075,18 @@
   function renderManualGrid(container, cfg) {
     /* Los atletas de conjunto no reciben posición individual: se excluyen y van a Equipos. */
     const fullRoster = effectiveRoster(ev);
-    const all = fullRoster.filter((r) => !isConjuntoDeporte(r.deporte));
+    const nonConj = fullRoster.filter((r) => !isConjuntoDeporte(r.deporte));
     const hasConjunto = fullRoster.some((r) => isConjuntoDeporte(r.deporte));
-    if (!all.length) { if (hasConjunto) { conjuntoOnlyState(container, 'ranking'); return; } rosterEmptyState(container, 'Los resultados'); return; }
+    if (!nonConj.length) { if (hasConjunto) { conjuntoOnlyState(container, 'ranking'); return; } rosterEmptyState(container, 'Los resultados'); return; }
+    const compKey = (r) => `${(r.deporte || '').toLowerCase()}·${(r.prueba || '').toLowerCase()}`;
+    const rkey = (r) => positionKey({ nroDoc: r.nroDoc, deporte: r.deporte, prueba: r.prueba });
+    /* Resultados YA registrados → NO reaparecen en la captura (se editan abajo). Feedback Doug. */
+    const regMap = getResultPositions(selectedEventId);
+    const all = nonConj.filter((r) => !regMap[rkey(r)]);       // capturables (aún sin resultado)
+    const regRows = nonConj.filter((r) => regMap[rkey(r)]);    // ya registrados (editables abajo)
+    /* Posiciones ya tomadas por competencia → un nuevo resultado no puede repetirlas. */
+    const regPosByComp = {};
+    regRows.forEach((r) => { const p = String((regMap[rkey(r)] || {}).posicion || '').trim(); if (p) (regPosByComp[compKey(r)] = regPosByComp[compKey(r)] || new Set()).add(p); });
     const conjNote = hasConjunto ? `<div class="naowee-message naowee-message--caution" style="margin-bottom:12px"><div class="naowee-message__header"><span class="naowee-message__icon">${I.bang}</span><span class="naowee-message__body">Este evento incluye <strong>deportes de conjunto</strong>: sus resultados se registran en el modo <strong>Equipos · conjunto</strong> (arriba), no aquí por deportista.</span></div></div>` : '';
     const PAGE_SIZE = 6;
     const state = {};   // id -> { posicion, marca }
@@ -2999,13 +3100,27 @@
         <input class="carg-manual-input" type="text" placeholder="${esc(rm.ph)}" data-field="marca" data-id="${r.id}" value="${esc(st.marca || '')}" title="${esc(rm.label)}">
       </div>`;
     };
+    /* Fila de un resultado YA registrado: posición/resultado editable inline + quitar. */
+    const regRowHTML = (r) => {
+      const rec = regMap[rkey(r)] || {};
+      const rm = resultMeta(r.deporte, r.prueba);
+      return `<div class="carg-manual-row g-ranking carg-reg-row" data-rk="${esc(rkey(r))}">
+        <div><div class="carg-manual-row__name">${esc(r.nombre)}</div><div class="carg-manual-row__doc">${rosterSub(r)}</div></div>
+        <input class="carg-manual-input" type="number" min="1" placeholder="—" data-field="posicion" value="${esc(rec.posicion || '')}">
+        <div class="carg-reg-row__end">
+          <input class="carg-manual-input" type="text" placeholder="${esc(rm.ph)}" data-field="marca" value="${esc(rec.marca || '')}" title="${esc(rm.label)}">
+          <button class="carg-eq-del" type="button" data-rm-reg="${esc(rkey(r))}" title="Quitar resultado (volver a capturar)" aria-label="Quitar resultado">${I.trash}</button>
+        </div>
+      </div>`;
+    };
     container.innerHTML = `
       <div class="carg-card">
         <div class="carg-card__head"><div>
           <h3 class="carg-card__title">Captura manual — ${esc(cfg.label)}</h3>
-          <p class="carg-card__sub">Filtra por deporte o nombre y registra posición y resultado para cada inscrito.${sampleNote(all.length)}</p>
+          <p class="carg-card__sub">Registra posición y resultado para cada inscrito. Los que ya tienen resultado bajan a <strong>Resultados registrados</strong> — edítalos ahí.${sampleNote(all.length)}</p>
         </div></div>
         ${conjNote}
+        ${all.length ? `
         <div class="carg-search-row" style="margin-bottom:12px">
           <div class="naowee-searchbox" id="rkSearch" style="max-width:480px;flex:1 1 260px">
             <div class="naowee-searchbox__input-wrap">
@@ -3025,8 +3140,34 @@
             <span class="carg-rk-dupwarn" id="rkDupWarn" hidden>⚠ Posiciones repetidas en una misma competencia.</span>
             <button class="naowee-btn naowee-btn--loud" id="manualSaveBtn" disabled>${I.check} Guardar ${esc(cfg.labelShort.toLowerCase())}</button>
           </div>
+        </div>`
+        : `<div class="naowee-message naowee-message--positive" style="margin:2px 0 0"><div class="naowee-message__header"><span class="naowee-message__icon">${I.check}</span><span class="naowee-message__body">Todos los inscritos ya tienen su resultado registrado. Edítalos abajo o quítalos para volver a capturarlos.</span></div></div>`}
+      </div>
+      ${regRows.length ? `
+      <div class="carg-card" id="regCard" style="margin-top:16px">
+        <div class="carg-eq-staged__title">${I.layers} Resultados registrados (${regRows.length}) <span class="carg-eq-staged__hint">· edita la posición/resultado o quítalos para re-capturar</span></div>
+        <div class="carg-manual-grid" style="margin-top:10px">
+          <div class="carg-manual-grid__header g-ranking"><span>Deportista</span><span>Posición</span><span>Resultado</span></div>
+          <div id="regRows">${regRows.map(regRowHTML).join('')}</div>
         </div>
-      </div>`;
+      </div>` : ''}`;
+
+    /* ── Registrados: editar inline (persiste al store) + quitar (vuelve a capturar) ── */
+    const regRowsEl = container.querySelector('#regRows');
+    if (regRowsEl) {
+      regRowsEl.querySelectorAll('.carg-reg-row .carg-manual-input').forEach((inp) => inp.addEventListener('change', () => {
+        const row = inp.closest('.carg-reg-row'); const r = regRows.find((x) => rkey(x) === row.dataset.rk); if (!r) return;
+        setResultPosition(selectedEventId, { nroDoc: r.nroDoc, deporte: r.deporte, prueba: r.prueba, posicion: row.querySelector('[data-field="posicion"]').value.trim(), marca: row.querySelector('[data-field="marca"]').value.trim(), deportista: r.nombre });
+        flash('Resultado actualizado.');
+      }));
+      regRowsEl.querySelectorAll('[data-rm-reg]').forEach((b) => b.addEventListener('click', () => {
+        removeResultPosition(selectedEventId, b.dataset.rmReg);
+        applyUpload(selectedEventId, cfg.storeTipo, -1);   // vuelve a capturar → un resultado menos
+        renderTabPanel();
+      }));
+    }
+    if (!all.length) return;   // sin capturables → solo la sección de registrados
+
     const rowsEl = container.querySelector('#rkRows');
     const pagerEl = container.querySelector('#rkPager');
     const saveBtn = container.querySelector('#manualSaveBtn');
@@ -3034,13 +3175,13 @@
     const searchBox = container.querySelector('#rkSearch');
     const filtered = () => { const t = q.trim().toLowerCase(); return t ? all.filter((r) => `${r.nombre} ${r.deporte} ${r.prueba || ''} ${rosterDoc(r)}`.toLowerCase().includes(t)) : all; };
     const entered = () => Object.values(state).filter((s) => String(s.posicion || '').trim() || String(s.marca || '').trim()).length;
-    /* Posiciones NO se repiten dentro de una misma competencia (deporte + prueba) (#6). */
-    const compKey = (r) => `${(r.deporte || '').toLowerCase()}·${(r.prueba || '').toLowerCase()}`;
+    /* Posiciones NO se repiten dentro de una misma competencia — ni entre sí ni contra las YA registradas. */
     const dupIds = () => {
       const byComp = {};
       all.forEach((r) => { const s = state[r.id]; if (!s) return; const p = String(s.posicion || '').trim(); if (!p) return; const ck = compKey(r); (byComp[ck] = byComp[ck] || {}); (byComp[ck][p] = byComp[ck][p] || []).push(r.id); });
       const dup = new Set();
       Object.values(byComp).forEach((pm) => Object.values(pm).forEach((ids) => { if (ids.length > 1) ids.forEach((id) => dup.add(id)); }));
+      all.forEach((r) => { const s = state[r.id]; if (!s) return; const p = String(s.posicion || '').trim(); if (!p) return; const rs = regPosByComp[compKey(r)]; if (rs && rs.has(p)) dup.add(r.id); });
       return dup;
     };
     const markDups = () => {
@@ -3086,9 +3227,9 @@
         columns: RANK_COLS,
         rows: filled.map((r) => { const s = state[r.id] || {}; return { organizacion: r.organizacion || '—', deportista: r.nombre || '—', deporte: r.deporte || '—', prueba: r.prueba || '—', posicion: s.posicion || '—', marca: s.marca || '—' }; })
       });
-      /* Liga con Medallería: registra la posición por persona+competencia → la
-         medallería solo permitirá la medalla que corresponde al puesto. */
-      if (cfg.storeTipo === 'res') filled.forEach((r) => { const s = state[r.id] || {}; const pos = String(s.posicion || '').trim(); if (pos) setResultPosition(selectedEventId, { nroDoc: r.nroDoc, deporte: r.deporte, prueba: r.prueba, posicion: pos, deportista: r.nombre }); });
+      /* Registra el resultado por persona+competencia → sale de la captura (no reaparece
+         para re-capturar) y la medallería solo permitirá la medalla que corresponde al puesto. */
+      filled.forEach((r) => { const s = state[r.id] || {}; setResultPosition(selectedEventId, { nroDoc: r.nroDoc, deporte: r.deporte, prueba: r.prueba, posicion: String(s.posicion || '').trim(), marca: String(s.marca || '').trim(), deportista: r.nombre }); });
       flash(`✓ ${n} ${cfg.labelShort.toLowerCase()}${n !== 1 ? 's' : ''} guardada${n !== 1 ? 's' : ''} correctamente.`, 'success');
       renderTabPanel();   // resetea el estado y muestra la nueva versión en "Archivos cargados"
     });

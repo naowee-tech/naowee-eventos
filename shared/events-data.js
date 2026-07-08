@@ -528,8 +528,14 @@ export function setResultPosition(eventId, rec) {
   let all;
   try { all = JSON.parse(sessionStorage.getItem(RESULT_POS_KEY) || '{}'); } catch { all = {}; }
   if (!all[eventId]) all[eventId] = {};
-  all[eventId][positionKey(rec)] = { posicion: rec.posicion, deportista: rec.deportista || rec.nombre || '', deporte: rec.deporte || '', prueba: rec.prueba || '' };
+  all[eventId][positionKey(rec)] = { posicion: rec.posicion, marca: rec.marca || '', deportista: rec.deportista || rec.nombre || '', deporte: rec.deporte || '', prueba: rec.prueba || '' };
   sessionStorage.setItem(RESULT_POS_KEY, JSON.stringify(all));
+}
+/** Quita el resultado registrado de una persona+competencia (para volver a capturarlo). */
+export function removeResultPosition(eventId, key) {
+  let all;
+  try { all = JSON.parse(sessionStorage.getItem(RESULT_POS_KEY) || '{}'); } catch { return; }
+  if (all[eventId] && all[eventId][key]) { delete all[eventId][key]; sessionStorage.setItem(RESULT_POS_KEY, JSON.stringify(all)); }
 }
 
 /* ═══════════════════════════════════════════════════════════════
