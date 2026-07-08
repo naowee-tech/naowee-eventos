@@ -11,9 +11,9 @@
 
 <link rel="stylesheet" href="shared/tokens.css?v=0.9.1">
 <link rel="stylesheet" href="shared/shell.css?v=0.4.5">
-<link rel="stylesheet" href="shared/forms.css?v=0.9.1">
+<link rel="stylesheet" href="shared/forms.css?v=0.9.3">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.9.1">
-<script src="shared/naowee-footer.js?v=0.9.2" defer></script>
+<script src="shared/naowee-footer.js?v=0.9.3" defer></script>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════
@@ -52,17 +52,61 @@
   .field-grid .col-2 { grid-column: span 2; }
   @media (max-width: 760px) { .field-grid { grid-template-columns: 1fr; gap: 16px; } .field-grid .col-2 { grid-column: span 1; } }
 
-  /* ── Segmento canónico .naowee-segment (Nacional/Internacional) — inline porque
-     evento-crear no carga list-components.css. Copiado verbatim del DS. ── */
-  .naowee-segment { position: relative; display: inline-flex; background: var(--surface); border: 1px solid var(--border-dark); border-radius: var(--radius-lg); padding: 4px; gap: 0; height: 40px; overflow: clip; font-feature-settings: 'case' 1; }
-  .naowee-segment__pill { box-sizing: border-box; position: absolute; top: 4px; bottom: 4px; left: 0; width: 0; background: var(--surface); border: 2px solid var(--accent); border-radius: var(--radius-md); box-shadow: 0 0 0 3px rgba(215, 64, 9, .08); pointer-events: none; z-index: 0; transform: translate3d(var(--seg-x, 0), 0, 0); transition: transform 380ms var(--easing-smoothout), width 380ms var(--easing-smoothout); }
-  .naowee-segment__pill--no-anim { transition: none; }
-  .naowee-segment__item { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; align-self: stretch; padding: 0 16px; border: 2px solid transparent; background: transparent; border-radius: var(--radius-md); cursor: pointer; white-space: nowrap; flex-shrink: 0; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); transition: color 220ms var(--easing-smoothout); }
-  .naowee-segment__item:hover { color: var(--text-primary); }
-  .naowee-segment__item--active { color: var(--accent); font-weight: 700; }
-  /* Nota informativa del alcance internacional */
-  .alcance-note { display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; }
-  .alcance-note svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px; color: var(--blue-info); }
+  /* ── Alcance del evento — choice cards (decisión estructural: cambia el form) ── */
+  .alcance-hint { margin: 2px 0 12px; font-size: 12px; color: var(--text-muted); line-height: 1.45; }
+  .alcance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .alcance-opt {
+    position: relative; display: flex; align-items: flex-start; gap: 12px; text-align: left;
+    padding: 15px 16px; background: var(--surface);
+    border: 1.5px solid var(--border-dark); border-radius: var(--radius-lg);
+    cursor: pointer; font-family: inherit; color: var(--text-primary);
+    transition: border-color var(--duration-normal) var(--easing-smoothout),
+                background-color var(--duration-normal) var(--easing-smoothout),
+                transform var(--duration-fast) var(--easing-smoothout);
+  }
+  /* Anillo de foco (mismo valor establecido en forms.css) — solo teclado */
+  .alcance-opt::after {
+    content: ""; position: absolute; inset: -1.5px; border-radius: inherit;
+    box-shadow: 0 0 0 3px rgba(215, 64, 9, .2); opacity: 0; pointer-events: none;
+    transition: opacity var(--duration-normal) var(--easing-smoothout);
+  }
+  .alcance-opt:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .alcance-opt:focus-visible { outline: none; border-color: var(--accent); }
+  .alcance-opt:focus-visible::after { opacity: 1; }
+  .alcance-opt__tile {
+    flex-shrink: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+    border-radius: var(--radius-md); background: var(--bg-soft); color: var(--text-secondary);
+    transition: background-color var(--duration-normal) var(--easing-smoothout),
+                color var(--duration-normal) var(--easing-smoothout);
+  }
+  .alcance-opt__ic { width: 20px; height: 20px; }
+  .alcance-opt__body { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding-right: 22px; }
+  .alcance-opt__title { font-size: 14px; font-weight: 700; line-height: 1.2; transition: color var(--duration-normal) var(--easing-smoothout); }
+  .alcance-opt__desc { font-size: 12px; font-weight: 500; color: var(--text-secondary); line-height: 1.45; }
+  /* Indicador radio-dot en esquina */
+  .alcance-opt__mark {
+    position: absolute; top: 14px; right: 14px; width: 18px; height: 18px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1.5px solid var(--border-dark); border-radius: var(--radius-full); background: var(--surface);
+    transition: border-color var(--duration-normal) var(--easing-smoothout);
+  }
+  .alcance-opt__dot {
+    width: 10px; height: 10px; border-radius: var(--radius-full); background: var(--accent);
+    transform: scale(0); opacity: 0;
+    transition: transform var(--duration-normal) var(--easing-smoothout), opacity var(--duration-fast) var(--easing-smoothout);
+  }
+  /* Seleccionada — señal redundante: borde + fondo + tile + título + dot */
+  .alcance-opt.is-selected { border-color: var(--accent); background: var(--accent-bg); }
+  .alcance-opt.is-selected .alcance-opt__tile { background: var(--accent-bg-warm); color: var(--accent); }
+  .alcance-opt.is-selected .alcance-opt__title { color: var(--accent); }
+  .alcance-opt.is-selected .alcance-opt__mark { border-color: var(--accent); }
+  .alcance-opt.is-selected .alcance-opt__dot { transform: scale(1); opacity: 1; }
+  @media (max-width: 560px) { .alcance-grid { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) {
+    .alcance-opt, .alcance-opt::after, .alcance-opt__tile, .alcance-opt__mark, .alcance-opt__dot, .alcance-opt__title { transition: none; }
+    .alcance-opt:hover { transform: none; }
+    .alcance-opt__dot { transition: opacity 1ms; }
+  }
 
   /* ── Sección 2: gestor seleccionado (preview card) ── */
   .gestor-preview { display: flex; align-items: center; gap: 12px; margin-top: 14px; padding: 13px 15px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-soft); animation: fadeInUp .26s var(--easing-smoothout) both; }
@@ -130,15 +174,25 @@
               <div class="field-grid">
                 <!-- Alcance: Nacional / Internacional (no editable después de crear) -->
                 <div class="col-2" data-field="alcance">
-                  <label class="naowee-textfield__label">Alcance del evento</label>
-                  <div class="naowee-segment" id="alcanceSeg" role="tablist" aria-label="Alcance del evento">
-                    <span class="naowee-segment__pill naowee-segment__pill--no-anim" data-pill></span>
-                    <button type="button" class="naowee-segment__item naowee-segment__item--active" data-val="nacional" role="tab" aria-selected="true">Nacional</button>
-                    <button type="button" class="naowee-segment__item" data-val="internacional" role="tab" aria-selected="false">Internacional</button>
-                  </div>
-                  <div class="alcance-note" id="alcanceNote" hidden>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                    <span>Evento <strong>internacional</strong>: se hace seguimiento a los deportistas de Colombia. El lugar (departamento/municipio) no aplica; los rivales se registran como participantes de otros países en los resultados.</span>
+                  <label class="naowee-textfield__label" id="alcanceLbl">Alcance del evento</label>
+                  <p class="alcance-hint">Se fija al crear y no podrá cambiarse después. Define qué campos pide el formulario.</p>
+                  <div class="alcance-grid" id="alcanceSeg" role="radiogroup" aria-labelledby="alcanceLbl">
+                    <button type="button" class="alcance-opt is-selected" data-val="nacional" role="radio" aria-checked="true">
+                      <span class="alcance-opt__tile"><svg class="alcance-opt__ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4"/><path d="M4 4h13l-2.5 4L17 12H4"/></svg></span>
+                      <span class="alcance-opt__body">
+                        <span class="alcance-opt__title">Nacional</span>
+                        <span class="alcance-opt__desc">Ocurre en Colombia. Se piden departamento(s) y municipio(s) del evento.</span>
+                      </span>
+                      <span class="alcance-opt__mark" aria-hidden="true"><span class="alcance-opt__dot"></span></span>
+                    </button>
+                    <button type="button" class="alcance-opt" data-val="internacional" role="radio" aria-checked="false">
+                      <span class="alcance-opt__tile"><svg class="alcance-opt__ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18z"/></svg></span>
+                      <span class="alcance-opt__body">
+                        <span class="alcance-opt__title">Internacional</span>
+                        <span class="alcance-opt__desc">Seguimiento a deportistas de Colombia que compiten fuera. No se pide lugar; los rivales se registran como participantes de otros países.</span>
+                      </span>
+                      <span class="alcance-opt__mark" aria-hidden="true"><span class="alcance-opt__dot"></span></span>
+                    </button>
                   </div>
                 </div>
 
@@ -685,10 +739,8 @@
     const intl = state.alcance === 'internacional';
     const deptoField = document.querySelector('[data-field="departamento"]');
     const muniField = document.getElementById('municipioField');
-    const note = document.getElementById('alcanceNote');
     if (deptoField) deptoField.hidden = intl;
     if (muniField) muniField.hidden = intl || state.departamentos.length === 0;
-    if (note) note.hidden = !intl;
     if (intl) {
       state.departamentos = []; state.municipios = [];
       if (ddDepto) { ddDepto.setLabel('Selecciona departamentos…', true); ddDepto.setError(false); }
@@ -697,24 +749,29 @@
     }
   }
   function initAlcance() {
-    const seg = document.getElementById('alcanceSeg');
-    const pill = seg.querySelector('[data-pill]');
-    const items = [...seg.querySelectorAll('.naowee-segment__item')];
-    const position = (animate) => {
-      const active = seg.querySelector('.naowee-segment__item--active');
-      if (!active) return;
-      if (animate) pill.classList.remove('naowee-segment__pill--no-anim');
-      pill.style.setProperty('--seg-x', active.offsetLeft + 'px');
-      pill.style.width = active.offsetWidth + 'px';
-    };
-    items.forEach((it) => it.addEventListener('click', () => {
-      if (it.classList.contains('naowee-segment__item--active')) return;
-      items.forEach((x) => { const on = x === it; x.classList.toggle('naowee-segment__item--active', on); x.setAttribute('aria-selected', String(on)); });
-      state.alcance = it.dataset.val;
-      position(true);
+    const group = document.getElementById('alcanceSeg');
+    const opts = [...group.querySelectorAll('.alcance-opt')];
+    const select = (opt, focus) => {
+      if (focus) opt.focus();
+      if (opt.classList.contains('is-selected')) return;
+      opts.forEach((x) => {
+        const on = x === opt;
+        x.classList.toggle('is-selected', on);
+        x.setAttribute('aria-checked', String(on));
+        x.tabIndex = on ? 0 : -1;
+      });
+      state.alcance = opt.dataset.val;
       applyAlcance();
-    }));
-    requestAnimationFrame(() => position(false));
+    };
+    opts.forEach((opt, i) => {
+      opt.tabIndex = opt.classList.contains('is-selected') ? 0 : -1;
+      opt.addEventListener('click', () => select(opt, false));
+      // Navegación por flechas → radiogroup WAI-ARIA
+      opt.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); select(opts[(i + 1) % opts.length], true); }
+        else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); select(opts[(i - 1 + opts.length) % opts.length], true); }
+      });
+    });
   }
 
   function initSection1() {
