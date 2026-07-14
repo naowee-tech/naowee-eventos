@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="shared/event-detail.css?v=0.9.1">
 <link rel="stylesheet" href="shared/forms.css?v=0.9.3">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.9.1">
-<script src="shared/naowee-footer.js?v=0.9.9" defer></script>
+<script src="shared/naowee-footer.js?v=0.9.10" defer></script>
 <!-- SheetJS: lectura/escritura real de .xlsx para el cargue masivo (validación real por fila). -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -550,6 +550,10 @@
   .carg-eq-mm.is-on { filter: grayscale(0) opacity(1); border-color: var(--accent); background: var(--accent-bg); }
   .carg-eq-inline-inp { width: 100%; min-width: 64px; height: 34px; padding: 0 10px; border: 1px solid var(--border-dark); border-radius: var(--radius-md); font-family: inherit; font-size: 13px; color: var(--text-primary); background: var(--surface); }
   .carg-eq-inline-inp--pos { width: 64px; text-align: center; font-weight: 700; }
+  /* Editor inline del equipo (nombre/organización/país). */
+  .carg-eq-editcell { display: flex; flex-direction: column; gap: 6px; min-width: 180px; }
+  .carg-eq-inline-sel { width: 100%; min-width: 150px; height: 34px; padding: 0 8px; border: 1px solid var(--border-dark); border-radius: var(--radius-md); font-family: inherit; font-size: 13px; color: var(--text-primary); background: var(--surface); cursor: pointer; }
+  .carg-eq-inline-sel:focus, .carg-eq-name-inp:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(215,64,9,.1); }
   /* Empty state de Medallería (sin equipos aún → guía a Ranking) */
   .carg-eq-noteams { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 28px 20px; }
   .carg-eq-noteams__ico { color: var(--text-muted); }
@@ -1743,6 +1747,7 @@
     const fullRoster = effectiveRoster(ev);
     const rows = fullRoster.filter((r) => !isConjuntoDeporte(r.deporte));
     const hasConjunto = fullRoster.some((r) => isConjuntoDeporte(r.deporte));
+    const isIntlEv = !!(ev && ev.alcance === 'internacional');   // intl → medallas agrupadas para Colombia (no por liga)
     if (!rows.length) { if (hasConjunto) { conjuntoOnlyState(container, 'medalleria'); return; } rosterEmptyState(container, 'Las medallas'); return; }
     const medals = {};   // id -> 'oro' | 'plata' | 'bronce'
     /* Liga con Resultados: la posición registrada en el ranking restringe la medalla
@@ -1791,7 +1796,7 @@
         </div>
         <div class="carg-med-list" id="medList">${rows.map(medalRow).join('')}</div>
         <div class="carg-med-orgpanel">
-          <div class="carg-med-orgpanel__title">Medallero por organización <span class="carg-med-orgpanel__hint">· se calcula solo</span></div>
+          <div class="carg-med-orgpanel__title">${isIntlEv ? 'Medallas de Colombia 🇨🇴' : 'Medallero por organización'} <span class="carg-med-orgpanel__hint">· se calcula solo</span></div>
           <div id="medOrgTally"></div>
         </div>
         <div class="carg-med-foot">
@@ -1811,7 +1816,7 @@
       const t = {};
       Object.entries(medals).forEach(([id, m]) => {
         const r = rows.find((x) => x.id === id); if (!r) return;
-        const org = r.organizacion || 'Sin organización';
+        const org = isIntlEv ? '🇨🇴 Colombia' : (r.organizacion || 'Sin organización');
         (t[org] = t[org] || { oro: 0, plata: 0, bronce: 0 })[m]++;
       });
       const orgs = Object.keys(t).sort();
@@ -1825,11 +1830,25 @@
       saveBtn.disabled = n === 0;
       renderTally();
     };
+    const medComp = (r) => `${String(r.deporte || '').toLowerCase()}·${String(r.prueba || '').toLowerCase()}`;
     function bindMedals() {
       list.querySelectorAll('.carg-medal').forEach((b) => b.addEventListener('click', () => {
         if (b.disabled) return;   // medalla bloqueada por el puesto del ranking
         const id = b.dataset.id, m = b.dataset.medal;
-        if (medals[id] === m) delete medals[id]; else medals[id] = m;
+        if (medals[id] === m) { delete medals[id]; }
+        else {
+          /* Unicidad: una sola medalla de cada tipo por competencia (deporte+prueba).
+             Sin ranking la asignación es libre → sin esto habría dos oros en la misma
+             prueba. Con ranking la posición ya bloquea, pero el guard aplica igual. */
+          const r = rows.find((x) => x.id === id);
+          const clash = r && Object.entries(medals).some(([oid, om]) => {
+            if (oid === id || om !== m) return false;
+            const or = rows.find((y) => y.id === oid);
+            return or && medComp(or) === medComp(r);
+          });
+          if (clash) { flash(`Ya asignaste ${MED_EMOJI[m]} ${m} en ${r.deporte}${r.prueba ? ' · ' + r.prueba : ''}. Quítalo primero para reasignarlo.`, 'error'); return; }
+          medals[id] = m;
+        }
         b.closest('.carg-med-row').querySelectorAll('.carg-medal').forEach((x) => x.classList.toggle('is-selected', medals[id] === x.dataset.medal));
         sync();
       }));
@@ -2096,13 +2115,26 @@
       const xtag = isMed
         ? (String(t.posicion).trim() ? ` <span class="carg-eq-xtag">pos ${esc(t.posicion)}</span>` : '')
         : (t.medalla ? ` <span class="carg-eq-xtag">${MED_EMOJI[t.medalla]}</span>` : '');
+      /* Nombre/organización (y país en internacional) EDITABLES inline: se pueden
+         corregir sin borrar+recrear el equipo (feedback Doug/QA). Mismo patrón que
+         posición/marca. Internacional = nombre libre + país; nacional = organización
+         del catálogo (native select, accesible). */
+      const orgOpts = ORGS_LIST.map((o) => `<option value="${esc(o.value)}"${o.value === t.organizacion ? ' selected' : ''}>${esc(o.label)}</option>`).join('')
+        + (ORGS_LIST.some((o) => o.value === t.organizacion) ? '' : `<option value="${esc(t.organizacion)}" selected>${esc(t.organizacion)}</option>`);
+      const paisOpts = PAIS_REGIONS.map((rg) => `<optgroup label="${esc(rg.region)}">${rg.paises.map((p) => `<option value="${p.value}"${p.value === t.pais ? ' selected' : ''}>${esc(p.label)}</option>`).join('')}</optgroup>`).join('');
+      const equipoCell = intl
+        ? `<td data-label="Equipo"><div class="carg-eq-editcell">
+             <input class="carg-eq-inline-inp carg-eq-name-inp" type="text" maxlength="60" value="${esc(t.organizacion)}" data-team="${esc(t.id)}" placeholder="Nombre del equipo" aria-label="Nombre del equipo">
+             <select class="carg-eq-inline-sel carg-eq-pais-sel" data-team-pais="${esc(t.id)}" aria-label="País del equipo">${paisOpts}</select>
+           </div>${xtag}</td>`
+        : `<td data-label="Equipo"><select class="carg-eq-inline-sel carg-eq-org-sel" data-team-org="${esc(t.id)}" aria-label="Equipo / Organización">${orgOpts}</select>${xtag}</td>`;
       return `<tr>
-        <td data-label="Equipo">${esc(t.organizacion)}${intl && t.pais ? ` <span class="carg-eq-pais">${esc(paisLbl(t.pais))}</span>` : ''}${xtag}</td>
+        ${equipoCell}
         <td data-label="Deporte">${esc(t.deporte)}</td>
         <td data-label="Prueba">${esc(t.prueba)}</td>
         ${meta}
         <td data-label="Integrantes">${t.integrantes.length ? esc(t.integrantes.map((m) => m.nombre).join(', ')) : '—'}</td>
-        <td style="text-align:right"><button class="carg-eq-del" type="button" data-rm-team="${esc(t.id)}" aria-label="Quitar equipo">${I.trash}</button></td>
+        <td style="text-align:right"><button class="carg-eq-del" type="button" data-rm-team="${esc(t.id)}" aria-label="Quitar equipo" title="Quitar equipo">${I.trash}</button></td>
       </tr>`;
     };
     const renderTally = () => {
@@ -2159,6 +2191,20 @@
           persist(); updateCountSave();
         }));
       }
+      /* Editar NOMBRE/ORGANIZACIÓN/PAÍS del equipo inline (aplica a ambos tabs). El
+         nombre usa 'input' (sin re-render → conserva foco); país/org usan 'change'. */
+      stagedEl.querySelectorAll('.carg-eq-name-inp').forEach((inp) => inp.addEventListener('input', () => {
+        const t = teams.find((x) => x.id === inp.dataset.team); if (!t) return;
+        t.organizacion = inp.value; persist(); renderTally();
+      }));
+      stagedEl.querySelectorAll('.carg-eq-pais-sel').forEach((sel) => sel.addEventListener('change', () => {
+        const t = teams.find((x) => x.id === sel.dataset.teamPais); if (!t) return;
+        t.pais = sel.value; persist(); renderTally();
+      }));
+      stagedEl.querySelectorAll('.carg-eq-org-sel').forEach((sel) => sel.addEventListener('change', () => {
+        const t = teams.find((x) => x.id === sel.dataset.teamOrg); if (!t) return;
+        t.organizacion = sel.value; persist(); renderTally();
+      }));
       updateCountSave();
       renderTally();
     };
@@ -2249,6 +2295,7 @@
       </div>
       <div class="carg-intl-athlete__right">
         <span class="carg-intl-athlete__status" data-status ${done ? '' : 'hidden'}>✓ ${done && intlData[r.id] ? 'Puesto ' + esc(intlData[r.id].pos) : 'Resultado registrado'}</span>
+        ${done ? `<button type="button" class="naowee-btn naowee-btn--link naowee-btn--sm" data-rm-intl="${r.id}" title="Quitar resultado">Quitar</button>` : ''}
         <button type="button" class="naowee-btn naowee-btn--ghost naowee-btn--sm" data-open="${r.id}">${done ? 'Editar' : 'Registrar resultado'}</button>
       </div>
     </div>`;
@@ -2399,7 +2446,25 @@
       drawer.classList.add('is-open');
     };
     const close = () => { drawer.classList.remove('is-open'); setTimeout(() => { drawer.hidden = true; }, 300); };
-    container.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => open(b.dataset.open)));
+    /* Lista de atletas: re-render + re-bind tras registrar/quitar (para que el botón
+       Quitar aparezca/desaparezca según el estado). */
+    const listEl = container.querySelector('.carg-intl-list');
+    function rebindRows() {
+      container.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => open(b.dataset.open)));
+      container.querySelectorAll('[data-rm-intl]').forEach((b) => b.addEventListener('click', () => {
+        const id = b.dataset.rmIntl; const r = rows.find((x) => x.id === id);
+        if (!r || !intlDone.has(id)) return;
+        confirmDialog({ title: 'Quitar resultado', message: `¿Quitar el resultado registrado de <strong>${esc(r.nombre)}</strong>? Podrás volver a registrarlo cuando quieras.`, confirmLabel: 'Quitar', onConfirm: () => {
+          intlDone.delete(id); delete intlData[id];
+          removeResultPosition(selectedEventId, positionKey({ nroDoc: r.nroDoc, deporte: r.deporte, prueba: r.prueba }));
+          applyUpload(selectedEventId, 'res', -1);
+          refreshList(); renderIntlPreview();
+          flash('Resultado quitado.', 'success');
+        } });
+      }));
+    }
+    function refreshList() { if (listEl) listEl.innerHTML = rows.map((r) => intlAthleteRow(r)).join(''); rebindRows(); }
+    rebindRows();
     drawer.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', close));
     /* Handler ÚNICO de Escape (antes se agregaba uno por render → se acumulaban). */
     if (intlEscHandler) document.removeEventListener('keydown', intlEscHandler);
@@ -2444,12 +2509,7 @@
       const wasDone = intlDone.has(currentId);
       intlData[currentId] = { pos, marca: colMarca, podio };
       intlDone.add(currentId);
-      const row = container.querySelector(`.carg-intl-athlete[data-athlete="${currentId}"]`);
-      if (row) {
-        row.classList.add('is-done');
-        const st = row.querySelector('[data-status]'); st.hidden = false; st.textContent = '✓ Puesto ' + pos;
-        row.querySelector('[data-open]').textContent = 'Editar';
-      }
+      refreshList();   // re-pinta la fila (estado ✓ + botones Editar/Quitar)
       /* Liga con Medallería: la posición del colombiano restringe su medalla. */
       const rAth = rows.find((x) => x.id === currentId);
       if (rAth) setResultPosition(selectedEventId, { nroDoc: rAth.nroDoc, deporte: rAth.deporte, prueba: rAth.prueba, posicion: pos, deportista: rAth.nombre });
