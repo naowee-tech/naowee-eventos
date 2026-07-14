@@ -41,10 +41,12 @@ export function dailyChart(daily, mode, startLabel) {
 }
 
 /* ── Barras horizontales ──────────────────────────────────────────────── */
+/* r.hi === true → resalta la fila (país seguido = Colombia). El label puede
+   traer bandera emoji embebida desde el panel (por país). */
 export function hbars(rows, color) {
   const mx = Math.max(1, ...rows.map((r) => r.v));
   return rows.map((r) => `
-    <div class="rep-hb">
+    <div class="rep-hb${r.hi ? ' is-co' : ''}">
       <span class="rep-hb__lbl" title="${r.lbl}">${r.lbl}</span>
       <div class="rep-hb__track"><div class="rep-hb__fill" style="background:${r.c || color};width:${(r.v / mx * 100).toFixed(1)}%"></div></div>
       <span class="rep-hb__val">${num(r.v)}</span>
@@ -92,11 +94,11 @@ export function podio(top3, avatars) {
   const order = [top3[1], top3[0], top3[2]];   // orden visual: 2º · 1º · 3º
   const cls = ['p2', 'p1', 'p3'];
   return order.map((r, i) => `
-    <div class="rep-podio__item ${cls[i]}">
+    <div class="rep-podio__item ${cls[i]}${r.isCol ? ' is-co' : ''}">
       ${cls[i] === 'p1' ? '<div class="rep-podio__crown" aria-hidden="true">👑</div>' : ''}
       <div class="rep-podio__avatar" style="background:${avatars[r.pos - 1]}">${r.av}</div>
       <div class="rep-podio__name">${r.dep}</div>
-      <div class="rep-podio__org">${r.org}</div>
+      <div class="rep-podio__org">${r.flag ? r.flag + ' ' : ''}${r.org}</div>
       <div class="rep-podio__marca">${r.marca}</div>
       <div class="rep-podio__block"><span class="rep-podio__pos">${r.pos}°</span></div>
     </div>`).join('');
@@ -109,8 +111,8 @@ export function stackedBars(orgs) {
     const tot = d.oro + d.plata + d.bronce;
     const pct = tot / max * 100;
     const oP = tot ? d.oro / tot * 100 : 0, sP = tot ? d.plata / tot * 100 : 0, bP = tot ? d.bronce / tot * 100 : 0;
-    return `<div class="rep-shb">
-      <span class="rep-shb__lbl" title="${d.name}">${d.name.replace('Liga ', '')}</span>
+    return `<div class="rep-shb${d.isCol ? ' is-co' : ''}">
+      <span class="rep-shb__lbl" title="${d.name}">${d.flag ? d.flag + ' ' : ''}${d.name.replace('Liga ', '')}</span>
       <div class="rep-shb__track" style="width:${pct}%">
         <div class="rep-shb__seg" style="width:${oP}%;background:var(--rep-gold-fill)"></div>
         <div class="rep-shb__seg" style="width:${sP}%;background:var(--rep-silver-fill)"></div>

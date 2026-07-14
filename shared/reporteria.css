@@ -10,16 +10,35 @@
   --rep-bronze: #92400e; --rep-bronze-bg: #fff7ed; --rep-bronze-bd: #fed7aa; --rep-bronze-fill: #cd7f32;
 }
 
-/* ── Card de contexto del evento (con selector para cambiar de evento) ── */
-.rep-ctx { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 18px 24px; margin-bottom: 18px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
-.rep-ctx__main { flex: 1; min-width: 240px; }
-.rep-ctx__title { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-.rep-ctx__name { font-size: 17px; font-weight: 800; letter-spacing: -.3px; color: var(--text-primary); }
+/* ── Card de setup del reporte (funnel vertical): Paso 1 tipo de evento (segment)
+   → divisor → Paso 2 evento filtrado + su contexto. El tipo manda la jerarquía. ── */
+/* overflow: visible → el menú del dropdown "Evento" ESCAPA la card (no recortar);
+   position + z-index → la card se eleva por encima de la card de tabs siguiente
+   para que el menú flotante quede por delante (gotcha canónico del DS). El divisor
+   full-width no toca las esquinas redondeadas (va en el medio) → no necesita clip. */
+.rep-ctx { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); margin-bottom: 18px; position: relative; z-index: 20; }
+/* Paso 1 · Tipo de evento */
+.rep-ctx__scope { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 24px; flex-wrap: wrap; }
+.rep-ctx__scope-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.rep-ctx__step { font-size: 10.5px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .06em; }
+/* Caption del ámbito = badge con ícono + palabra clave destacada (no texto suelto).
+   Neutro en nacional; tinte de Colombia (naranja suave) en internacional. */
+.rep-scope__badge { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; padding: 6px 12px; border-radius: var(--radius-md); background: var(--bg); border: 1px solid var(--border); font-size: 12.5px; line-height: 1.35; color: var(--text-secondary); }
+.rep-scope__badge svg { width: 15px; height: 15px; flex-shrink: 0; color: var(--text-secondary); }
+.rep-scope__badge b { font-weight: 700; color: var(--text-primary); }
+.rep-scope__badge--intl { background: var(--orange-bg); border-color: var(--orange-border); color: var(--accent); }
+.rep-scope__badge--intl svg, .rep-scope__badge--intl b { color: var(--accent); }
+.rep-ctx__scope .naowee-segment { flex: 0 0 auto; }
+/* Divisor full-width entre pasos */
+.rep-ctx__divider { height: 1px; background: var(--border); }
+/* Paso 2 · Evento (dropdown filtrado por tipo) + contexto del seleccionado */
+.rep-ctx__event { display: flex; flex-direction: column; gap: 14px; padding: 16px 24px; }
+.rep-ev-switch { display: flex; flex-direction: column; gap: 6px; }
+.rep-ev-switch label { display: flex; align-items: center; gap: 8px; font-size: 10.5px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .06em; }
+.rep-ev-switch__count { text-transform: none; letter-spacing: 0; font-size: 10.5px; font-weight: 700; color: var(--text-secondary); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-full); padding: 1px 8px; }
 .rep-ctx__meta { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .rep-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--text-secondary); }
 .rep-chip svg { width: 14px; height: 14px; opacity: .5; }
-.rep-ev-switch { display: flex; flex-direction: column; gap: 4px; }
-.rep-ev-switch label { font-size: 10.5px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .06em; }
 
 /* ── Gran container: tabs + filtros + paneles (patrón canónico .carg-tabs-card) ──
    Container plano (border + radius, SIN sombra). Tabs flush arriba (divider
@@ -39,7 +58,7 @@
 .rep-filter__label { font-size: 11.5px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .06em; margin-right: 2px; }
 .rep-filter .naowee-dropdown { width: 188px; flex: 0 0 auto; }
 .rep-filter__actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
-.rep-ev-switch .naowee-dropdown { width: 340px; max-width: 100%; }
+.rep-ev-switch .naowee-dropdown { width: 100%; max-width: 460px; }
 
 /* ── KPI grid ─────────────────────────────────────────────────────────── */
 .rep-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
@@ -166,6 +185,19 @@
 .col-total { font-weight: 800; font-size: 15px; color: var(--text-primary); }
 .rep-chip-prueba { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: var(--radius-full); background: var(--blue-bg); color: var(--blue-info); }
 
+/* ── Identidad de país: bandera emoji como avatar (reemplaza el disco de iniciales).
+   Regla dura: banderas = emoji; nunca la bandera dentro de un cuadro de color. ── */
+.rep-flag { width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--bg); border: 1px solid var(--border); display: inline-flex; align-items: center; justify-content: center; font-size: 19px; line-height: 1; flex-shrink: 0; }
+
+/* ── Highlight de Colombia (país seguido): por IDENTIDAD, nunca por rank ni color
+   patrio inventado. Solo acento + tinte del DS sobre elementos existentes. ── */
+.naowee-table--in-card tbody tr.is-co { background: var(--orange-bg); }
+.naowee-table--in-card tbody tr.is-co td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.naowee-table--in-card tbody tr.is-co .rep-org__name { font-weight: 700; color: var(--text-primary); }
+.rep-you { display: inline-block; margin-left: 6px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--accent); background: var(--surface); border: 1px solid var(--orange-border); border-radius: var(--radius-full); padding: 1px 7px; vertical-align: middle; }
+.rep-hb.is-co .rep-hb__lbl, .rep-shb.is-co .rep-shb__lbl { font-weight: 700; color: var(--text-primary); }
+.rep-podio__item.is-co .rep-podio__org { color: var(--accent); font-weight: 700; }
+
 /* ── Medallería: resumen + stacked + two-col ──────────────────────────── */
 .rep-med-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 .rep-med-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 20px 22px; display: flex; flex-direction: column; gap: 5px; }
@@ -222,4 +254,13 @@
   .rep-filter .naowee-dropdown, .rep-ev-switch .naowee-dropdown { width: 100%; }
   .rep-filter__actions { width: 100%; }
   .rep-filter__actions .naowee-btn { flex: 1; }
+  /* El nombre largo del evento no debe desbordar el ancho del móvil: el switcher
+     ocupa toda la fila y el valor trunca con ellipsis (scoped a móvil → sin efecto
+     en desktop). Requiere min-width:0 en toda la cadena flex para poder encoger. */
+  .rep-ev-switch { flex: 1 1 100%; min-width: 0; }
+  .rep-ev-switch .naowee-dropdown { min-width: 0; }
+  .rep-ev-switch .naowee-dropdown__trigger { width: 100%; min-width: 0; }
+  .rep-ev-switch .naowee-dropdown__value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rep-ctx__scope { align-items: stretch; }
+  .rep-ctx__scope .naowee-segment { width: 100%; }
 }

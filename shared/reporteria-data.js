@@ -10,6 +10,7 @@
    y el tablero muestra empty states canónicos.
    ═══════════════════════════════════════════════════════════════════════ */
 import { pct } from './events-data.js';
+import { PAISES, PAIS_SEGUIDO, paisFlag, paisName, paisRegion } from './paises.js';
 
 /* ── RNG determinista (FNV-1a → LCG) ─────────────────────────────────── */
 function seedFrom(str) {
@@ -37,6 +38,26 @@ export const ORGANISMOS = [
   { name: 'Liga Caldas',        av: 'CA', c: '#b45309' },
   { name: 'Liga Tolima',        av: 'TO', c: '#0d9488' }
 ];
+
+/* ── Dimensión "equipo" internacional = PAÍS (Colombia = país seguido) ──
+   En un evento internacional los "equipos" son países. Colombia siempre entra
+   (es el país que se sigue) en la posición 0, y el resto son rivales sembrados
+   (Fisher-Yates por el id del evento → set estable). Los items caben en el mismo
+   shape que ORGANISMOS pero con `flag`/`isCol` (sin `av`/`c`: el panel pinta la
+   bandera en vez del recuadro de iniciales). */
+function participatingCountries(rnd, count, region) {
+  /* Si el evento acota una región (p.ej. Panamericano → 'América'), el pool de
+     países se filtra a esa región para que el medallero sea geográficamente
+     coherente (nada de países de otro continente en unos Panamericanos). Colombia
+     (país seguido) SIEMPRE entra, esté o no en la región. */
+  const inRegion = region ? PAISES.filter((p) => paisRegion(p.value) === region) : PAISES;
+  const pool = inRegion.length ? inRegion : PAISES;
+  const colP = PAISES.find((p) => p.value === PAIS_SEGUIDO);
+  const rivals = shuffled(pool.filter((p) => p.value !== PAIS_SEGUIDO), rnd);
+  return [colP, ...rivals].slice(0, Math.max(0, count)).map((p) => ({
+    name: paisName(p.value), flag: paisFlag(p.value), value: p.value, isCol: p.value === PAIS_SEGUIDO
+  }));
+}
 
 const DISCIPLINAS_MULTI = ['Atletismo', 'Natación', 'Ciclismo', 'Patinaje', 'Taekwondo', 'Judo', 'Karate Do', 'Baloncesto', 'Fútbol Sala', 'Voleibol', 'Levantamiento', 'Boxeo', 'Tenis de Mesa', 'Gimnasia'];
 const NOMBRES = ['Carlos Rodríguez', 'Luis Martínez', 'Sebastián Torres', 'Felipe Gutiérrez', 'Andrés Vargas', 'Daniel Morales', 'Camilo Herrera', 'Ricardo Sánchez', 'Mateo Jiménez', 'Santiago Ramírez', 'Valentina Ríos', 'Laura Castro', 'Mariana Díaz', 'Sofía Mejía'];
@@ -78,14 +99,43 @@ const initials = (nm) => nm.split(' ').map((w) => w[0]).join('').slice(0, 2).toU
 /* ── Reparto entero determinista según pesos (suma exacta al total) ──── */
 function splitTotal(total, weights) {
   const sum = weights.reduce((a, b) => a + b, 0) || 1;
-  const out = weights.map((w) => Math.round((total * w) / sum));
+  const out = weights.map((w) => Math.max(0, Math.round((total * w) / sum)));
   const drift = total - out.reduce((a, b) => a + b, 0);
-  if (out.length) out[0] += drift;             // corrige redondeo en el mayor
-  return out.map((v) => Math.max(0, v));
+  /* Corrige el redondeo en el bucket MAYOR: puede absorber ±drift sin volverse
+     negativo. (out[0] NO siempre es el mayor — p.ej. la curva diaria en campana:
+     sumarle un drift negativo lo clampaba a 0 y la suma no cerraba al total.) */
+  if (out.length) {
+    let mi = 0;
+    for (let i = 1; i < out.length; i++) if (out[i] > out[mi]) mi = i;
+    out[mi] = Math.max(0, out[mi] + drift);
+  }
+  return out;
 }
 /* Pesos decrecientes con jitter sembrado (para rankings realistas). */
 function decayWeights(n, rnd) {
   return Array.from({ length: n }, (_, i) => (n - i) + rnd() * 1.6);
+}
+/* Pesos de medallas para el medallero internacional: Colombia (país seguido) NO
+   se fuerza a #1 — recibe el peso de un rango top sembrado (1.º–3.º) y el resto de
+   países se reparten los demás pesos en orden aleatorio. Así "Posición de Colombia"
+   y "brecha con el líder" son realistas y varían por evento. Si no hay país seguido
+   (medallero nacional por ligas), devuelve decayWeights alineado por índice (idéntico
+   al comportamiento previo → nacional intacto). */
+function medalWeights(teams, rnd, fixedTarget) {
+  const n = teams.length;
+  const w = decayWeights(n, rnd);                 // valores descendentes por rango
+  const ci = teams.findIndex((t) => t.isCol);
+  if (ci < 0 || n === 0) return w;                // nacional (ligas): alineado por índice
+  /* Colombia se ancla al MISMO rango (fixedTarget) en oro/plata/bronce → su posición
+     en el medallero es coherente (no #1 en oro y #8 en plata). Los rivales se barajan
+     por metal, así el líder varía pero Colombia mantiene un puesto realista top-3. */
+  const target = (fixedTarget != null) ? Math.min(fixedTarget, n - 1) : Math.floor(rnd() * Math.min(3, n));
+  const rest = w.filter((_, i) => i !== target);
+  const others = shuffled(teams.map((_, i) => i).filter((i) => i !== ci), rnd);
+  const out = new Array(n);
+  out[ci] = w[target];
+  others.forEach((idx, k) => { out[idx] = rest[k]; });
+  return out;
 }
 
 const num = (n) => (n || 0).toLocaleString('es-CO');
@@ -93,8 +143,15 @@ const num = (n) => (n || 0).toLocaleString('es-CO');
 /* ═══════════════════════════════════════════════════════════════════════
    buildReporteria(ev) — objeto consumido por reporteria.html
    ═══════════════════════════════════════════════════════════════════════ */
-export function buildReporteria(ev) {
-  const rnd = makeRng(seedFrom(ev.id));
+export function buildReporteria(ev, scope) {
+  /* Ámbito del reporte: por defecto sigue al `ev.alcance`, pero el segment de la
+     página puede forzarlo (para previsualizar el otro encuadre con la misma data).
+     En internacional la dimensión "equipo" pasa de ligas (ORGANISMOS) a PAÍSES. */
+  const isIntl = scope ? scope === 'internacional' : (ev.alcance === 'internacional');
+  /* Salt del seed SOLO en internacional: nacional queda byte-idéntico (ev.id + ''
+     === ev.id) y el reencuadre internacional muestra una distribución distinta,
+     no los mismos números relabeleados. */
+  const rnd = makeRng(seedFrom(ev.id + (isIntl ? '|intl' : '')));
   const insc = ev.insc || { done: 0, total: 0 };
   const res = ev.res || { done: 0, total: 0 };
   const med = ev.med || { done: 0, total: 0 };
@@ -106,29 +163,50 @@ export function buildReporteria(ev) {
     ? DISCIPLINAS_MULTI.slice(0, Math.max(6, parseInt((ev.sport.match(/(\d+)/) || [])[1] || '14', 10)))
     : [baseSport];
 
-  /* Nº de organismos participantes (sembrado, acotado al catálogo). */
-  const orgCount = insc.done > 0 ? Math.min(ORGANISMOS.length, Math.max(3, 4 + Math.floor(rnd() * 8))) : 0;
-  const orgs = ORGANISMOS.slice(0, orgCount);
+  /* Nº de equipos participantes (sembrado): ligas (nacional) o países (internacional). */
+  const orgCount = insc.done > 0
+    ? (isIntl ? Math.min(PAISES.length, Math.max(8, 8 + Math.floor(rnd() * 8)))
+              : Math.min(ORGANISMOS.length, Math.max(3, 4 + Math.floor(rnd() * 8))))
+    : 0;
+  const poolRegion = ev.poolRegion;   // p.ej. 'América' para Panamericanos (acota el pool de países)
+  const orgs = isIntl ? participatingCountries(rnd, orgCount, poolRegion) : ORGANISMOS.slice(0, orgCount);
 
   /* ── INSCRIPCIONES ─────────────────────────────────────────────────── */
   const pruebasTotal = isMulti ? disciplinas.length * 6 : (PRUEBAS_POR_DEPORTE[baseSport] || ['Final']).length * 2;
   const inscData = {
     hasData: insc.done > 0,
+    isIntl,
     inscritos: insc.done,
     cupo: insc.total,
     pctCupo: pct(insc.done, insc.total),
     organismosCount: orgCount,
+    paisesCount: orgCount,
     deportesCount: disciplinas.length,
     pruebasCount: pruebasTotal,
     pruebasConInscritos: Math.round(pruebasTotal * (0.55 + rnd() * 0.35)),
     daily: dailyCurve(insc.done, rnd),
-    porOrganismo: orgs.map((o, i) => ({ ...o })),
+    porOrganismo: isIntl ? [] : orgs.map((o, i) => ({ ...o })),
+    porRegion: [],
     porDeporte: [],
     tipo: []
   };
-  // reparto inscritos por organismo
-  splitTotal(insc.done, decayWeights(orgCount, rnd)).forEach((v, i) => { if (inscData.porOrganismo[i]) inscData.porOrganismo[i].v = v; });
-  inscData.porOrganismo.sort((a, b) => b.v - a.v);
+  if (!isIntl) {
+    // NACIONAL: reparto de inscritos por organismo (liga).
+    splitTotal(insc.done, decayWeights(orgCount, rnd)).forEach((v, i) => { if (inscData.porOrganismo[i]) inscData.porOrganismo[i].v = v; });
+    inscData.porOrganismo.sort((a, b) => b.v - a.v);
+  } else {
+    /* INTERNACIONAL: en un evento internacional solo se sigue a Colombia → los
+       inscritos SON la delegación de Colombia (no se reparten entre países; los
+       rivales no se inscriben en el módulo). El eje país vive en Medallería y en
+       el podio de Resultados. Aquí interesa el tamaño de NUESTRA delegación y la
+       amplitud de la justa (cuántos países/regiones enfrenta). */
+    inscData.colDelegacion = insc.done;
+    // Participación por región: nº de países participantes por región (amplitud de la justa).
+    const regionCount = {};
+    orgs.forEach((o) => { const r = paisRegion(o.value); if (r) regionCount[r] = (regionCount[r] || 0) + 1; });
+    inscData.porRegion = Object.keys(regionCount).map((r) => ({ lbl: r, v: regionCount[r] })).sort((a, b) => b.v - a.v);
+    inscData.regionesCount = inscData.porRegion.length;
+  }
   // por deporte (multi) o por prueba (single)
   const depLabels = isMulti ? disciplinas : (PRUEBAS_POR_DEPORTE[baseSport] || ['Final']);
   inscData.porDeporteLabel = isMulti ? 'Por deporte' : 'Por prueba';
@@ -151,14 +229,30 @@ export function buildReporteria(ev) {
   if (res.done > 0) {
     const n = Math.min(8, NOMBRES.length);
     const names = shuffled(NOMBRES, rnd).slice(0, n);      // atletas ÚNICOS
-    const ligas = ORGANISMOS.slice(0, n);                 // ligas distintas por fila
     const marcas = genMarcas(depShown, n, rnd);           // marcas MONÓTONAS (pos 1 = mejor)
-    for (let i = 0; i < n; i++) {
-      tabla.push({ pos: i + 1, dep: names[i], org: ligas[i].name, av: initials(names[i]), marca: marcas[i] });
+    if (isIntl) {
+      /* Internacional: cada fila es de un PAÍS (Colombia en un puesto de podio
+         sembrado, rivales distintos). El "organismo" pasa a ser el país. */
+      const pool = orgs.length ? orgs : participatingCountries(rnd, Math.min(PAISES.length, n + 2), poolRegion);
+      const col = pool.find((p) => p.isCol) || pool[0];
+      const rivals = pool.filter((p) => !p.isCol);
+      const colSlot = Math.min(n - 1, Math.floor(rnd() * 3)); // 0..2 → sube al podio
+      let ri = 0;
+      for (let i = 0; i < n; i++) {
+        const c = (i === colSlot) ? col : (rivals.length ? rivals[ri++ % rivals.length] : col);
+        tabla.push({ pos: i + 1, dep: names[i], org: c ? c.name : '—', flag: c ? c.flag : '', isCol: !!(c && c.isCol), av: initials(names[i]), marca: marcas[i] });
+      }
+    } else {
+      const ligas = ORGANISMOS.slice(0, n);                 // ligas distintas por fila
+      for (let i = 0; i < n; i++) {
+        tabla.push({ pos: i + 1, dep: names[i], org: ligas[i].name, av: initials(names[i]), marca: marcas[i] });
+      }
     }
   }
+  const colBestRow = isIntl ? tabla.find((r) => r.isCol) : null;
   const resData = {
     hasData: res.done > 0,
+    isIntl,
     cargados: res.done,
     total: res.total,
     pctCargado: pct(res.done, res.total),
@@ -167,7 +261,9 @@ export function buildReporteria(ev) {
     deporteCtx: depShown,
     pruebaLbl: prueba,
     podio: tabla.slice(0, 3),
-    tabla
+    tabla,
+    colBestPos: colBestRow ? colBestRow.pos : null,
+    colBestMarca: colBestRow ? colBestRow.marca : null
   };
 
   /* ── MEDALLERÍA ────────────────────────────────────────────────────── */
@@ -175,19 +271,46 @@ export function buildReporteria(ev) {
   // oro≈plata≈bronce (cada prueba reparte 3); split casi parejo
   const [oro, plata, bronce] = splitTotal(totMed, [0.34, 0.34, 0.32]);
   const medOrgs = orgs.map((o) => ({ ...o }));
-  const oroSplit = splitTotal(oro, decayWeights(medOrgs.length, rnd));
-  const plataSplit = splitTotal(plata, decayWeights(medOrgs.length, rnd));
-  const bronceSplit = splitTotal(bronce, decayWeights(medOrgs.length, rnd));
+  /* Rango de Colombia en el medallero: sembrado UNA vez (solo intl) y reusado en los
+     tres metales → posición coherente y realista (no siempre #1). Nacional: null (no
+     consume rnd → secuencia intacta). */
+  const colTarget = isIntl ? Math.floor(rnd() * Math.min(3, Math.max(1, medOrgs.length))) : null;
+  const oroSplit = splitTotal(oro, medalWeights(medOrgs, rnd, colTarget));
+  const plataSplit = splitTotal(plata, medalWeights(medOrgs, rnd, colTarget));
+  const bronceSplit = splitTotal(bronce, medalWeights(medOrgs, rnd, colTarget));
   medOrgs.forEach((o, i) => { o.oro = oroSplit[i] || 0; o.plata = plataSplit[i] || 0; o.bronce = bronceSplit[i] || 0; });
   medOrgs.sort((a, b) => (b.oro - a.oro) || (b.plata - a.plata) || (b.bronce - a.bronce));
+  const medPor = medOrgs.filter((o) => o.oro + o.plata + o.bronce > 0);
   const medData = {
     hasData: totMed > 0,
+    isIntl,
     oro, plata, bronce, total: totMed,
     pruebas: med.total,
-    porOrganismo: medOrgs.filter((o) => o.oro + o.plata + o.bronce > 0)
+    paisesCount: medPor.length,
+    porOrganismo: medPor
+  };
+  // internacional: posición de Colombia en el medallero + su cosecha (métrica estrella)
+  if (isIntl) {
+    const ci = medPor.findIndex((o) => o.isCol);
+    medData.colRank = ci >= 0 ? ci + 1 : null;
+    medData.colMedals = ci >= 0
+      ? { oro: medPor[ci].oro, plata: medPor[ci].plata, bronce: medPor[ci].bronce, total: medPor[ci].oro + medPor[ci].plata + medPor[ci].bronce }
+      : { oro: 0, plata: 0, bronce: 0, total: 0 };
+    // Brecha de oros con el líder del medallero (0 si Colombia lidera).
+    medData.brechaOroLider = medPor.length ? Math.max(0, medPor[0].oro - medData.colMedals.oro) : 0;
+  }
+
+  /* Entidades del filtro "Organismo/País" (fuente del dropdown fOrg en la página):
+     nacional → ligas con inscritos; internacional → países participantes (con bandera). */
+  const filterEntities = isIntl
+    ? orgs.map((o) => ({ value: o.name, label: (o.flag ? o.flag + ' ' : '') + o.name }))
+    : inscData.porOrganismo.map((o) => ({ value: o.name, label: o.name }));
+  const dim = {
+    entity: isIntl ? 'País' : 'Organismo',
+    entityAll: isIntl ? 'Todos los países' : 'Todos los organismos'
   };
 
-  return { ev, insc: inscData, res: resData, med: medData, num };
+  return { ev, scope: isIntl ? 'internacional' : 'nacional', isIntl, dim, filterEntities, insc: inscData, res: resData, med: medData, num };
 }
 
 /* Curva diaria sembrada (campana sesgada) que suma exactamente al total. */

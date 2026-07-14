@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="shared/event-detail.css?v=0.9.1">
 <link rel="stylesheet" href="shared/forms.css?v=0.9.3">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.9.1">
-<script src="shared/naowee-footer.js?v=0.9.4" defer></script>
+<script src="shared/naowee-footer.js?v=0.9.9" defer></script>
 <!-- SheetJS: lectura/escritura real de .xlsx para el cargue masivo (validación real por fila). -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -254,6 +254,16 @@
   .carg-data-scroll .naowee-table--in-card { table-layout: auto; min-width: 760px; }
   .carg-data-scroll .naowee-table--in-card tbody td { white-space: nowrap; }
   .carg-data-scroll .naowee-table--in-card .num { text-align: center; font-feature-settings: 'tnum'; }
+  /* Tabla "Deportistas inscritos": ancho fijo (colgroup) + ellipsis por columna →
+     cabe sin scroll horizontal y las acciones nunca se cortan; el texto largo se
+     trunca en UNA línea (título al hover para verlo completo). */
+  /* overflow-x:auto = red de seguridad SOLO en pantallas muy angostas (móvil): en
+     desktop la tabla fija cabe al 100% → no aparece scroll; en móvil contiene el
+     desborde dentro de la tabla (no en la página). */
+  .carg-insc-tablewrap { width: 100%; overflow-x: auto; }
+  .carg-insc-table { table-layout: fixed; width: 100%; min-width: 0; }
+  .carg-insc-table th, .carg-insc-table td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .carg-insc-table th:last-child, .carg-insc-table td.carg-insc-actions { overflow: visible; text-align: right; white-space: nowrap; }
   .carg-file__table-foot { font-size: 11.5px; color: var(--text-muted); margin-top: 10px; }
   /* Acciones por fila (editar/borrar) en "Cargas realizadas". */
   /* Columna de acciones fija a la derecha → editar/borrar siempre visibles aunque
@@ -650,6 +660,7 @@
   import { allEvents, STATUS_LABEL, applyUpload, addUploadRecord, getFileVersions, addFileVersion, removeFileRow, updateFileRow, addInscritos, removeInscrito, updateInscrito, getResultPositions, setResultPosition, removeResultPosition, positionKey, GESTOR_MAP, resolveGestorId, eventsForGestor, gestorIdForRole } from './shared/events-data.js';
   import { GESTORES, DEPORTES_POR_TIPO, DEPARTAMENTOS, deptoDeLiga, deptoDeClub } from './shared/catalogo.js';
   import { effectiveRoster } from './shared/roster-data.js';
+  import { PAIS_REGIONS, PAISES } from './shared/paises.js';
 
   /* ─── Params ─── */
   const params = new URLSearchParams(window.location.search);
@@ -2222,46 +2233,8 @@
      En un evento internacional solo se sigue a los deportistas de Colombia.
      Para cada colombiano se registra su posición y se crean los participantes
      "ficticios" (país + nombre) del podio contra los que compitió. */
-  /* Catálogo de países agrupado por región (para el dropdown con buscador + grupos).
-     PAISES = versión plana derivada (la usan el podio internacional y paisLbl). */
-  const PAIS_REGIONS = [
-    { region: 'América', paises: [
-      { value: 'CO', label: '🇨🇴 Colombia' }, { value: 'AR', label: '🇦🇷 Argentina' }, { value: 'BR', label: '🇧🇷 Brasil' },
-      { value: 'CL', label: '🇨🇱 Chile' }, { value: 'PE', label: '🇵🇪 Perú' }, { value: 'EC', label: '🇪🇨 Ecuador' },
-      { value: 'VE', label: '🇻🇪 Venezuela' }, { value: 'UY', label: '🇺🇾 Uruguay' }, { value: 'PY', label: '🇵🇾 Paraguay' },
-      { value: 'BO', label: '🇧🇴 Bolivia' }, { value: 'MX', label: '🇲🇽 México' }, { value: 'US', label: '🇺🇸 Estados Unidos' },
-      { value: 'CA', label: '🇨🇦 Canadá' }, { value: 'CR', label: '🇨🇷 Costa Rica' }, { value: 'PA', label: '🇵🇦 Panamá' },
-      { value: 'CU', label: '🇨🇺 Cuba' }, { value: 'DO', label: '🇩🇴 Rep. Dominicana' }, { value: 'GT', label: '🇬🇹 Guatemala' },
-      { value: 'HN', label: '🇭🇳 Honduras' }, { value: 'PR', label: '🇵🇷 Puerto Rico' }
-    ] },
-    { region: 'Europa', paises: [
-      { value: 'ES', label: '🇪🇸 España' }, { value: 'FR', label: '🇫🇷 Francia' }, { value: 'DE', label: '🇩🇪 Alemania' },
-      { value: 'IT', label: '🇮🇹 Italia' }, { value: 'PT', label: '🇵🇹 Portugal' }, { value: 'GB', label: '🇬🇧 Reino Unido' },
-      { value: 'NL', label: '🇳🇱 Países Bajos' }, { value: 'BE', label: '🇧🇪 Bélgica' }, { value: 'CH', label: '🇨🇭 Suiza' },
-      { value: 'SE', label: '🇸🇪 Suecia' }, { value: 'NO', label: '🇳🇴 Noruega' }, { value: 'DK', label: '🇩🇰 Dinamarca' },
-      { value: 'FI', label: '🇫🇮 Finlandia' }, { value: 'RU', label: '🇷🇺 Rusia' }, { value: 'PL', label: '🇵🇱 Polonia' },
-      { value: 'AT', label: '🇦🇹 Austria' }, { value: 'GR', label: '🇬🇷 Grecia' }, { value: 'UA', label: '🇺🇦 Ucrania' },
-      { value: 'HR', label: '🇭🇷 Croacia' }, { value: 'RS', label: '🇷🇸 Serbia' }, { value: 'IE', label: '🇮🇪 Irlanda' },
-      { value: 'CZ', label: '🇨🇿 Chequia' }, { value: 'HU', label: '🇭🇺 Hungría' }
-    ] },
-    { region: 'Asia', paises: [
-      { value: 'JP', label: '🇯🇵 Japón' }, { value: 'CN', label: '🇨🇳 China' }, { value: 'KR', label: '🇰🇷 Corea del Sur' },
-      { value: 'IN', label: '🇮🇳 India' }, { value: 'IR', label: '🇮🇷 Irán' }, { value: 'IL', label: '🇮🇱 Israel' },
-      { value: 'SA', label: '🇸🇦 Arabia Saudita' }, { value: 'QA', label: '🇶🇦 Catar' }, { value: 'TH', label: '🇹🇭 Tailandia' },
-      { value: 'KZ', label: '🇰🇿 Kazajistán' }, { value: 'ID', label: '🇮🇩 Indonesia' }, { value: 'PH', label: '🇵🇭 Filipinas' },
-      { value: 'TR', label: '🇹🇷 Turquía' }
-    ] },
-    { region: 'África', paises: [
-      { value: 'MA', label: '🇲🇦 Marruecos' }, { value: 'EG', label: '🇪🇬 Egipto' }, { value: 'NG', label: '🇳🇬 Nigeria' },
-      { value: 'ZA', label: '🇿🇦 Sudáfrica' }, { value: 'KE', label: '🇰🇪 Kenia' }, { value: 'ET', label: '🇪🇹 Etiopía' },
-      { value: 'DZ', label: '🇩🇿 Argelia' }, { value: 'TN', label: '🇹🇳 Túnez' }, { value: 'CM', label: '🇨🇲 Camerún' },
-      { value: 'GH', label: '🇬🇭 Ghana' }, { value: 'SN', label: '🇸🇳 Senegal' }
-    ] },
-    { region: 'Oceanía', paises: [
-      { value: 'AU', label: '🇦🇺 Australia' }, { value: 'NZ', label: '🇳🇿 Nueva Zelanda' }, { value: 'FJ', label: '🇫🇯 Fiyi' }
-    ] }
-  ];
-  const PAISES = PAIS_REGIONS.flatMap((r) => r.paises);
+  /* Catálogo de países (PAIS_REGIONS agrupado + PAISES plano) = fuente única en
+     shared/paises.js; lo usan el dropdown con buscador, el podio internacional y paisLbl. */
   const ICON_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
   const intlDone = new Set();
   const intlData = {};        // id -> { pos, marca, podio:{1,2,3} } (sobrevive re-renders de la sesión)
@@ -2757,9 +2730,9 @@
   let inscFilter = { deporte: '', prueba: '', q: '' };
   const ICON_EDIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>';
   const inscRowHTML = (r) => `<tr>
-      <td>${esc(r.nombre)}</td><td>${esc(rosterDoc(r))}</td><td>${esc(r.deporte || '—')}</td>
-      <td>${esc(r.prueba || '—')}</td><td>${esc(r.organizacion || '—')}</td><td>${esc(r.correo || '—')}</td>
-      <td style="text-align:right;white-space:nowrap"><button class="carg-insc-edit" type="button" data-edit="${esc(r.id)}" aria-label="Editar inscripción" title="Editar">${ICON_EDIT}</button><button class="carg-insc-del" type="button" data-del="${esc(r.id)}" aria-label="Eliminar inscripción" title="Eliminar">${I.trash}</button></td>
+      <td title="${esc(r.nombre)}">${esc(r.nombre)}</td><td title="${esc(rosterDoc(r))}">${esc(rosterDoc(r))}</td><td title="${esc(r.deporte || '—')}">${esc(r.deporte || '—')}</td>
+      <td title="${esc(r.prueba || '—')}">${esc(r.prueba || '—')}</td><td title="${esc(r.organizacion || '—')}">${esc(r.organizacion || '—')}</td><td title="${esc(r.correo || '—')}">${esc(r.correo || '—')}</td>
+      <td class="carg-insc-actions"><button class="carg-insc-edit" type="button" data-edit="${esc(r.id)}" aria-label="Editar inscripción" title="Editar">${ICON_EDIT}</button><button class="carg-insc-del" type="button" data-del="${esc(r.id)}" aria-label="Eliminar inscripción" title="Eliminar">${I.trash}</button></td>
     </tr>`;
   function mountInscritosPanel() {
     const mount = document.getElementById('filesMount');
@@ -2779,8 +2752,9 @@
           <div class="naowee-dropdown naowee-dropdown--small" data-dd="fPrueba"><button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox"><span class="naowee-dropdown__value ${inscFilter.prueba ? '' : 'is-placeholder'}" data-dd-val>${esc(inscFilter.prueba || 'Todas las competencias')}</span><span class="naowee-dropdown__chevron">${I.chevD}</span></button><div class="naowee-dropdown__menu" role="listbox"></div></div>
           <div class="naowee-searchbox naowee-searchbox--small" id="fSearch"><div class="naowee-searchbox__input-wrap"><span class="naowee-searchbox__icon">${I.search}</span><input class="naowee-searchbox__input" type="search" id="fInput" placeholder="Documento, correo o nombre…" value="${esc(inscFilter.q)}" autocomplete="off"><button class="naowee-searchbox__clear" id="fClear" type="button" aria-label="Limpiar">${I.x}</button></div></div>
         </div>
-        <div class="carg-data-scroll">
-          <table class="naowee-table--in-card">
+        <div class="carg-insc-tablewrap">
+          <table class="naowee-table--in-card carg-insc-table">
+            <colgroup><col style="width:21%"><col style="width:13%"><col style="width:12%"><col style="width:16%"><col style="width:15%"><col style="width:14%"><col style="width:9%"></colgroup>
             <thead><tr><th>Deportista</th><th>Documento</th><th>Deporte</th><th>Competencia</th><th>Organización</th><th>Correo</th><th></th></tr></thead>
             <tbody id="inscTbody">${filtered.length ? filtered.map(inscRowHTML).join('') : emptyRow}</tbody>
           </table>

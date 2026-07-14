@@ -7,6 +7,77 @@
    ═══════════════════════════════════════════════════════════════ */
 
 export const EVENTS = [
+  /* ══════════════════════════════════════════════════════════════════════
+     CASOS DEMO (feedback Doug) — cubren la matriz completa
+     {nacional · internacional} × {multideporte · un solo deporte individual ·
+     un solo deporte de conjunto}. Van PRIMERO y asignados a Andrea Salas
+     (gestorId 'g-andrea'). Poblados con datos + catálogo deportivo (ev.deportes)
+     para el modo "Libre · con datos".
+     ══════════════════════════════════════════════════════════════════════ */
+  {
+    id: 'EV-2026-016', emoji: '🌎', name: 'Juegos Suramericanos Lima 2026',
+    sport: 'Multideporte · 14 disciplinas', place: 'Internacional', org: 'ODESUR · Comité Olímpico Colombiano',
+    start: '10 abr 2026', end: '20 abr 2026', status: 'finalizado', alcance: 'internacional', poolRegion: 'América',
+    gestorId: 'g-andrea',
+    insc: { done: 512, total: 512 }, res: { done: 430, total: 450 }, med: { done: 288, total: 288 },
+    deportes: [
+      { deporte: 'Atletismo', emoji: '🏃', competencias: ['100m Planos', '200m Planos', 'Salto Largo', 'Lanzamiento de Jabalina'] },
+      { deporte: 'Natación', emoji: '🏊', competencias: ['50m Libre', '100m Libre', '100m Espalda', '100m Pecho'] },
+      { deporte: 'Boxeo', emoji: '🥊', competencias: ['-52kg', '-57kg', '-63kg', '-69kg'] },
+      { deporte: 'Taekwondo', emoji: '🥋', competencias: ['Kyorugi -54kg', 'Kyorugi -58kg', 'Poomsae'] },
+      { deporte: 'Voleibol', emoji: '🏐', competencias: ['EQUIPOS'] },
+      { deporte: 'Baloncesto', emoji: '🏀', competencias: ['EQUIPOS'] }
+    ]
+  },
+  {
+    id: 'EV-2026-017', emoji: '🏃', name: 'Campeonato Mundial de Atletismo 2026',
+    sport: 'Atletismo · Pista y campo', place: 'Internacional', org: 'World Athletics',
+    start: '02 jun 2026', end: '08 jun 2026', status: 'activo', alcance: 'internacional',
+    gestorId: 'g-andrea',
+    insc: { done: 72, total: 72 }, res: { done: 38, total: 90 }, med: { done: 21, total: 60 },
+    deportes: [
+      { deporte: 'Atletismo', emoji: '🏃', competencias: ['100m Planos', '200m Planos', '400m Planos', '1.500m', 'Salto Largo', 'Lanzamiento de Jabalina'] }
+    ]
+  },
+  {
+    id: 'EV-2026-018', emoji: '🏐', name: 'Copa Panamericana de Voleibol',
+    sport: 'Voleibol · Conjunto', place: 'Internacional', org: 'Confederación Panamericana de Voleibol',
+    start: '02 jun 2026', end: '09 jun 2026', status: 'activo', alcance: 'internacional', poolRegion: 'América',
+    gestorId: 'g-andrea',
+    insc: { done: 36, total: 36 }, res: { done: 8, total: 12 }, med: { done: 3, total: 6 },
+    deportes: [{ deporte: 'Voleibol', emoji: '🏐', competencias: ['EQUIPOS'] }]
+  },
+  {
+    id: 'EV-2026-019', emoji: '🏆', name: 'Juegos Deportivos Nacionales 2026',
+    sport: 'Multideporte · 20 disciplinas', place: 'Cali, Valle del Cauca', org: 'Ministerio del Deporte',
+    start: '14 jun 2026', end: '30 jun 2026', status: 'activo',
+    gestorId: 'g-andrea',
+    insc: { done: 2180, total: 2600 }, res: { done: 360, total: 1100 }, med: { done: 96, total: 540 },
+    deportes: [
+      { deporte: 'Atletismo', emoji: '🏃', competencias: ['100m Planos', '400m Planos', '1.500m', 'Salto Largo'] },
+      { deporte: 'Natación', emoji: '🏊', competencias: ['50m Libre', '100m Libre', '200m Libre', '100m Pecho'] },
+      { deporte: 'Levantamiento de Pesas', emoji: '🏋️', competencias: ['Arranque', 'Envión', 'Total Olímpico'] },
+      { deporte: 'Judo', emoji: '🥋', competencias: ['-60kg', '-66kg', '-73kg'] },
+      { deporte: 'Fútbol Sala', emoji: '⚽', competencias: ['EQUIPOS'] },
+      { deporte: 'Baloncesto', emoji: '🏀', competencias: ['EQUIPOS'] }
+    ]
+  },
+  {
+    id: 'EV-2026-020', emoji: '⛸️', name: 'Campeonato Nacional de Patinaje de Velocidad',
+    sport: 'Patinaje · Velocidad', place: 'Bucaramanga, Santander', org: 'Federación Colombiana de Patinaje',
+    start: '05 mar 2026', end: '08 mar 2026', status: 'finalizado',
+    gestorId: 'g-andrea',
+    insc: { done: 168, total: 168 }, res: { done: 96, total: 96 }, med: { done: 36, total: 36 },
+    deportes: [{ deporte: 'Patinaje', emoji: '⛸️', competencias: ['500m', '1.000m', '3.000m', 'Relevos'] }]
+  },
+  {
+    id: 'EV-2026-021', emoji: '🏀', name: 'Liga Nacional de Baloncesto 2026',
+    sport: 'Baloncesto · Conjunto', place: 'Medellín, Antioquia', org: 'Federación Colombiana de Baloncesto',
+    start: '12 jun 2026', end: '26 jun 2026', status: 'activo',
+    gestorId: 'g-andrea',
+    insc: { done: 48, total: 48 }, res: { done: 8, total: 12 }, med: { done: 3, total: 6 },
+    deportes: [{ deporte: 'Baloncesto', emoji: '🏀', competencias: ['EQUIPOS'] }]
+  },
   {
     id: 'EV-2026-001', emoji: '🏆', name: 'Juegos Intercolegiados Nacionales 2026',
     sport: 'Multideporte · 14 disciplinas', place: 'Bogotá D.C.', org: 'Ministerio del Deporte',
@@ -66,7 +137,7 @@ export const EVENTS = [
     id: 'EV-2026-010', emoji: '🥊', name: 'Clasificatorio Internacional de Boxeo',
     sport: 'Boxeo · Combate', place: 'Internacional', org: 'Federación Colombiana de Boxeo',
     start: '18 jun 2026', end: '18 jun 2026', status: 'activo', alcance: 'internacional',
-    insc: { done: 64, total: 64 }, res: { done: 0, total: 32 }, med: { done: 0, total: 18 }
+    insc: { done: 64, total: 64 }, res: { done: 20, total: 32 }, med: { done: 12, total: 18 }
   },
   {
     id: 'EV-2026-011', emoji: '🏓', name: 'Campeonato de Tenis de Mesa',
@@ -85,6 +156,20 @@ export const EVENTS = [
     sport: 'Bádminton · Individual', place: 'Pereira, Risaralda', org: 'Federación Colombiana de Bádminton',
     start: '22 jun 2026', end: '25 jun 2026', status: 'activo',
     insc: { done: 88, total: 120 }, res: { done: 0, total: 80 }, med: { done: 0, total: 18 }
+  },
+  /* ── Eventos INTERNACIONALES (alcance='internacional') — dimensión = países,
+     seguimiento a Colombia. Poblados para el showcase de la reportería intl. ── */
+  {
+    id: 'EV-2026-014', emoji: '🏅', name: 'Juegos Panamericanos Junior 2026',
+    sport: 'Multideporte · 18 disciplinas', place: 'Internacional', org: 'Comité Olímpico Colombiano',
+    start: '15 may 2026', end: '25 may 2026', status: 'finalizado', alcance: 'internacional', poolRegion: 'América',
+    insc: { done: 520, total: 520 }, res: { done: 460, total: 480 }, med: { done: 306, total: 306 }
+  },
+  {
+    id: 'EV-2026-015', emoji: '🏃', name: 'Campeonato Panamericano de Atletismo',
+    sport: 'Atletismo · Pista y campo', place: 'Internacional', org: 'World Athletics · Panam',
+    start: '02 abr 2026', end: '05 abr 2026', status: 'finalizado', alcance: 'internacional', poolRegion: 'América',
+    insc: { done: 58, total: 58 }, res: { done: 90, total: 96 }, med: { done: 42, total: 42 }
   }
 ];
 
@@ -585,3 +670,73 @@ export function organismoEventsForCalendar() {
     kind: 'organismo'
   })).filter((e) => e.start);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   SEMILLA DE LA DEMO "Libre · con datos" — cargue simulado de Andrea
+   ───────────────────────────────────────────────────────────────
+   Los INDIVIDUALES ya los sintetiza effectiveRoster (roster-data.js) en
+   cuanto insc.done>0. Aquí pre-cargamos los EQUIPOS de los eventos de
+   CONJUNTO activos (el flujo por equipos no usa el roster individual), para
+   demostrar la UX de equipos sin que el gestor tenga que capturarlos.
+   · countedRes/countedMed = true → ya contados (no re-suman al re-guardar).
+   · Corre UNA vez por sesión (flag); "Reiniciar demo" borra el flag y las
+     claves naowee-eventos-*, así que se re-siembra en la próxima carga.
+   · Solo en modo 'demo' (Libre · con datos); en 'blank' (Guiado · vacío) no.
+   ═══════════════════════════════════════════════════════════════ */
+const EQ_TEAMS_KEY = 'naowee-eventos-equipos';
+const SEED_FLAG_KEY = 'naowee-eventos-demo-seeded';
+const SEED_VERSION = 'v1';
+const _vTeam = (o) => ({ organizacion: '', pais: '', deporte: '', prueba: 'EQUIPOS', posicion: '', marca: '', medalla: '', integrantes: [], countedRes: true, countedMed: !!o.medalla, ...o });
+/* EV-018 Voleibol (internacional) → equipos = países (Colombia + rivales de América). */
+const _voleiIntl = [
+  { organizacion: 'Selección Brasil', pais: 'BR', deporte: 'Voleibol', posicion: '1', marca: '3-0', medalla: 'oro' },
+  { organizacion: 'Selección Colombia', pais: 'CO', deporte: 'Voleibol', posicion: '2', marca: '3-1', medalla: 'plata' },
+  { organizacion: 'Selección Argentina', pais: 'AR', deporte: 'Voleibol', posicion: '3', marca: '3-2', medalla: 'bronce' },
+  { organizacion: 'Selección Perú', pais: 'PE', deporte: 'Voleibol', posicion: '4', marca: '2-3' },
+  { organizacion: 'Selección Chile', pais: 'CL', deporte: 'Voleibol', posicion: '5', marca: '2-3' },
+  { organizacion: 'Selección México', pais: 'MX', deporte: 'Voleibol', posicion: '6', marca: '1-3' },
+  { organizacion: 'Selección Rep. Dominicana', pais: 'DO', deporte: 'Voleibol', posicion: '7', marca: '1-3' },
+  { organizacion: 'Selección Puerto Rico', pais: 'PR', deporte: 'Voleibol', posicion: '8', marca: '0-3' }
+];
+/* EV-021 Baloncesto (nacional) → equipos = ligas colombianas. */
+const _baloncNac = [
+  { organizacion: 'Liga Antioqueña', deporte: 'Baloncesto', posicion: '1', marca: '82-70', medalla: 'oro' },
+  { organizacion: 'Liga del Valle', deporte: 'Baloncesto', posicion: '2', marca: '75-68', medalla: 'plata' },
+  { organizacion: 'Liga de Bogotá', deporte: 'Baloncesto', posicion: '3', marca: '80-72', medalla: 'bronce' },
+  { organizacion: 'Liga de Santander', deporte: 'Baloncesto', posicion: '4', marca: '66-71' },
+  { organizacion: 'Liga del Atlántico', deporte: 'Baloncesto', posicion: '5', marca: '59-70' },
+  { organizacion: 'Liga de Risaralda', deporte: 'Baloncesto', posicion: '6', marca: '61-77' },
+  { organizacion: 'Liga de Cundinamarca', deporte: 'Baloncesto', posicion: '7', marca: '55-80' },
+  { organizacion: 'Liga de Boyacá', deporte: 'Baloncesto', posicion: '8', marca: '58-84' }
+];
+/* EV-019 Juegos Nacionales (multideporte) → equipos de sus deportes de conjunto
+   (Fútbol Sala + Baloncesto). Los individuales del evento ya salen del roster. */
+const _conjNac = [
+  { organizacion: 'Liga Antioqueña', deporte: 'Fútbol Sala', posicion: '1', marca: '4-2', medalla: 'oro' },
+  { organizacion: 'Liga de Bogotá', deporte: 'Fútbol Sala', posicion: '2', marca: '3-1', medalla: 'plata' },
+  { organizacion: 'Liga del Valle', deporte: 'Fútbol Sala', posicion: '3', marca: '5-3', medalla: 'bronce' },
+  { organizacion: 'Liga del Atlántico', deporte: 'Baloncesto', posicion: '1', marca: '88-79', medalla: 'oro' },
+  { organizacion: 'Liga de Santander', deporte: 'Baloncesto', posicion: '2', marca: '77-70', medalla: 'plata' },
+  { organizacion: 'Liga de Risaralda', deporte: 'Baloncesto', posicion: '3', marca: '69-66', medalla: 'bronce' }
+];
+const DEMO_TEAMS = { 'EV-2026-018': _voleiIntl, 'EV-2026-021': _baloncNac, 'EV-2026-019': _conjNac };
+
+export function seedDemoData() {
+  try {
+    if (typeof sessionStorage === 'undefined') return;
+    if (localStorage.getItem('naowee-eventos-demo-mode') === 'blank') return;   // Guiado · vacío → no sembrar
+    if (sessionStorage.getItem(SEED_FLAG_KEY) === SEED_VERSION) return;         // ya sembrado esta sesión
+    const all = JSON.parse(sessionStorage.getItem(EQ_TEAMS_KEY) || '{}');
+    Object.entries(DEMO_TEAMS).forEach(([eid, teams]) => {
+      if (!Array.isArray(all[eid]) || all[eid].length === 0) {                  // no pisar equipos ya capturados
+        all[eid] = teams.map((t, i) => ({ id: 'eqt-' + (i + 1), ..._vTeam(t) }));
+      }
+    });
+    sessionStorage.setItem(EQ_TEAMS_KEY, JSON.stringify(all));
+    sessionStorage.setItem(SEED_FLAG_KEY, SEED_VERSION);
+  } catch (e) { /* noop: la demo funciona sin la semilla */ }
+}
+
+/* Sembrar al cargar el módulo (todas las páginas importan events-data.js → corre
+   una vez por sesión gracias al flag; el orden es antes de cualquier render). */
+seedDemoData();

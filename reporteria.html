@@ -14,9 +14,9 @@
 <link rel="stylesheet" href="shared/list-components.css?v=0.9.1">
 <link rel="stylesheet" href="shared/event-detail.css?v=0.9.1">
 <link rel="stylesheet" href="shared/forms.css?v=0.9.3">
-<link rel="stylesheet" href="shared/reporteria.css?v=0.6.7">
+<link rel="stylesheet" href="shared/reporteria.css?v=0.9.9">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=0.9.1">
-<script src="shared/naowee-footer.js?v=0.9.4" defer></script>
+<script src="shared/naowee-footer.js?v=0.9.9" defer></script>
 
 <style>
   /* Topbar: back (ghost canónico) a la izquierda, CTA a la derecha. */
@@ -56,6 +56,7 @@
   const cal = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
   const pin = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
   const bld = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+  const globe = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
 
   const PALETTE = ['#1f78d1', '#d74009', '#7c3aed', '#1f8923', '#0891b2', '#9333ea', '#c2410c', '#065f46'];
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -152,7 +153,14 @@
   let ev = null;
   let activeTab = 'inscripciones';
   let chartMode = 'd';
+  let scope = 'nacional';   // 'nacional' | 'internacional' — ámbito del reporte (segment)
   let filterState = { org: '', dep: '', pru: '' };
+
+  const defaultScope = (e) => (e && e.alcance === 'internacional') ? 'internacional' : 'nacional';
+  const isIntlEvent = (e) => !!(e && e.alcance === 'internacional');
+  /* El dropdown "Evento" depende del ámbito: solo lista eventos del tipo elegido. */
+  const eventsForScope = (sc) => events.filter((e) => isIntlEvent(e) === (sc === 'internacional'));
+  const firstEventForScope = (sc) => { const l = eventsForScope(sc); return l.find((e) => e.status === 'activo') || l[0] || null; };
 
   const TABS = [
     { id: 'inscripciones', label: 'Inscripciones', icon: I.ticket },
@@ -172,15 +180,22 @@
 
     events = allEvents();
     const wanted = params.get('id');
-    ev = events.find((e) => e.id === wanted) || events.find((e) => e.status === 'activo') || events[0];
+    const wantEv = events.find((e) => e.id === wanted);
     activeTab = ['inscripciones', 'resultados', 'medalleria'].includes(params.get('tab')) ? params.get('tab') : 'inscripciones';
+    const urlScope = params.get('scope');
+    /* El ámbito (tipo de evento) manda: si viene en la URL se respeta; si no, se
+       deriva del evento pedido; el evento resultante SIEMPRE coincide con el ámbito. */
+    scope = (urlScope === 'nacional' || urlScope === 'internacional') ? urlScope
+      : (wantEv ? defaultScope(wantEv) : 'nacional');
+    ev = (wantEv && defaultScope(wantEv) === scope) ? wantEv : firstEventForScope(scope);
+    if (!ev) { scope = defaultScope(wantEv) || 'nacional'; ev = wantEv || events.find((e) => e.status === 'activo') || events[0]; }
     render();
-    document.title = ev ? `Naowee Eventos — Reportería · ${ev.name}` : 'Naowee Eventos — Reportería';
   }
 
   /* ─── Shell de la página (contexto + filtros + tabs + panel) ─── */
   function render() {
     filterState = { org: '', dep: '', pru: '' };
+    const scopeEvents = eventsForScope(scope);
     const backHref = `dashboard.html?role=${roleCode}`;
     const cargueCta = roleCode === 'ADMIN'
       ? `<a class="naowee-btn naowee-btn--ghost naowee-btn--sm" href="cargue.html?tipo=inscripciones&id=${ev.id}&role=${roleCode}">${I.ticket} Ver cargues</a>`
@@ -192,22 +207,39 @@
         ${cargueCta}
       </div>
 
-      <!-- Contexto del evento + selector -->
+      <!-- Setup del reporte (funnel): (1) tipo de evento → (2) evento filtrado + su contexto -->
       <div class="rep-ctx">
-        <div class="rep-ctx__main">
-          <div class="rep-ctx__title">
-            <span class="rep-ctx__name">${ev.emoji} ${esc(ev.name)}</span>
-            <span class="badge s-${ev.status}">${STATUS_LABEL[ev.status]}</span>
+        <!-- Paso 1 · Tipo de evento (segment = tope de la jerarquía; el evento depende de él) -->
+        <div class="rep-ctx__scope">
+          <div class="rep-ctx__scope-text">
+            <span class="rep-ctx__step">Paso 1 · Tipo de evento</span>
+            <span class="rep-scope__badge${scope === 'internacional' ? ' rep-scope__badge--intl' : ''}">
+              ${scope === 'internacional'
+                ? `${globe}<span>Equipos por <b>país</b> · seguimiento a <b>Colombia</b> 🇨🇴</span>`
+                : `${bld}<span>Equipos por <b>liga u organismo</b> del país</span>`}
+            </span>
+          </div>
+          <div class="naowee-segment" id="repScopeSeg" role="tablist" aria-label="Tipo de evento">
+            <div class="naowee-segment__pill"></div>
+            <button class="naowee-segment__item" type="button" role="tab" data-val="nacional">Nacional</button>
+            <button class="naowee-segment__item" type="button" role="tab" data-val="internacional">Internacional</button>
+          </div>
+        </div>
+
+        <div class="rep-ctx__divider"></div>
+
+        <!-- Paso 2 · Evento (solo los del tipo elegido) + contexto del seleccionado -->
+        <div class="rep-ctx__event">
+          <div class="rep-ev-switch">
+            <label>Paso 2 · Evento <span class="rep-ev-switch__count">${scopeEvents.length} ${scopeEvents.length === 1 ? 'disponible' : 'disponibles'}</span></label>
+            ${ddMarkup('evSwitch', 'Evento', `${ev.emoji} ${esc(ev.name)}`, false, false)}
           </div>
           <div class="rep-ctx__meta">
+            <span class="badge s-${ev.status}">${STATUS_LABEL[ev.status]}</span>
             <span class="rep-chip">${cal} ${esc(ev.start)} — ${esc(ev.end)}</span>
             <span class="rep-chip">${pin} ${esc(ev.place)}</span>
             <span class="rep-chip">${bld} ${esc(ev.org)}</span>
           </div>
-        </div>
-        <div class="rep-ev-switch">
-          <label>Evento</label>
-          ${ddMarkup('evSwitch', 'Evento', `${ev.emoji} ${esc(ev.name)} · ${STATUS_LABEL[ev.status]}`, false, false)}
         </div>
       </div>
 
@@ -240,22 +272,65 @@
         renderPanel();
       });
     });
+    bindSegment(document.getElementById('repScopeSeg'), () => scope, (val) => {
+      if (val === scope) return;
+      scope = val;
+      ev = firstEventForScope(scope) || ev;   // el evento seleccionado debe pertenecer al nuevo ámbito
+      syncUrl();
+      render();
+    });
     bindFilters();
     renderPanel();
+    document.title = ev ? `Naowee Eventos — Reportería · ${ev.name}` : 'Naowee Eventos — Reportería';
+  }
+
+  /* Segment canónico .naowee-segment: pill deslizante posicionado por getBoundingClientRect.
+     Portado verbatim de cargue.html (bindSegment) — reusar, no reinventar. */
+  function bindSegment(segEl, getActive, onSelect) {
+    if (!segEl) return;
+    const pill = segEl.querySelector('.naowee-segment__pill');
+    const items = Array.from(segEl.querySelectorAll('.naowee-segment__item'));
+    function place(idx, instant) {
+      items.forEach((it, i) => {
+        it.classList.toggle('naowee-segment__item--active', i === idx);
+        it.setAttribute('aria-selected', String(i === idx));
+      });
+      const rect = items[idx].getBoundingClientRect();
+      const segRect = segEl.getBoundingClientRect();
+      const bl = parseFloat(getComputedStyle(segEl).borderLeftWidth) || 0;
+      const x = rect.left - segRect.left - bl;
+      if (instant) {
+        pill.classList.add('naowee-segment__pill--no-anim');
+        pill.style.setProperty('--seg-x', `${x}px`);
+        pill.style.width = `${rect.width}px`;
+        void pill.offsetWidth;
+        pill.classList.remove('naowee-segment__pill--no-anim');
+      } else {
+        pill.style.setProperty('--seg-x', `${x}px`);
+        pill.style.width = `${rect.width}px`;
+      }
+    }
+    const init = items.findIndex((it) => it.dataset.val === getActive());
+    place(init >= 0 ? init : 0, true);
+    items.forEach((it, i) => it.addEventListener('click', () => { place(i, false); onSelect(it.dataset.val); }));
+    requestAnimationFrame(() => { const k = items.findIndex((x) => x.dataset.val === getActive()); if (k >= 0) place(k, true); });
   }
 
   function syncUrl() {
     const u = new URLSearchParams(location.search);
-    u.set('id', ev.id); u.set('tab', activeTab); u.set('role', roleCode);
+    u.set('id', ev.id); u.set('tab', activeTab); u.set('role', roleCode); u.set('scope', scope);
     history.replaceState(null, '', `?${u.toString()}`);
   }
 
   /* ─── Barra de filtros (dropdowns CANÓNICOS .naowee-dropdown + botones DS) ─── */
   function filterBar() {
+    const isI = scope === 'internacional';
+    const orgAll = isI ? 'Todos los países' : 'Todos los organismos';
+    const orgSheet = isI ? 'País' : 'Organismo';
     return `
       <div class="rep-filter">
         <span class="rep-filter__label">Filtrar por</span>
-        ${ddMarkup('fOrg', 'Organismo', 'Todos los organismos', true, false)}
+        ${ddMarkup('fOrg', orgSheet, orgAll, true, false)}
         ${ddMarkup('fDep', 'Deporte', 'Todos los deportes', true, false)}
         ${ddMarkup('fPru', 'Prueba', 'Todas las pruebas', true, true)}
         <div class="rep-filter__actions">
@@ -268,21 +343,23 @@
      cosméticos en la demo (igual que el mock de Diego), pero con UX real:
      cascada deporte→prueba, Limpiar resetea, Aplicar da feedback. */
   function bindFilters() {
-    const D = buildReporteria(ev);
+    const D = buildReporteria(ev, scope);
+    const orgAll = D.dim.entityAll;
     /* "Limpiar" (--ghost) arranca disabled; se habilita en cuanto hay algún
        filtro seleccionado, y vuelve a disabled al limpiar. */
     const fClearBtn = document.getElementById('fClear');
     const updateClearBtn = () => { fClearBtn.disabled = !(filterState.org || filterState.dep || filterState.pru); };
 
     setupDropdown('evSwitch',
-      events.map((e) => ({ value: e.id, label: `${e.emoji} ${e.name} · ${STATUS_LABEL[e.status]}` })),
+      eventsForScope(scope).map((e) => ({ value: e.id, label: `${e.emoji} ${e.name} · ${STATUS_LABEL[e.status]}` })),
       (chosen) => { ev = events.find((x) => x.id === chosen.value) || ev; syncUrl(); render(); },
       () => ev.id
     );
 
-    const orgOpts = [{ value: '', label: 'Todos los organismos' }, ...D.insc.porOrganismo.map((o) => ({ value: o.name, label: o.name }))];
+    /* fuente del filtro fOrg: ligas (nacional) o países (internacional) → D.filterEntities */
+    const orgOpts = [{ value: '', label: orgAll }, ...D.filterEntities];
     const ddOrg = setupDropdown('fOrg', orgOpts,
-      (c) => { filterState.org = c.value; ddOrg.setLabel(c.value || 'Todos los organismos', !c.value); updateClearBtn(); },
+      (c) => { filterState.org = c.value; ddOrg.setLabel(c.value || orgAll, !c.value); updateClearBtn(); },
       () => filterState.org);
 
     let ddPru;
@@ -302,7 +379,7 @@
 
     document.getElementById('fClear').addEventListener('click', () => {
       filterState = { org: '', dep: '', pru: '' };
-      ddOrg.setLabel('Todos los organismos', true);
+      ddOrg.setLabel(orgAll, true);
       ddDep.setLabel('Todos los deportes', true);
       ddPru.setLabel('Todas las pruebas', true); ddPru.setDisabled(true);
       updateClearBtn();
@@ -315,11 +392,11 @@
 
   /* ─── Panel por tab ─── */
   function renderPanel() {
-    const D = buildReporteria(ev);
+    const D = buildReporteria(ev, scope);
     const el = document.getElementById('repPanel');
-    if (activeTab === 'inscripciones') el.innerHTML = panelInsc(D);
-    else if (activeTab === 'resultados') el.innerHTML = panelRes(D);
-    else el.innerHTML = panelMed(D);
+    if (activeTab === 'inscripciones') el.innerHTML = D.isIntl ? panelInscIntl(D) : panelInsc(D);
+    else if (activeTab === 'resultados') el.innerHTML = D.isIntl ? panelResIntl(D) : panelRes(D);
+    else el.innerHTML = D.isIntl ? panelMedIntl(D) : panelMed(D);
     animateBars(el);
     bindChartToggle(D);
   }
@@ -476,6 +553,130 @@
         body: m.porOrganismo.map((d, i) => `<tr>
             <td class="num"><span class="rep-pos-chip ${i < 3 ? 'pc-' + (i + 1) : 'pc-n'}">${i + 1}</span></td>
             <td><div class="rep-org"><div class="rep-org__av" style="background:${d.c}">${d.av}</div><span class="rep-org__name">${esc(d.name)}</span></div></td>
+            <td class="num col-oro">${d.oro}</td><td class="num col-plata">${d.plata}</td><td class="num col-bronce">${d.bronce}</td>
+            <td class="num col-total">${d.oro + d.plata + d.bronce}</td>
+          </tr>`).join('')
+      })}
+    </div>`;
+  }
+
+  /* ════════════ TABLEROS INTERNACIONALES (equipos = países) ════════════
+     Modelo canónico (cargue.html): en un evento internacional solo se sigue a
+     Colombia; los rivales del podio/medallero son sintéticos por país. Colombia
+     se destaca por IDENTIDAD (clase .is-co: borde + tinte acento), nunca por rank
+     ni forzándola a #1. La bandera emoji reemplaza el disco de iniciales. */
+
+  /* ── INSCRIPCIONES · internacional (delegación de Colombia) ── */
+  function panelInscIntl(D) {
+    const d = D.insc;
+    if (!d.hasData) return emptyState(`La delegación de Colombia para <strong>${esc(ev.name)}</strong> aún no tiene inscritos cargados.`);
+    const depLbl = /multideporte/i.test(ev.sport || '') ? 'Colombia por deporte' : 'Colombia por prueba';
+    return `<div class="rep-panel">
+      <div class="rep-kpis">
+        ${kpi(I.athlete, 'blue', `${d.pctCupo}% del cupo`, false, D.num(d.inscritos), 'Deportistas de la delegación 🇨🇴')}
+        ${kpi(bld, 'green', `${d.regionesCount} ${d.regionesCount === 1 ? 'región' : 'regiones'}`, false, d.paisesCount, 'Países en competencia')}
+        ${kpi(I.ranking, 'orange', 'en disputa', false, d.deportesCount, d.deportesCount === 1 ? 'Deporte' : 'Deportes')}
+        ${kpi(I.ticket, 'purple', `${d.pruebasConInscritos} con inscritos`, false, d.pruebasCount, 'Pruebas')}
+      </div>
+      <div class="rep-widgets">
+        <div class="rep-w rep-w--4">
+          <div class="rep-w__hd"><div><div class="rep-w__title">Confirmación de la delegación</div><div class="rep-w__sub">Registro diario de la delegación de Colombia · línea de promedio</div></div>
+            <div class="rep-toggle"><button class="rep-tgl on" data-mode="d" type="button">Diario</button><button class="rep-tgl" data-mode="a" type="button">Acumulado</button></div>
+          </div>
+          <div class="rep-chart" id="dailyChart">${dailyChart(d.daily, chartMode)}</div>
+        </div>
+        <div class="rep-w rep-w--2" style="display:flex;flex-direction:column">
+          <div class="rep-w__title">Composición de la delegación</div><div class="rep-w__sub">Distribución por categoría</div>
+          <div style="flex:1;display:flex;align-items:center;justify-content:center">${donut(d.tipo)}</div>
+        </div>
+        <div class="rep-w rep-w--3"><div class="rep-w__title">Participación por región</div><div class="rep-w__sub">Países participantes por región · amplitud de la justa</div>
+          <div class="rep-hbars">${hbars(d.porRegion.map((r) => ({ lbl: r.lbl, v: r.v, c: 'var(--blue-info)' })))}</div></div>
+        <div class="rep-w rep-w--3"><div class="rep-w__title">${depLbl}</div><div class="rep-w__sub">Deportistas de la delegación por disciplina</div>
+          <div class="rep-hbars">${hbars(d.porDeporte.map((x) => ({ lbl: x.lbl, v: x.v, c: 'var(--accent)' })))}</div></div>
+        <div class="rep-w rep-w--6"><div class="rep-w__title">Cobertura de la delegación</div><div class="rep-w__sub">Avance de inscripción y pruebas con representación de Colombia</div>
+          <div class="rep-prog">${progress([
+            { title: 'Delegación inscrita vs cupo', done: d.inscritos, total: d.cupo, c: 'var(--blue-info)' },
+            { title: 'Pruebas con representación de Colombia', done: d.pruebasConInscritos, total: d.pruebasCount, c: 'var(--accent)' }
+          ])}</div></div>
+      </div>
+    </div>`;
+  }
+
+  /* ── RESULTADOS · internacional (rendimiento de Colombia vs rivales) ── */
+  function panelResIntl(D) {
+    const r = D.res;
+    if (!r.hasData) return emptyState(`Todavía no hay resultados cargados para <strong>${esc(ev.name)}</strong>. En un evento internacional se registra la posición de cada deportista de Colombia y el podio de la prueba.`);
+    return `<div class="rep-panel">
+      <div class="rep-kpis rep-kpis--3">
+        ${kpi(I.ranking, 'blue', `${r.cargados} de ${D.num(r.total)} pruebas`, false, D.num(r.cargados), 'Resultados de Colombia')}
+        ${kpi(I.medal, 'green', esc(r.deporteCtx), true, `<span style="font-size:22px">${r.colBestPos ? r.colBestPos + '.º' : '—'}</span>`, 'Mejor puesto de Colombia')}
+        ${kpi(I.medal, 'orange', esc(r.pruebaLbl), false, `<span style="font-size:22px">${esc(r.colBestMarca || r.mejorMarca)}</span>`, 'Mejor marca de Colombia')}
+      </div>
+      <div class="naowee-table-card">
+        <div class="tc-head"><h3 class="tc-head__title">Podio — ${esc(r.deporteCtx)} · ${esc(r.pruebaLbl)}</h3><p class="tc-head__sub">Top 3 por país · Colombia 🇨🇴 destacada</p></div>
+        <div class="rep-podio">${podio(r.podio, PALETTE)}</div>
+      </div>
+      ${tableCard({
+        title: 'Resultados por país',
+        sub: `${r.deporteCtx} · ${r.pruebaLbl}`,
+        count: `${r.tabla.length} resultados`,
+        cols: ['8%', '32%', '26%', '19%', '15%'],
+        head: `<th class="num">#</th><th>Deportista</th><th>País</th><th>Prueba</th><th style="text-align:right">Marca</th>`,
+        body: r.tabla.map((row, i) => `<tr class="${row.isCol ? 'is-co' : ''}">
+            <td class="num"><span class="rep-pos-chip ${i < 3 ? 'pc-' + (i + 1) : 'pc-n'}">${row.pos}</span></td>
+            <td><div class="rep-org">${row.flag ? `<span class="rep-flag">${row.flag}</span>` : `<div class="rep-org__av" style="background:${PALETTE[i % PALETTE.length]}">${row.av}</div>`}<span class="rep-org__name">${esc(row.dep)}</span></div></td>
+            <td style="color:var(--text-secondary)">${esc(row.org)}</td>
+            <td><span class="rep-chip-prueba">${esc(r.deporteCtx)} · ${esc(r.pruebaLbl)}</span></td>
+            <td style="text-align:right;font-weight:700">${esc(row.marca)}</td>
+          </tr>`).join('')
+      })}
+    </div>`;
+  }
+
+  /* ── MEDALLERÍA · internacional (medallero por país + posición de Colombia) ── */
+  function panelMedIntl(D) {
+    const m = D.med;
+    if (!m.hasData) return emptyState(`El medallero de <strong>${esc(ev.name)}</strong> se llena a medida que se cierran las pruebas. Aún no hay medallas otorgadas.`);
+    const c = m.colMedals;
+    const colIdx = m.porOrganismo.findIndex((o) => o.isCol);
+    const topRows = (colIdx >= 5) ? [...m.porOrganismo.slice(0, 5), m.porOrganismo[colIdx]] : m.porOrganismo.slice(0, 5);
+    const paisRow = (d, i) => `<tr class="${d.isCol ? 'is-co' : ''}">
+        <td class="num"><span class="rep-pos-chip ${i < 3 ? 'pc-' + (i + 1) : 'pc-n'}">${i + 1}</span></td>
+        <td><div class="rep-org"><span class="rep-flag">${d.flag}</span><span class="rep-org__name">${esc(d.name)}${d.isCol ? ' <span class="rep-you">tu delegación</span>' : ''}</span></div></td>`;
+    return `<div class="rep-panel">
+      <div class="rep-med-summary">
+        <div class="rep-med-kpi oro"><span class="rep-med-kpi__emoji">🥇</span><div class="rep-med-kpi__num">${c.oro}</div><div class="rep-med-kpi__lbl">Oro de Colombia</div><div class="rep-med-kpi__sub">${m.colRank === 1 ? 'lidera el medallero' : (m.brechaOroLider > 0 ? `a ${m.brechaOroLider} ${m.brechaOroLider === 1 ? 'oro' : 'oros'} del líder` : 'empatada en oro con el líder')}</div></div>
+        <div class="rep-med-kpi plata"><span class="rep-med-kpi__emoji">🥈</span><div class="rep-med-kpi__num">${c.plata}</div><div class="rep-med-kpi__lbl">Plata de Colombia</div><div class="rep-med-kpi__sub">en ${m.pruebas} pruebas</div></div>
+        <div class="rep-med-kpi bronce"><span class="rep-med-kpi__emoji">🥉</span><div class="rep-med-kpi__num">${c.bronce}</div><div class="rep-med-kpi__lbl">Bronce de Colombia</div><div class="rep-med-kpi__sub">en ${m.pruebas} pruebas</div></div>
+        <div class="rep-med-kpi total"><span class="rep-med-kpi__emoji">🇨🇴</span><div class="rep-med-kpi__num">${m.colRank ? m.colRank + '.º' : '—'}</div><div class="rep-med-kpi__lbl">Posición de Colombia</div><div class="rep-med-kpi__sub">de ${m.paisesCount} países · ${c.total} ${c.total === 1 ? 'medalla' : 'medallas'}</div></div>
+      </div>
+      <div class="rep-two">
+        <div class="naowee-table-card">
+          <div class="tc-head"><h3 class="tc-head__title">Medallero por país</h3><p class="tc-head__sub">Distribución apilada · ${m.paisesCount} países</p></div>
+          <div>
+            <div class="rep-leyenda">
+              <div class="rep-leg-item"><div class="rep-leg-item__dot" style="background:var(--rep-gold-fill)"></div>Oro</div>
+              <div class="rep-leg-item"><div class="rep-leg-item__dot" style="background:var(--rep-silver-fill)"></div>Plata</div>
+              <div class="rep-leg-item"><div class="rep-leg-item__dot" style="background:var(--rep-bronze-fill)"></div>Bronce</div>
+            </div>
+            <div class="rep-shbars">${stackedBars(m.porOrganismo)}</div>
+          </div>
+        </div>
+        ${tableCard({
+          title: 'Top países', sub: 'Por medallas de oro · Colombia fijada',
+          cols: ['16%', '40%', '15%', '15%', '14%'],
+          head: `<th class="num">#</th><th>País</th><th class="num">🥇</th><th class="num">🥈</th><th class="num">🥉</th>`,
+          body: topRows.map((d) => { const i = m.porOrganismo.indexOf(d); return `${paisRow(d, i)}
+              <td class="num col-oro">${d.oro}</td><td class="num col-plata">${d.plata}</td><td class="num col-bronce">${d.bronce}</td>
+            </tr>`; }).join('')
+        })}
+      </div>
+      ${tableCard({
+        title: 'Medallero completo por país', sub: 'Ordenado por medallas de oro',
+        count: `${m.porOrganismo.length} países`,
+        cols: ['8%', '36%', '13%', '13%', '14%', '16%'],
+        head: `<th class="num">#</th><th>País</th><th class="num">🥇 Oro</th><th class="num">🥈 Plata</th><th class="num">🥉 Bronce</th><th class="num">Total</th>`,
+        body: m.porOrganismo.map((d, i) => `${paisRow(d, i)}
             <td class="num col-oro">${d.oro}</td><td class="num col-plata">${d.plata}</td><td class="num col-bronce">${d.bronce}</td>
             <td class="num col-total">${d.oro + d.plata + d.bronce}</td>
           </tr>`).join('')
