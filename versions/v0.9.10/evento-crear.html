@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Naowee Eventos — Crear evento</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="shared/tokens.css?v=0.9.1">
+<link rel="stylesheet" href="shared/shell.css?v=0.4.5">
+<link rel="stylesheet" href="shared/forms.css?v=0.9.3">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.9.1">
+<script src="shared/naowee-footer.js?v=0.9.10" defer></script>
+
+<style>
+  /* ═══════════════════════════════════════════════════════════════
+     CREAR EVENTO — form de página, una sola vista (rol Administrador).
+     Módulo LIGHT: sin catálogo deportivo. Secciones: 1·Datos del evento ·
+     2·Asignación (gestor) + footer sticky. Los deportes/pruebas viven solo
+     como columnas dentro de los archivos de cargue (Fase 4).
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* El form deja espacio inferior para el action-bar sticky. */
+  .page--form { padding-bottom: 110px; }
+
+  /* ── Cabecera de página: título + badge de estado ── */
+  .crear-head { margin-bottom: 24px; }
+  .crear-head__row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .crear-head__row h2 { font-size: 24px; font-weight: 800; letter-spacing: -.4px; color: var(--text-primary); margin: 0; }
+  .state-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: var(--radius-full); background: #f0f1f7; color: var(--text-secondary); font-size: 12px; font-weight: 700; }
+  .state-badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .crear-head__sub { font-size: 13px; color: var(--text-secondary); margin: 10px 0 0; max-width: 620px; }
+
+  /* ── Tarjeta de sección ──
+     overflow: visible para que los menús de dropdown (Departamento, Municipio,
+     Gestor) FLOTEN por encima del card sin recortarse (fix dropdown enmascarado).
+     El header redondeado usa su propio radio, no necesita clip del card. */
+  .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); margin-bottom: 18px; overflow: visible; animation: fadeInUp .42s var(--easing-smoothout) both; }
+  .form-card__head { border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
+  .form-card:nth-of-type(1) { animation-delay: .04s; } .form-card:nth-of-type(2) { animation-delay: .1s; } .form-card:nth-of-type(3) { animation-delay: .16s; }
+  .form-card__head { display: flex; align-items: flex-start; gap: 13px; padding: 20px 24px 16px; border-bottom: 1px solid var(--border); }
+  .form-card__num { width: 30px; height: 30px; border-radius: var(--radius-md); background: var(--accent-bg); color: var(--accent); font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .form-card__titles h3 { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0; }
+  .form-card__titles p { font-size: 12.5px; color: var(--text-secondary); margin: 3px 0 0; }
+  .form-card__body { padding: 22px 24px 24px; }
+
+  /* ── Grid de campos: 2 cols desktop, apilado móvil ── */
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .field-grid .col-2 { grid-column: span 2; }
+  @media (max-width: 760px) { .field-grid { grid-template-columns: 1fr; gap: 16px; } .field-grid .col-2 { grid-column: span 1; } }
+
+  /* ── Alcance del evento — choice cards (decisión estructural: cambia el form) ── */
+  .alcance-hint { margin: 2px 0 12px; font-size: 12px; color: var(--text-muted); line-height: 1.45; }
+  .alcance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .alcance-opt {
+    position: relative; display: flex; align-items: flex-start; gap: 12px; text-align: left;
+    padding: 15px 16px; background: var(--surface);
+    border: 1.5px solid var(--border-dark); border-radius: var(--radius-lg);
+    cursor: pointer; font-family: inherit; color: var(--text-primary);
+    transition: border-color var(--duration-normal) var(--easing-smoothout),
+                background-color var(--duration-normal) var(--easing-smoothout),
+                transform var(--duration-fast) var(--easing-smoothout);
+  }
+  /* Anillo de foco (mismo valor establecido en forms.css) — solo teclado */
+  .alcance-opt::after {
+    content: ""; position: absolute; inset: -1.5px; border-radius: inherit;
+    box-shadow: 0 0 0 3px rgba(215, 64, 9, .2); opacity: 0; pointer-events: none;
+    transition: opacity var(--duration-normal) var(--easing-smoothout);
+  }
+  .alcance-opt:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .alcance-opt:focus-visible { outline: none; border-color: var(--accent); }
+  .alcance-opt:focus-visible::after { opacity: 1; }
+  .alcance-opt__tile {
+    flex-shrink: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+    border-radius: var(--radius-md); background: var(--bg-soft); color: var(--text-secondary);
+    transition: background-color var(--duration-normal) var(--easing-smoothout),
+                color var(--duration-normal) var(--easing-smoothout);
+  }
+  .alcance-opt__ic { width: 20px; height: 20px; }
+  .alcance-opt__body { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding-right: 22px; }
+  .alcance-opt__title { font-size: 14px; font-weight: 700; line-height: 1.2; transition: color var(--duration-normal) var(--easing-smoothout); }
+  .alcance-opt__desc { font-size: 12px; font-weight: 500; color: var(--text-secondary); line-height: 1.45; }
+  /* Indicador radio-dot en esquina */
+  .alcance-opt__mark {
+    position: absolute; top: 14px; right: 14px; width: 18px; height: 18px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1.5px solid var(--border-dark); border-radius: var(--radius-full); background: var(--surface);
+    transition: border-color var(--duration-normal) var(--easing-smoothout);
+  }
+  .alcance-opt__dot {
+    width: 10px; height: 10px; border-radius: var(--radius-full); background: var(--accent);
+    transform: scale(0); opacity: 0;
+    transition: transform var(--duration-normal) var(--easing-smoothout), opacity var(--duration-fast) var(--easing-smoothout);
+  }
+  /* Seleccionada — señal redundante: borde + fondo + tile + título + dot */
+  .alcance-opt.is-selected { border-color: var(--accent); background: var(--accent-bg); }
+  .alcance-opt.is-selected .alcance-opt__tile { background: var(--accent-bg-warm); color: var(--accent); }
+  .alcance-opt.is-selected .alcance-opt__title { color: var(--accent); }
+  .alcance-opt.is-selected .alcance-opt__mark { border-color: var(--accent); }
+  .alcance-opt.is-selected .alcance-opt__dot { transform: scale(1); opacity: 1; }
+  @media (max-width: 560px) { .alcance-grid { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) {
+    .alcance-opt, .alcance-opt::after, .alcance-opt__tile, .alcance-opt__mark, .alcance-opt__dot, .alcance-opt__title { transition: none; }
+    .alcance-opt:hover { transform: none; }
+    .alcance-opt__dot { transition: opacity 1ms; }
+  }
+
+  /* ── Sección 2: gestor seleccionado (preview card) ── */
+  .gestor-preview { display: flex; align-items: center; gap: 12px; margin-top: 14px; padding: 13px 15px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-soft); animation: fadeInUp .26s var(--easing-smoothout) both; }
+  .gestor-preview__ava { width: 40px; height: 40px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
+  .gestor-preview__name { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+  .gestor-preview__meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .gestor-preview__invite { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 11.5px; font-weight: 600; color: var(--accent); }
+  .gestor-preview__invite svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .dd-opt-rich { display: flex; flex-direction: column; line-height: 1.3; }
+  .dd-opt-rich small { font-size: 11.5px; color: var(--text-secondary); }
+
+  /* ── Action bar sticky (footer de acciones) ── */
+  .action-bar {
+    position: fixed; left: var(--sidebar-w); right: 0; bottom: 0; z-index: 90;
+    background: var(--surface); border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 20px rgba(40, 40, 52, .06);
+    padding: 14px 32px; display: flex; align-items: center; gap: 12px;
+    transition: left var(--duration-normal) var(--easing-smoothout);
+  }
+  body.sidebar-collapsed .action-bar { left: var(--sidebar-w-collapsed); }
+  .action-bar__hint { font-size: 12.5px; color: var(--text-secondary); margin-right: auto; display: inline-flex; align-items: center; gap: 7px; }
+  .action-bar__hint svg { width: 16px; height: 16px; color: var(--text-muted); }
+  @media (max-width: 1023px) {
+    .action-bar { left: 0; padding: 12px 16px; }
+    .action-bar__hint { display: none; }
+    .action-bar .naowee-btn { flex: 1; }
+  }
+
+  /* El footer pill vive sobre el action-bar (que ocupa el borde inferior). */
+  .naowee-footer { bottom: 76px; z-index: 91; }
+  @media (max-width: 600px) { .crear-head__row h2 { font-size: 20px; } .naowee-footer { bottom: 130px; } }
+  @media (prefers-reduced-motion: reduce) {
+    .form-card, .gestor-preview, .action-bar { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div id="sidebarRoot"></div>
+  <div class="main">
+    <header class="top-header" id="topHeader"></header>
+    <div class="page page--form">
+      <div class="page-inner">
+        <form id="crearForm" novalidate>
+          <!-- Cabecera -->
+          <div class="crear-head">
+            <div class="crear-head__row">
+              <h2>Crear evento</h2>
+              <span class="state-badge">Borrador</span>
+            </div>
+            <p class="crear-head__sub">Define los datos básicos del evento y asigna un gestor. El evento se guarda en estado <strong>Borrador</strong>.</p>
+          </div>
+
+          <!-- ═══ Sección 1 · Datos del evento ═══ -->
+          <section class="form-card" aria-labelledby="sec1">
+            <div class="form-card__head">
+              <span class="form-card__num">1</span>
+              <div class="form-card__titles">
+                <h3 id="sec1">Datos del evento</h3>
+                <p>Información general. Los campos con <strong>*</strong> son obligatorios.</p>
+              </div>
+            </div>
+            <div class="form-card__body">
+              <div class="field-grid">
+                <!-- Alcance: Nacional / Internacional (no editable después de crear) -->
+                <div class="col-2" data-field="alcance">
+                  <label class="naowee-textfield__label" id="alcanceLbl">Alcance del evento</label>
+                  <p class="alcance-hint">Se fija al crear y no podrá cambiarse después. Define qué campos pide el formulario.</p>
+                  <div class="alcance-grid" id="alcanceSeg" role="radiogroup" aria-labelledby="alcanceLbl">
+                    <button type="button" class="alcance-opt is-selected" data-val="nacional" role="radio" aria-checked="true">
+                      <span class="alcance-opt__tile"><svg class="alcance-opt__ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4"/><path d="M4 4h13l-2.5 4L17 12H4"/></svg></span>
+                      <span class="alcance-opt__body">
+                        <span class="alcance-opt__title">Nacional</span>
+                        <span class="alcance-opt__desc">Ocurre en Colombia. Se piden departamento(s) y municipio(s) del evento.</span>
+                      </span>
+                      <span class="alcance-opt__mark" aria-hidden="true"><span class="alcance-opt__dot"></span></span>
+                    </button>
+                    <button type="button" class="alcance-opt" data-val="internacional" role="radio" aria-checked="false">
+                      <span class="alcance-opt__tile"><svg class="alcance-opt__ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18z"/></svg></span>
+                      <span class="alcance-opt__body">
+                        <span class="alcance-opt__title">Internacional</span>
+                        <span class="alcance-opt__desc">Seguimiento a deportistas de Colombia que compiten fuera. No se pide lugar; los rivales se registran como participantes de otros países.</span>
+                      </span>
+                      <span class="alcance-opt__mark" aria-hidden="true"><span class="alcance-opt__dot"></span></span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Nombre* -->
+                <div class="naowee-textfield col-2" data-field="nombre">
+                  <label class="naowee-textfield__label naowee-textfield__label--required" for="f-nombre">Nombre del evento</label>
+                  <div class="naowee-textfield__input-wrap">
+                    <input type="text" class="naowee-textfield__input" id="f-nombre" placeholder="Ej. Copa Nacional de Atletismo 2026" autocomplete="off">
+                  </div>
+                  <span class="naowee-textfield__msg" data-msg></span>
+                </div>
+
+                <!-- Fecha inicio* -->
+                <div data-field="inicio">
+                  <label class="naowee-textfield__label naowee-textfield__label--required" id="lbl-inicio">Fecha de inicio</label>
+                  <div class="naowee-datepicker" data-datepicker="inicio">
+                    <button type="button" class="naowee-datepicker__trigger" aria-haspopup="dialog" aria-labelledby="lbl-inicio">
+                      <span class="naowee-datepicker__ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+                      <span class="naowee-datepicker__val is-placeholder" data-dp-val>Selecciona una fecha</span>
+                    </button>
+                  </div>
+                  <span class="naowee-textfield__msg" data-msg style="display:none"></span>
+                </div>
+
+                <!-- Fecha fin* -->
+                <div data-field="fin">
+                  <label class="naowee-textfield__label naowee-textfield__label--required" id="lbl-fin">Fecha de fin</label>
+                  <div class="naowee-datepicker" data-datepicker="fin">
+                    <button type="button" class="naowee-datepicker__trigger" aria-haspopup="dialog" aria-labelledby="lbl-fin">
+                      <span class="naowee-datepicker__ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+                      <span class="naowee-datepicker__val is-placeholder" data-dp-val>Selecciona una fecha</span>
+                    </button>
+                  </div>
+                  <span class="naowee-textfield__msg" data-msg style="display:none"></span>
+                </div>
+
+                <!-- Lugar = cascada Departamento(s) → Municipio(s). Un evento puede
+                     ser multi-departamental/municipal (Juegos Nacionales, festivales). -->
+                <div data-field="departamento">
+                  <label class="naowee-textfield__label" id="lbl-depto">Departamento(s)</label>
+                  <div class="naowee-dropdown" data-dd="departamento" data-sheet-title="Departamentos">
+                    <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-labelledby="lbl-depto">
+                      <span class="naowee-dropdown__value is-placeholder" data-dd-val>Selecciona departamentos…</span>
+                      <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </button>
+                    <div class="naowee-dropdown__menu" role="listbox"></div>
+                  </div>
+                  <span class="naowee-textfield__msg" data-msg style="display:none"></span>
+                </div>
+
+                <!-- Municipio(s): opcional, se revela al elegir departamento(s), agrupado por depto -->
+                <div data-field="municipio" id="municipioField" hidden>
+                  <label class="naowee-textfield__label" id="lbl-muni">Municipio(s) <span class="lbl-opt">· opcional</span></label>
+                  <div class="naowee-dropdown" data-dd="municipio" data-sheet-title="Municipios">
+                    <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-labelledby="lbl-muni">
+                      <span class="naowee-dropdown__value is-placeholder" data-dd-val>Municipios (opcional)…</span>
+                      <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </button>
+                    <div class="naowee-dropdown__menu" role="listbox"></div>
+                  </div>
+                  <span class="naowee-textfield__msg" data-msg style="display:none"></span>
+                </div>
+
+                <!-- Descripción -->
+                <div class="naowee-textfield naowee-textfield--textarea col-2" data-field="descripcion">
+                  <label class="naowee-textfield__label" for="f-desc">Descripción</label>
+                  <div class="naowee-textfield__input-wrap">
+                    <textarea class="naowee-textfield__input" id="f-desc" rows="3" placeholder="Resumen del evento, alcance y notas para los participantes (opcional)."></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ═══ Sección 2 · Asignación ═══ -->
+          <section class="form-card" aria-labelledby="sec2">
+            <div class="form-card__head">
+              <span class="form-card__num">2</span>
+              <div class="form-card__titles">
+                <h3 id="sec2">Asignación</h3>
+                <p>Define qué gestor cargará inscripciones, resultados y medallería de este evento.</p>
+              </div>
+            </div>
+            <div class="form-card__body">
+              <div style="max-width:520px">
+                <label class="naowee-textfield__label" id="lbl-gestor">Asignar al gestor</label>
+                <div class="naowee-dropdown" data-dd="gestor" data-sheet-title="Asignar al gestor">
+                  <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-labelledby="lbl-gestor">
+                    <span class="naowee-dropdown__value is-placeholder" data-dd-val>Selecciona un perfil…</span>
+                    <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+                  </button>
+                  <div class="naowee-dropdown__menu" role="listbox"></div>
+                </div>
+                <div class="naowee-field-help">Asigna a cualquier perfil de la plataforma; si aún no es gestor, se le invitará como gestor de este evento. Podrás reasignarlo más adelante.</div>
+                <div id="gestorPreview"></div>
+              </div>
+            </div>
+          </section>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer de acciones sticky -->
+<div class="action-bar">
+  <span class="action-bar__hint">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    El evento se guardará en estado Borrador.
+  </span>
+  <button type="button" class="naowee-btn naowee-btn--link" id="cancelBtn">Cancelar</button>
+  <button type="button" class="naowee-btn naowee-btn--loud" id="saveBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+    Guardar
+  </button>
+</div>
+
+<script type="module">
+  import {
+    mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher,
+    getRoleFromQuery, ROLES, homeForRole
+  } from './shared/sidebar.js';
+  /* Módulo LIGHT: el alcance NO carga catálogo deportivo. El form de creación
+     solo captura datos del evento + asignación de gestor (los deportes/pruebas
+     viven únicamente como columnas dentro de los archivos de cargue — Fase 4). */
+  import { PERFILES_ASIGNABLES, DEPARTAMENTOS, municipiosDeDepto } from './shared/catalogo.js?v=0.9.0';
+  import { addDraft, placeLabel } from './shared/events-data.js?v=0.9.0';
+
+  const roleCode = getRoleFromQuery();
+  /* Guard de rol: SOLO el Administrador crea eventos (consistente con el resto
+     de pantallas). Otros roles se redirigen a su home. */
+  if (roleCode !== 'ADMIN') {
+    window.location.replace(`${homeForRole(roleCode)}?role=${roleCode}`);
+  }
+  const role = ROLES[roleCode];
+  const eventosHref = `eventos.html?role=${roleCode}`;
+
+  /* ─── Helpers de fecha (datepicker) ─── */
+  const MES_ABBR = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  const MES_FULL = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  function fmtDate(d) { return `${String(d.getDate()).padStart(2, '0')} ${MES_ABBR[d.getMonth()]} ${d.getFullYear()}`; }
+  function sameDay(a, b) { return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+  const ICON_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+  const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  const ICON_WARN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+
+  /* ─── Estado del form ─── */
+  const state = {
+    alcance: 'nacional',
+    nombre: '', inicio: null, fin: null,
+    /* Ubicación MULTI: un evento puede ser multi-departamental/municipal.
+       departamentos = [nombre]; municipios = [{depto, nombre}] (opcionales). */
+    departamentos: [], municipios: [], descripcion: '',
+    gestorId: null
+  };
+  /* Demo: contador de intentos de submit. El 1er submit inválido muestra
+     errores (wiggle + scroll); el 2º click en Guardar deja continuar. */
+  let saveAttempts = 0;
+
+  /* ════════════════ Dropdown genérico (flotante/bottom-sheet) ════════════════ */
+  let _sheetBackdrop = null;
+  function ensureBackdrop() {
+    if (_sheetBackdrop) return _sheetBackdrop;
+    _sheetBackdrop = document.createElement('div');
+    _sheetBackdrop.className = 'naowee-sheet-backdrop';
+    document.body.appendChild(_sheetBackdrop);
+    _sheetBackdrop.addEventListener('click', closeAllPopovers);
+    return _sheetBackdrop;
+  }
+  function isMobile() { return window.matchMedia('(max-width: 760px)').matches; }
+  function closeAllPopovers() {
+    document.querySelectorAll('.naowee-dropdown.is-open, .naowee-datepicker.is-open').forEach((el) => el.classList.remove('is-open'));
+    if (_sheetBackdrop) _sheetBackdrop.classList.remove('is-open');
+  }
+
+  /* Renderiza opciones de un dropdown. opts = [{value,label,emoji?,html?,disabled?}]
+     cfg opcional para MULTI-selección: { multi:true, isSelected(value), groups() }.
+     En multi: cada opción es un checkbox, el menú NO se cierra al elegir, y
+     `groups()` (opcional) devuelve [{label, opts:[...]}] para agrupar (municipios
+     por departamento). El label del trigger lo gestiona el llamador (setLabel). */
+  function setupDropdown(name, opts, onSelect, getSelected, cfg = {}) {
+    const dd = document.querySelector(`[data-dd="${name}"]`);
+    const menu = dd.querySelector('.naowee-dropdown__menu');
+    const valEl = dd.querySelector('[data-dd-val]');
+    const trigger = dd.querySelector('.naowee-dropdown__trigger');
+    const sheetTitle = dd.getAttribute('data-sheet-title') || 'Selecciona';
+    const multi = !!cfg.multi;
+
+    function paint() {
+      const sel = getSelected ? getSelected() : null;
+      const sheetHead = `<div class="naowee-dropdown__sheet-head"><span class="naowee-dropdown__sheet-title">${sheetTitle}</span><button type="button" class="naowee-dropdown__sheet-close" data-close aria-label="Cerrar">${ICON_X}</button></div>`;
+      const renderOpt = (o) => {
+        const checked = multi ? cfg.isSelected(o.value) : (o.value === sel);
+        return `<button type="button" class="naowee-dropdown__opt ${multi ? 'naowee-dropdown__opt--multi' : ''} ${checked ? (multi ? 'is-checked' : 'is-selected') : ''}" data-val="${o.value}">
+          ${multi ? `<span class="dd-check-box">${checked ? ICON_CHECK : ''}</span>` : ''}
+          ${o.emoji ? `<span class="naowee-dropdown__opt-emoji">${o.emoji}</span>` : ''}
+          ${o.html || `<span>${o.label}</span>`}
+          ${multi ? '' : `<span class="naowee-dropdown__opt-check">${ICON_CHECK}</span>`}
+        </button>`;
+      };
+      const groupsData = (multi && cfg.groups) ? cfg.groups() : null;
+      const flat = groupsData ? groupsData.flatMap((g) => g.opts) : opts;
+      let body;
+      if (groupsData) {
+        body = groupsData.length
+          ? groupsData.map((g) => `<div class="dd-group-hd">${g.label}</div>${g.opts.map(renderOpt).join('')}`).join('')
+          : `<div class="naowee-dropdown__empty">Elige un departamento primero</div>`;
+      } else {
+        body = flat.length ? flat.map(renderOpt).join('') : `<div class="naowee-dropdown__empty">Sin opciones disponibles</div>`;
+      }
+      menu.innerHTML = sheetHead + body;
+      menu.querySelectorAll('.naowee-dropdown__opt').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const chosen = flat.find((o) => o.value === btn.dataset.val);
+          if (!chosen) return;   // defensivo: opción obsoleta tras re-paint
+          onSelect(chosen);
+          if (multi) paint(); else close();
+        });
+      });
+      menu.querySelector('[data-close]')?.addEventListener('click', (e) => { e.stopPropagation(); close(); });
+    }
+    function open() {
+      if (dd.classList.contains('naowee-dropdown--disabled')) return;
+      closeAllPopovers();
+      paint();
+      // Auto-flip: si no hay espacio abajo (p.ej. gestor pegado al footer) abre hacia arriba
+      dd.classList.remove('is-up');
+      if (!isMobile()) {
+        const r = trigger.getBoundingClientRect();
+        const espacioAbajo = window.innerHeight - r.bottom;
+        if (espacioAbajo < 300 && r.top > espacioAbajo) dd.classList.add('is-up');
+      }
+      dd.classList.add('is-open');
+      trigger.setAttribute('aria-expanded', 'true');
+      if (isMobile()) ensureBackdrop().classList.add('is-open');
+    }
+    function close() { dd.classList.remove('is-open'); trigger.setAttribute('aria-expanded', 'false'); if (_sheetBackdrop && !document.querySelector('.is-open')) _sheetBackdrop.classList.remove('is-open'); }
+
+    trigger.addEventListener('click', (e) => { e.stopPropagation(); dd.classList.contains('is-open') ? close() : open(); });
+    return {
+      el: dd, valEl,
+      setLabel(label, isPlaceholder) { valEl.textContent = label; valEl.classList.toggle('is-placeholder', !!isPlaceholder); },
+      setDisabled(d) { dd.classList.toggle('naowee-dropdown--disabled', d); },
+      setError(e) { dd.classList.toggle('naowee-dropdown--error', e); },
+      setOpts(next) { opts = next; },
+      repaint() { paint(); },
+      close
+    };
+  }
+
+  /* ════════════════ Datepicker — calendario CANÓNICO del DS ════════════════
+     Estructura .naowee-datepicker__calendar: header con selector de mes/año
+     (clic → cicla vistas días→meses→años) + nav de mes/año, content de semanas
+     y grid de meses/años. Selección single. Mobile = bottom-sheet. */
+  const CHEV = {
+    left:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+    right: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>',
+    down:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
+    up:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>'
+  };
+  const DOW_CANON = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sab', 'Dom'];
+  function setupDatepicker(name, onPick, getMin) {
+    const dp = document.querySelector(`[data-datepicker="${name}"]`);
+    const trigger = dp.querySelector('.naowee-datepicker__trigger');
+    const valEl = dp.querySelector('[data-dp-val]');
+    let curMonth = 5, curYear = 2026;   // jun 2026 por defecto
+    let calView = 'days';               // 'days' | 'months' | 'years'
+    let cal = null;
+
+    function buildCal() {
+      cal = document.createElement('div');
+      cal.className = 'naowee-cal';
+      dp.appendChild(cal);
+    }
+    function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+    function paint() {
+      const selected = name === 'inicio' ? state.inicio : state.fin;
+      const minRaw = getMin ? getMin() : null;
+      const min = minRaw ? startOfDay(minRaw) : null;
+      const today = new Date(2026, 5, 2);
+
+      const headerTitle = calView === 'years' ? curYear : `${MES_FULL[curMonth]} de ${curYear}`;
+      const headerChev = calView === 'days' ? CHEV.down : CHEV.up;
+      let header = `<div class="naowee-datepicker__header">
+          <button type="button" class="naowee-datepicker__month-selector" data-toggleview aria-label="Cambiar vista">
+            <span class="naowee-datepicker__month">${headerTitle}</span>
+            <span class="naowee-datepicker__month-chevron">${headerChev}</span>
+          </button>`;
+      if (calView === 'days') {
+        header += `<div class="naowee-datepicker__controls">
+            <button type="button" class="naowee-datepicker__nav" data-nav="-1" aria-label="Anterior">${CHEV.left}</button>
+            <button type="button" class="naowee-datepicker__nav" data-nav="1" aria-label="Siguiente">${CHEV.right}</button>
+          </div>`;
+      }
+      header += `</div>`;
+
+      let body = '';
+      if (calView === 'months') {
+        body = '<div class="naowee-datepicker__month-grid">' +
+          MES_FULL.map((m, i) => `<button type="button" class="naowee-datepicker__month-item ${i === curMonth ? 'naowee-datepicker__month-item--selected' : ''}" data-month="${i}">${m}</button>`).join('') +
+          '</div>';
+      } else if (calView === 'years') {
+        const startY = curYear - (curYear % 4) - 4;
+        let cells = '';
+        for (let yi = 0; yi < 12; yi++) { const y = startY + yi; cells += `<button type="button" class="naowee-datepicker__month-item ${y === curYear ? 'naowee-datepicker__month-item--selected' : ''}" data-year="${y}">${y}</button>`; }
+        body = `<div class="naowee-datepicker__month-grid">${cells}</div>`;
+      } else {
+        const first = new Date(curYear, curMonth, 1);
+        const startOffset = (first.getDay() + 6) % 7; // lunes=0
+        const daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
+        const prevDays = new Date(curYear, curMonth, 0).getDate();
+        const all = [];
+        for (let pi = startOffset - 1; pi >= 0; pi--) all.push({ d: prevDays - pi, other: true });
+        for (let ci = 1; ci <= daysInMonth; ci++) all.push({ d: ci, other: false });
+        const remaining = 42 - all.length;
+        for (let ni = 1; ni <= remaining; ni++) all.push({ d: ni, other: true });
+
+        const wkHtml = '<div class="naowee-datepicker__week">' + DOW_CANON.map((w) => `<span class="naowee-datepicker__weekday">${w}</span>`).join('') + '</div>';
+        let weeksHtml = '';
+        for (let w = 0; w < 6; w++) {
+          weeksHtml += '<div class="naowee-datepicker__week">';
+          for (let di = 0; di < 7; di++) {
+            const cell = all[w * 7 + di];
+            const cls = ['naowee-datepicker__day'];
+            let disabled = false;
+            if (cell.other) cls.push('naowee-datepicker__day--other-month');
+            else {
+              const date = new Date(curYear, curMonth, cell.d);
+              if (min && date < min) { cls.push('naowee-datepicker__day--disabled'); disabled = true; }
+              if (sameDay(date, selected)) cls.push('naowee-datepicker__day--selected');
+              if (sameDay(date, today)) cls.push('naowee-datepicker__day--today');
+            }
+            weeksHtml += `<button type="button" class="${cls.join(' ')}"${(cell.other || disabled) ? '' : ` data-d="${cell.d}"`}>${cell.d}</button>`;
+          }
+          weeksHtml += '</div>';
+        }
+        body = `<div class="naowee-datepicker__content">${wkHtml}${weeksHtml}</div>`;
+      }
+
+      cal.innerHTML =
+        `<div class="naowee-cal__sheet-head"><span class="naowee-cal__sheet-title">${name === 'inicio' ? 'Fecha de inicio' : 'Fecha de fin'}</span><button type="button" class="naowee-cal__sheet-close" data-close aria-label="Cerrar">${ICON_X}</button></div>` +
+        `<div class="naowee-datepicker__calendar">${header}${body}</div>`;
+
+      cal.querySelector('[data-toggleview]')?.addEventListener('click', (e) => { e.stopPropagation(); calView = calView === 'days' ? 'months' : calView === 'months' ? 'years' : 'days'; paint(); });
+      cal.querySelectorAll('[data-nav]').forEach((b) => b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const delta = Number(b.dataset.nav);
+        if (calView === 'days') { curMonth += delta; if (curMonth > 11) { curMonth = 0; curYear++; } if (curMonth < 0) { curMonth = 11; curYear--; } }
+        else if (calView === 'years') { curYear += delta * 4; }
+        paint();
+      }));
+      cal.querySelectorAll('[data-month]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); curMonth = Number(b.dataset.month); calView = 'days'; paint(); }));
+      cal.querySelectorAll('[data-year]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); curYear = Number(b.dataset.year); calView = 'months'; paint(); }));
+      cal.querySelectorAll('.naowee-datepicker__day[data-d]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); onPick(new Date(curYear, curMonth, Number(b.dataset.d))); close(); }));
+      cal.querySelector('[data-close]')?.addEventListener('click', (e) => { e.stopPropagation(); close(); });
+    }
+    /* Coloca el popover: mide su alto real y descuenta top-header (88) y footer.
+       Cabe abajo → absoluto (default). Cabe arriba → is-up. Ni uno ni otro
+       (campo a media pantalla + calendario alto) → fija al viewport, 100% visible. */
+    function placeCal() {
+      cal.classList.remove('is-up', 'is-right');
+      cal.style.position = ''; cal.style.top = ''; cal.style.bottom = ''; cal.style.left = ''; cal.style.right = '';
+      const r = trigger.getBoundingClientRect();
+      const calH = cal.offsetHeight, calW = cal.offsetWidth;
+      const HDR = 96, FTR = 80, GAP = 6, M = 8;
+      const belowSpace = window.innerHeight - r.bottom - FTR;
+      const aboveSpace = r.top - HDR;
+      if (r.left + calW > window.innerWidth - M) cal.classList.add('is-right');
+      if (belowSpace >= calH + GAP) {
+        /* cabe abajo: posición absoluta por defecto */
+      } else if (aboveSpace >= calH + GAP) {
+        cal.classList.add('is-up');
+      } else {
+        cal.classList.remove('is-right');
+        let top = Math.max(HDR, Math.min(r.bottom + GAP, window.innerHeight - FTR - calH - M));
+        let left = Math.max(M, Math.min(r.left, window.innerWidth - calW - M));
+        cal.style.position = 'fixed'; cal.style.top = top + 'px'; cal.style.bottom = 'auto';
+        cal.style.left = left + 'px'; cal.style.right = 'auto';
+      }
+    }
+    function open() {
+      closeAllPopovers();
+      if (!cal) buildCal();
+      const sel = name === 'inicio' ? state.inicio : state.fin;
+      if (sel) { curMonth = sel.getMonth(); curYear = sel.getFullYear(); }
+      calView = 'days';
+      paint();
+      if (!isMobile()) placeCal();
+      dp.classList.add('is-open');
+      if (isMobile()) ensureBackdrop().classList.add('is-open');
+    }
+    function close() {
+      dp.classList.remove('is-open');
+      if (cal) { cal.classList.remove('is-up', 'is-right'); cal.style.position = ''; cal.style.top = ''; cal.style.bottom = ''; cal.style.left = ''; cal.style.right = ''; }
+      if (_sheetBackdrop && !document.querySelector('.is-open')) _sheetBackdrop.classList.remove('is-open');
+    }
+
+    trigger.addEventListener('click', (e) => { e.stopPropagation(); dp.classList.contains('is-open') ? close() : open(); });
+    return {
+      el: dp,
+      setValue(d) { valEl.textContent = d ? fmtDate(d) : 'Selecciona una fecha'; valEl.classList.toggle('is-placeholder', !d); },
+      setError(e) { dp.classList.toggle('naowee-datepicker--error', e); },
+      close
+    };
+  }
+
+  /* ════════════════ Sección 2 · gestor ════════════════ */
+  let ddGestor;
+  /* Subtítulo de cada perfil = su rol en la plataforma (+ especialidad si la
+     tiene). Así el administrador ve que no todos son gestores y a quién invita. */
+  function perfilSub(p) {
+    return p.area ? `${p.role} · <span style="color:var(--text-muted)">${p.area}</span>` : p.role;
+  }
+  const INVITE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>';
+  function initSection2() {
+    const opts = PERFILES_ASIGNABLES.map((p) => ({
+      value: p.id, label: p.name,
+      html: `<span class="dd-opt-rich"><span>${p.name}</span><small>${perfilSub(p)}</small></span>`
+    }));
+    ddGestor = setupDropdown('gestor', opts, (o) => {
+      state.gestorId = o.value;
+      ddGestor.setLabel(o.label, false);
+      ddGestor.setError(false);
+      renderGestorPreview();
+    }, () => state.gestorId);
+  }
+  function renderGestorPreview() {
+    const wrap = document.getElementById('gestorPreview');
+    const p = PERFILES_ASIGNABLES.find((x) => x.id === state.gestorId);
+    if (!p) { wrap.innerHTML = ''; return; }
+    const meta = p.area ? `${p.role} · ${p.area}` : p.role;
+    const invite = p.esGestor ? '' :
+      `<div class="gestor-preview__invite">${INVITE_ICON}Se le invitará como gestor de este evento</div>`;
+    wrap.innerHTML = `
+      <div class="gestor-preview">
+        <span class="gestor-preview__ava" style="background:${p.color}22;color:${p.color}">${p.avatar}</span>
+        <div>
+          <div class="gestor-preview__name">${p.name}</div>
+          <div class="gestor-preview__meta">${meta}</div>
+          ${invite}
+        </div>
+      </div>`;
+  }
+
+  /* ════════════════ Sección 1 · textfields + datepickers ════════════════ */
+  let dpInicio, dpFin, ddDepto, ddMunicipio;
+  function fieldEl(name) { return document.querySelector(`[data-field="${name}"]`); }
+
+  /* Devuelve el control visible del campo (para borde error + wiggle). */
+  function controlEl(f) {
+    return f.querySelector('.naowee-textfield__input-wrap, .naowee-datepicker__trigger, .naowee-dropdown__trigger');
+  }
+  const REDUCE_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* Wiggle canónico del DS (.naowee-shake): remove → reflow → add. Honra reduce. */
+  function wiggle(el) {
+    if (!el || REDUCE_MOTION) return;
+    el.classList.remove('naowee-shake');
+    void el.offsetWidth;
+    el.classList.add('naowee-shake');
+    el.addEventListener('animationend', () => el.classList.remove('naowee-shake'), { once: true });
+  }
+
+  function setFieldError(name, msg, doWiggle) {
+    const f = fieldEl(name);
+    if (!f) return;
+    f.classList.add('naowee-textfield--error');
+    const m = f.querySelector('[data-msg]');
+    if (m) { m.innerHTML = '<span class="naowee-helper naowee-helper--negative naowee-helper--loud"><span class="naowee-helper__text"><span class="naowee-helper__badge"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="6" style="fill:var(--field-border-error)"/><path d="M3.75 6h4.5" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg></span><span>' + msg + '</span></span></span>'; m.style.display = 'block'; m.setAttribute('aria-live', 'polite'); }
+    if (name === 'inicio') dpInicio.setError(true);
+    if (name === 'fin') dpFin.setError(true);
+    if (name === 'departamento') ddDepto.setError(true);
+    if (name === 'municipio') ddMunicipio.setError(true);
+    if (doWiggle) wiggle(controlEl(f));
+  }
+  function clearFieldError(name) {
+    const f = fieldEl(name);
+    if (!f) return;
+    f.classList.remove('naowee-textfield--error');
+    const m = f.querySelector('[data-msg]');
+    if (m) m.style.display = 'none';
+    if (name === 'inicio') dpInicio.setError(false);
+    if (name === 'fin') dpFin.setError(false);
+    if (name === 'departamento') ddDepto.setError(false);
+    if (name === 'municipio') ddMunicipio.setError(false);
+  }
+
+  /* ── Cascada Departamento(s) → Municipio(s), ambos MULTI. Municipios se
+     agrupan por departamento (dos deptos pueden tener municipios homónimos →
+     el valor se namespacéa "Depto::Municipio"). Al quitar un depto se PURGAN
+     sus municipios. ── */
+  const MUNI_SEP = '›';   /* "›" separador interno del value municipio */
+  function syncDeptoLabel() {
+    const n = state.departamentos.length;
+    ddDepto.setLabel(n === 0 ? 'Selecciona departamentos…' : n === 1 ? state.departamentos[0] : `${n} departamentos`, n === 0);
+  }
+  function syncMuniLabel() {
+    const n = state.municipios.length;
+    ddMunicipio.setLabel(n === 0 ? 'Municipios (opcional)…' : n === 1 ? state.municipios[0].nombre : `${n} municipios`, n === 0);
+  }
+  function initLugarCascade() {
+    const deptoOpts = DEPARTAMENTOS.map((d) => ({ value: d, label: d }));
+    const muniField = document.getElementById('municipioField');
+    const muniGroups = () => state.departamentos.map((d) => ({
+      label: d,
+      opts: municipiosDeDepto(d).map((m) => ({ value: `${d}${MUNI_SEP}${m}`, label: m }))
+    }));
+
+    ddDepto = setupDropdown('departamento', deptoOpts, (o) => {
+      const i = state.departamentos.indexOf(o.value);
+      if (i >= 0) {
+        state.departamentos.splice(i, 1);
+        /* purga municipios del depto quitado */
+        state.municipios = state.municipios.filter((m) => m.depto !== o.value);
+      } else {
+        state.departamentos.push(o.value);
+      }
+      syncDeptoLabel();
+      ddDepto.setError(false);
+      clearFieldError('departamento');
+      muniField.hidden = state.departamentos.length === 0;
+      syncMuniLabel();
+    }, null, { multi: true, isSelected: (v) => state.departamentos.includes(v) });
+
+    ddMunicipio = setupDropdown('municipio', [], (o) => {
+      const idx = o.value.indexOf(MUNI_SEP);
+      const depto = o.value.slice(0, idx), nombre = o.value.slice(idx + 1);
+      const at = state.municipios.findIndex((m) => m.depto === depto && m.nombre === nombre);
+      if (at >= 0) state.municipios.splice(at, 1);
+      else state.municipios.push({ depto, nombre });
+      syncMuniLabel();
+      clearFieldError('municipio');
+    }, null, {
+      multi: true,
+      groups: muniGroups,
+      isSelected: (v) => { const i = v.indexOf(MUNI_SEP); return state.municipios.some((m) => m.depto === v.slice(0, i) && m.nombre === v.slice(i + 1)); }
+    });
+  }
+
+  /* ── Alcance Nacional / Internacional (segmento canónico). En internacional el
+     lugar no aplica → se ocultan Departamento/Municipio. No editable tras crear
+     (regla Juanma): solo se fija aquí, en la creación. ── */
+  function applyAlcance() {
+    const intl = state.alcance === 'internacional';
+    const deptoField = document.querySelector('[data-field="departamento"]');
+    const muniField = document.getElementById('municipioField');
+    if (deptoField) deptoField.hidden = intl;
+    if (muniField) muniField.hidden = intl || state.departamentos.length === 0;
+    if (intl) {
+      state.departamentos = []; state.municipios = [];
+      if (ddDepto) { ddDepto.setLabel('Selecciona departamentos…', true); ddDepto.setError(false); }
+      if (ddMunicipio) { ddMunicipio.setLabel('Municipios (opcional)…', true); ddMunicipio.setError(false); }
+      clearFieldError('departamento'); clearFieldError('municipio');
+    }
+  }
+  function initAlcance() {
+    const group = document.getElementById('alcanceSeg');
+    const opts = [...group.querySelectorAll('.alcance-opt')];
+    const select = (opt, focus) => {
+      if (focus) opt.focus();
+      if (opt.classList.contains('is-selected')) return;
+      opts.forEach((x) => {
+        const on = x === opt;
+        x.classList.toggle('is-selected', on);
+        x.setAttribute('aria-checked', String(on));
+        x.tabIndex = on ? 0 : -1;
+      });
+      state.alcance = opt.dataset.val;
+      applyAlcance();
+    };
+    opts.forEach((opt, i) => {
+      opt.tabIndex = opt.classList.contains('is-selected') ? 0 : -1;
+      opt.addEventListener('click', () => select(opt, false));
+      // Navegación por flechas → radiogroup WAI-ARIA
+      opt.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); select(opts[(i + 1) % opts.length], true); }
+        else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); select(opts[(i - 1 + opts.length) % opts.length], true); }
+      });
+    });
+  }
+
+  function initSection1() {
+    const nombre = document.getElementById('f-nombre');
+    nombre.addEventListener('input', () => { state.nombre = nombre.value; if (nombre.value.trim()) clearFieldError('nombre'); syncSaveEnabled(); });
+    document.getElementById('f-desc').addEventListener('input', (e) => { state.descripcion = e.target.value; });
+    initLugarCascade();
+    initAlcance();
+
+    dpInicio = setupDatepicker('inicio', (d) => {
+      state.inicio = d; dpInicio.setValue(d); clearFieldError('inicio');
+      // si fin < inicio, lo invalida visualmente
+      if (state.fin && state.fin < d) { setFieldError('fin', 'La fecha de fin debe ser igual o posterior al inicio.'); }
+      else if (state.fin) clearFieldError('fin');
+      syncSaveEnabled();
+    });
+    dpFin = setupDatepicker('fin', (d) => {
+      state.fin = d; dpFin.setValue(d);
+      if (state.inicio && d < state.inicio) setFieldError('fin', 'La fecha de fin debe ser igual o posterior al inicio.');
+      else clearFieldError('fin');
+      syncSaveEnabled();
+    }, () => state.inicio); // min del fin = inicio
+
+    syncSaveEnabled();   // arranca deshabilitado: obligatorios vacíos
+  }
+
+  /* CTA "Guardar" deshabilitado hasta los obligatorios (nombre + fecha inicio + fin). */
+  function syncSaveEnabled() {
+    const ok = !!(state.nombre || '').trim() && !!state.inicio && !!state.fin;
+    const btn = document.getElementById('saveBtn');
+    if (btn) btn.disabled = !ok;
+  }
+
+  /* ════════════════ Guardar ════════════════ */
+  /* Marca todos los campos inválidos. El wiggle solo se dispara en el PRIMER
+     campo con error (el que recibe el auto-scroll); los demás solo pintan borde. */
+  function validate() {
+    let firstErrName = null;
+    const fail = (name, msg) => { if (!firstErrName) firstErrName = name; setFieldError(name, msg, false); };
+
+    if (!state.nombre.trim()) fail('nombre', 'El nombre del evento es obligatorio.');
+    if (!state.inicio) fail('inicio', 'Selecciona la fecha de inicio.');
+    if (!state.fin) fail('fin', 'Selecciona la fecha de fin.');
+    if (state.inicio && state.fin && state.fin < state.inicio) fail('fin', 'La fecha de fin debe ser igual o posterior al inicio.');
+    /* En internacional el lugar no aplica. En nacional se exige ≥1 departamento;
+       los municipios son OPCIONALES (un evento puede ser solo multi-departamental). */
+    if (state.alcance === 'nacional') {
+      if (!state.departamentos.length) fail('departamento', 'Selecciona al menos un departamento.');
+    }
+
+    if (firstErrName) {
+      const f = fieldEl(firstErrName);
+      // Auto-scroll suave al primer campo con error + dispara el wiggle ahí.
+      f.scrollIntoView({ behavior: REDUCE_MOTION ? 'auto' : 'smooth', block: 'center' });
+      wiggle(controlEl(f));
+      return false;
+    }
+    return true;
+  }
+
+  function buildDraft() {
+    /* Módulo LIGHT: el evento no asocia catálogo deportivo al crearse; los
+       deportes/pruebas llegan luego en las columnas de los archivos de cargue. */
+    /* Ubicación multi-sede. `place` = string DERIVADO (retro-compat con lista/
+       tabla/calendario que solo lo muestran); la fuente estructurada son
+       departamentos[] + municipios[{depto,nombre}]. */
+    const intl = state.alcance === 'internacional';
+    const departamentos = intl ? [] : state.departamentos.slice();
+    const municipios = intl ? [] : state.municipios.slice();
+    const place = placeLabel({ alcance: state.alcance, departamentos, municipios });
+    const g = (typeof PERFILES_ASIGNABLES !== 'undefined') ? PERFILES_ASIGNABLES.find((x) => x.id === state.gestorId) : null;
+    return {
+      id: `EV-2026-${String(Date.now()).slice(-3)}`, emoji: '📅',
+      name: state.nombre.trim(), sport: 'Evento deportivo',
+      place, org: 'Ministerio del Deporte',
+      start: state.inicio ? fmtDate(state.inicio) : 'Por definir',
+      end: state.fin ? fmtDate(state.fin) : 'Por definir',
+      status: 'borrador', alcance: state.alcance,
+      insc: { done: 0, total: 0 }, res: { done: 0, total: 0 }, med: { done: 0, total: 0 },
+      /* Datos completos para conectar detalle + "eventos asignados" del gestor. */
+      gestorId: state.gestorId || null,
+      gestor: g ? g.name : null,
+      /* Fuente estructurada + espejos singulares (por si algún lector viejo los usa). */
+      departamentos, municipios,
+      departamento: departamentos[0] || null,
+      municipio: (municipios[0] && municipios[0].nombre) || null,
+      descripcion: (state.descripcion || '').trim()
+    };
+  }
+
+  /* Snackbar canónico (DS): window.naoweeToast en naowee-footer.js. */
+  function toast(msg, type = 'info') { window.naoweeToast(msg, type); }
+
+  function doSave() {
+    addDraft(buildDraft());
+    toast('Evento creado en estado Borrador.', 'success');
+    setTimeout(() => { window.location.href = `${eventosHref}&created=1`; }, 700);
+  }
+  document.getElementById('saveBtn').addEventListener('click', () => {
+    closeAllPopovers();
+    if (validate()) { doSave(); return; }
+    /* Demo "segundo click continúa": el 1er submit inválido muestra errores
+       (wiggle + scroll); el 2º click en Guardar deja avanzar de todos modos
+       para que el flujo no quede bloqueado en la demo. */
+    saveAttempts += 1;
+    if (saveAttempts >= 2) {
+      toast('Continuando con datos incompletos (modo demo).');
+      doSave();
+    } else {
+      toast('Revisa los campos marcados. Vuelve a tocar Guardar para continuar.', 'caution');
+    }
+  });
+  document.getElementById('cancelBtn').addEventListener('click', () => { window.location.href = eventosHref; });
+
+  /* Cerrar popovers con click fuera + Escape. */
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.naowee-dropdown') && !e.target.closest('.naowee-datepicker') && !e.target.closest('.naowee-cal')) closeAllPopovers();
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllPopovers(); });
+  /* Mantiene el offset del action-bar sincronizado con el colapso del sidebar. */
+  function syncSidebarState() {
+    const sb = document.querySelector('.sidebar');
+    document.body.classList.toggle('sidebar-collapsed', !!sb && sb.classList.contains('collapsed'));
+  }
+
+  /* ─── Bootstrap ─── */
+  mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: 'crear-evento' });
+  mountHeader({ headerEl: document.getElementById('topHeader'), role, title: 'Crear evento', subtitle: 'Eventos · Ministerio del Deporte' });
+  mountBackdrop();
+  mountDemoSwitcher({ roleCode });
+  initSection1();
+  initSection2();
+  syncSidebarState();
+  new MutationObserver(syncSidebarState).observe(document.querySelector('.sidebar'), { attributes: true, attributeFilter: ['class'] });
+
+  document.title = `Naowee Eventos — Crear evento (${role.label})`;
+</script>
+
+</body>
+</html>

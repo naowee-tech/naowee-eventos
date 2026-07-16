@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Naowee Eventos — Eventos</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="shared/tokens.css?v=0.9.1">
+<link rel="stylesheet" href="shared/shell.css?v=0.4.5">
+<link rel="stylesheet" href="shared/list-components.css?v=0.9.1">
+<link rel="stylesheet" href="shared/forms.css?v=0.9.3">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.9.1">
+<script src="shared/naowee-footer.js?v=0.9.10" defer></script>
+
+<style>
+  /* ═══════════════════════════════════════════════════════════════
+     EVENTOS — listado completo (sección "Eventos" del menú · Administrador).
+     Reusa el patrón card/tabla del dashboard (list-components.css).
+     ═══════════════════════════════════════════════════════════════ */
+  .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
+  .page-head__title h2 { font-size: 24px; font-weight: 800; letter-spacing: -.4px; color: var(--text-primary); margin: 0 0 5px; }
+  .page-head__title p { font-size: 13px; color: var(--text-secondary); margin: 0; max-width: 560px; }
+  .page-head__actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+  @media (max-width: 600px) {
+    .page-head { gap: 12px; }
+    .page-head__title h2 { font-size: 20px; }
+    .page-head__actions { width: 100%; }
+    .page-head__actions .naowee-btn { flex: 1; }
+  }
+
+  /* Tabs de alcance (Mis eventos / Todos los eventos) DENTRO del card.
+     Bleed lateral -20px (= padding del .naowee-table-card) → el divider va de borde
+     a borde. El bleed SUPERIOR se deja en -8px (no -20px) para que el fondo del hover
+     del tab (accent-bg, llena los 48px) NO quede pegado al borde superior del card. */
+  .ev-scope-tabs { margin: -8px -20px 0; background: transparent; padding: 0 12px; }
+  /* tab interno 8px → la etiqueta queda a 20px del borde (alineada con el toolbar),
+     y el hover/underline no se pegan a la esquina redondeada del card. */
+  .ev-scope-tabs .naowee-tab { padding: 0 8px; }
+
+  /* ═══════════════════════════════════════════════════════════════
+     VISTA CALENDARIO (mes) — estilo Google Calendar.
+     Barras que abarcan varios días (eventos multi-fecha), coloreadas
+     por estado; clic en el evento → detalle.
+     ═══════════════════════════════════════════════════════════════ */
+  .cal-bar { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+  .cal-nav { display: flex; align-items: center; gap: 6px; }
+  /* Nav del calendario = botones canónicos .naowee-btn--quiet; solo acotamos el tamaño de los de ícono */
+  .cal-nav__btn { width: 36px; padding: 0; }
+  .cal-nav__btn svg { width: 18px; height: 18px; }
+  .cal-title { font-size: 18px; font-weight: 700; color: var(--text-primary); text-transform: capitalize; }
+
+  /* Hint cuando el mes visible no tiene eventos del filtro/scope */
+  .cal-hint {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 10px 14px; margin-bottom: 12px;
+    background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius-md);
+  }
+  .cal-hint__txt { font-size: 13px; color: var(--text-secondary); }
+  .cal-hint__jump {
+    font-family: inherit; font-size: 13px; font-weight: 600; color: var(--accent);
+    background: transparent; border: none; cursor: pointer; padding: 2px 4px; border-radius: 5px;
+  }
+  .cal-hint__jump:hover { text-decoration: underline; }
+  .cal-hint__jump:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215,64,9,.30); }
+
+  .cal-grid { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .cal-dow { display: grid; grid-template-columns: repeat(7, 1fr); background: var(--bg-soft); border-bottom: 1px solid var(--border); }
+  .cal-dow span { padding: 9px 10px; font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--text-secondary); }
+  .cal-week { position: relative; display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid var(--border); }
+  .cal-week:last-child { border-bottom: none; }
+  .cal-cell { border-right: 1px solid var(--border); padding: 6px 8px; min-width: 0; }
+  .cal-cell:last-child { border-right: none; }
+  .cal-cell--out { background: #fcfcfd; }
+  .cal-daynum {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 24px; height: 24px; padding: 0 6px; font-size: 12.5px; font-weight: 600;
+    color: var(--text-secondary); border-radius: var(--radius-full);
+  }
+  .cal-cell--out .cal-daynum { color: var(--text-muted); }
+  .cal-cell--today .cal-daynum { background: var(--accent); color: #fff; font-weight: 700; }
+
+  /* Capa de barras (absoluta sobre la semana) */
+  .cal-bars { position: absolute; inset: 0; pointer-events: none; }
+  .cal-ev {
+    position: absolute; height: 22px; display: flex; align-items: center; gap: 5px;
+    padding: 0 8px; border-radius: 6px; font-size: 11.5px; font-weight: 600;
+    color: #fff; text-decoration: none; white-space: nowrap; overflow: hidden;
+    cursor: pointer; pointer-events: auto; box-shadow: 0 1px 2px rgba(40,40,52,.16);
+    transition: filter var(--duration-fast), box-shadow var(--duration-fast);
+  }
+  .cal-ev:hover { filter: brightness(1.07); box-shadow: 0 3px 8px rgba(40,40,52,.22); }
+  .cal-ev:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215,64,9,.30); }
+  .cal-ev__emoji { font-size: 12px; flex-shrink: 0; }
+  .cal-ev__name { overflow: hidden; text-overflow: ellipsis; }
+  .cal-ev--activo     { background: #1f8923; }
+  .cal-ev--borrador   { background: #f59e0b; }
+  .cal-ev--finalizado { background: #64748b; }
+  .cal-ev--organismo  { background: #7c3aed; }   /* eventos publicados por el organismo (liga) */
+  span.cal-ev { cursor: default; }                /* evento de organismo sin link → no navegable */
+  .cal-ev--cont-left  { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+  .cal-ev--cont-right { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+
+  /* Número de día clicable (cuando tiene eventos) */
+  .cal-daynum--has { border: none; background: transparent; cursor: pointer; font-family: inherit; transition: background var(--duration-fast), color var(--duration-fast); }
+  .cal-daynum--has:hover { background: var(--bg-soft); color: var(--text-primary); }
+  .cal-cell--today .cal-daynum--has:hover { background: var(--accent); color: #fff; }
+
+  /* "+N más" — indicador de overflow por día */
+  .cal-more {
+    position: absolute; height: 18px; display: flex; align-items: center;
+    font-family: inherit; font-size: 11px; font-weight: 600; color: var(--text-secondary);
+    background: transparent; border: none; cursor: pointer; pointer-events: auto;
+    padding: 0 6px; border-radius: 5px; white-space: nowrap; overflow: hidden;
+    transition: background var(--duration-fast), color var(--duration-fast);
+  }
+  .cal-more:hover { background: var(--bg-soft); color: var(--text-primary); }
+  .cal-more:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215,64,9,.30); }
+
+  /* Popover de día — expande y lista TODOS los eventos del día */
+  .cal-pop-backdrop { position: fixed; inset: 0; z-index: 1200; }
+  .cal-pop {
+    position: fixed; z-index: 1201; width: 290px; max-width: 92vw;
+    background: var(--surface); border: 1px solid var(--border-dark);
+    border-radius: var(--radius-lg); box-shadow: var(--shadow-md); overflow: hidden;
+    animation: calPopIn .14s var(--easing-smoothout, ease) both;
+  }
+  @keyframes calPopIn { from { opacity: 0; transform: translateY(-4px) scale(.985); } to { opacity: 1; transform: none; } }
+  .cal-pop__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 14px 14px 10px; }
+  .cal-pop__dow { font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--text-secondary); }
+  .cal-pop__day { font-size: 20px; font-weight: 800; color: var(--text-primary); line-height: 1.1; text-transform: capitalize; }
+  .cal-pop__close { width: 30px; height: 30px; border-radius: var(--radius-md); border: none; background: transparent; cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background var(--duration-fast), color var(--duration-fast); }
+  .cal-pop__close:hover { background: var(--bg-soft); color: var(--text-primary); }
+  .cal-pop__close svg { width: 17px; height: 17px; }
+  .cal-pop__list { max-height: 320px; overflow-y: auto; padding: 2px 8px 10px; display: flex; flex-direction: column; gap: 2px; }
+  .cal-pop__item { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: var(--radius-md); text-decoration: none; transition: background var(--duration-fast); }
+  .cal-pop__item:hover { background: var(--bg-soft); }
+  .cal-pop__item:focus-visible { outline: none; box-shadow: inset 0 0 0 2px rgba(215,64,9,.3); }
+  .cal-pop__dot { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
+  .cal-pop__txt { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .cal-pop__name { font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-pop__sub { font-size: 11.5px; color: var(--text-secondary); }
+  .cal-pop__empty { font-size: 12.5px; color: var(--text-muted); padding: 6px 8px 12px; margin: 0; }
+
+  @media (max-width: 720px) {
+    .cal-dow span { padding: 7px 6px; font-size: 10px; }
+    .cal-cell { padding: 5px 5px; }
+    .cal-daynum { min-width: 20px; height: 20px; font-size: 11.5px; }
+    .cal-ev { font-size: 10.5px; padding: 0 5px; }
+    .cal-title { font-size: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cal-ev { transition: none; }
+  }
+
+  /* ── Cargues = conteos numéricos (v0.7.0, feedback Juanma: no % sino valores) ── */
+  /* Card: label + número (sin barra) */
+  .prog-item--count { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .prog-item--count .prog-item__num { font-size: 15px; font-weight: 800; color: var(--text-primary); font-feature-settings: 'tnum'; }
+  .prog-item--count .prog-item__num.is-empty { color: var(--text-muted); font-weight: 600; }
+  /* Tabla: 3 conteos inline */
+  .ev-row__counts { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+  .ev-cnt { font-size: 12px; color: var(--text-secondary); white-space: nowrap; line-height: 1.35; }
+  .ev-cnt b { font-weight: 800; color: var(--text-primary); font-feature-settings: 'tnum'; }
+  /* Tabla: acción analítica por fila + acción principal */
+  /* La columna Acción del catálogo compartido (17%) queda angosta para el cluster
+     ícono + "Ver detalle →" y el CTA se desbordaba desalineándose del header.
+     Override SOLO en eventos (no toca la tabla de usuarios): ancho suficiente. */
+  .col-accion { width: 21%; }
+  .col-evento { width: 23%; }
+  .ev-row__actions { display: inline-flex; align-items: center; gap: 2px; justify-content: flex-end; }
+  .ev-row__icon-act { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: var(--radius-md); color: var(--text-secondary); transition: background var(--duration-fast), color var(--duration-fast); }
+  .ev-row__icon-act svg { width: 16px; height: 16px; }
+  .ev-row__icon-act:hover { background: var(--accent-bg); color: var(--accent); }
+  /* Indicio de alcance (Nacional/Internacional) en Lugar (tabla) y cabecera (card) */
+  .ev-place { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
+  .ev-place__txt { font-size: 13px; color: var(--text-primary); }
+  .ev-alcance { text-transform: none; letter-spacing: 0; }
+  .event-card__badges { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div id="sidebarRoot"></div>
+  <div class="main">
+    <header class="top-header" id="topHeader"></header>
+    <div class="page">
+      <div class="page-inner" id="eventosPage"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import {
+    mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher,
+    getRoleFromQuery, ROLES
+  } from './shared/sidebar.js';
+  import { allEvents, STATUS_LABEL, pct, gestorIdForRole, organismoEventsForCalendar } from './shared/events-data.js';
+
+  /* ─── Iconos de página (paridad dashboard) ─── */
+  const I = {
+    cal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+    pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+    org: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg>',
+    arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>',
+    chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+    search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+    clear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    inbox: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',
+    gridV: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+    listV: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
+    gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'
+  };
+
+  const roleCode = getRoleFromQuery();
+  const role = ROLES[roleCode];
+  /* CTA "Crear evento" solo para Administrador. */
+  const canCreate = roleCode === 'ADMIN';
+  /* Reportería (analítica) = consumo de lectura → ADMIN y Usuario (acción por fila). */
+  const canReporteria = roleCode === 'ADMIN' || roleCode === 'USER';
+  const num = (n) => (n || 0).toLocaleString('es-CO');
+  /* Para el GESTOR: su gestorId propio y si está en la vista "Mis eventos". */
+  const isGestor = roleCode === 'GESTOR';
+  const myGestorId = gestorIdForRole(roleCode);
+  /* 'mine' = mis eventos (default para GESTOR) | 'all' = todos */
+  let gestorScope = 'mine';
+
+  /* Pool de eventos — se recarga en cada render para reflejar overrides/drafts. */
+  function getPool() { return allEvents(); }
+
+  /* Conteo numérico (no % — Juanma 25-jun: el progreso no es real porque no
+     conocemos el total esperado del archivo; sí conocemos lo CARGADO). */
+  function progItem(lbl, fill, o) {
+    const empty = o.done === 0;
+    return `
+      <div class="prog-item prog-item--count">
+        <span class="prog-item__lbl">${lbl}</span>
+        <span class="prog-item__num ${empty ? 'is-empty' : ''}">${empty ? '—' : num(o.done)}</span>
+      </div>`;
+  }
+
+  /* Determina la acción del evento para cada rol/scope.
+     GESTOR + "Mis eventos" → ir a cargues.
+     GESTOR + "Todos los eventos" → solo lectura (Ver detalle).
+     ADMIN → Gestionar.
+     USER → Ver detalle. */
+  function actionForEv(ev) {
+    if (isGestor && gestorScope === 'mine') {
+      return { label: 'Ir a cargues', href: `cargue.html?id=${encodeURIComponent(ev.id)}&role=${roleCode}` };
+    }
+    if (canCreate) {
+      return { label: 'Gestionar', href: `evento-detalle.html?id=${encodeURIComponent(ev.id)}&role=${roleCode}` };
+    }
+    return { label: 'Ver detalle', href: `evento-detalle.html?id=${encodeURIComponent(ev.id)}&role=${roleCode}` };
+  }
+
+  function eventCard(ev, idx) {
+    const act = actionForEv(ev);
+    return `
+      <article class="event-card" data-id="${ev.id}" tabindex="0" style="animation-delay:${.04 + idx * .05}s" aria-label="${act.label}: ${ev.name}" data-href="${act.href}">
+        <div class="event-card__top">
+          <div style="display:flex;gap:13px;align-items:flex-start;min-width:0">
+            <span class="event-card__icon" aria-hidden="true">${ev.emoji}</span>
+            <div style="min-width:0">
+              <div class="event-card__name">${ev.name}</div>
+              <div class="event-card__sport">${ev.sport}</div>
+            </div>
+          </div>
+          <div class="event-card__badges">${alcanceBadge(ev)}<span class="badge s-${ev.status}">${STATUS_LABEL[ev.status]}</span></div>
+        </div>
+        <div class="event-card__meta">
+          <div class="meta-row">${I.cal}<span><strong>${ev.start}</strong> — ${ev.end}</span></div>
+          <div class="meta-row">${I.pin}<span>${ev.place}</span></div>
+        </div>
+        <div class="progress">
+          ${progItem('Inscripciones', 'f-insc', ev.insc)}
+          ${progItem('Resultados', 'f-res', ev.res)}
+          ${progItem('Medallería', 'f-med', ev.med)}
+        </div>
+        <div class="event-card__foot">
+          <span class="event-card__org" title="${ev.org}">${I.org}<span class="event-card__org-name">${ev.org}</span></span>
+          <span class="event-card__link">${act.label} ${I.arrow}</span>
+        </div>
+      </article>`;
+  }
+
+  /* Indicio de ALCANCE del torneo (feedback Doug): Nacional (neutro + banderín) vs
+     Internacional (informativo azul + globo). Badge canónico .naowee-badge — sin clase paralela. */
+  const IC_GLOBE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18z"/></svg>';
+  const IC_FLAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4"/><path d="M4 4h13l-2.5 4L17 12H4"/></svg>';
+  function alcanceBadge(ev) {
+    return ev.alcance === 'internacional'
+      ? `<span class="naowee-badge naowee-badge--informative naowee-badge--quiet ev-alcance" title="Torneo internacional">${IC_GLOBE} Internacional</span>`
+      : `<span class="naowee-badge naowee-badge--neutral naowee-badge--quiet ev-alcance" title="Torneo nacional">${IC_FLAG} Nacional</span>`;
+  }
+
+  function eventRow(ev) {
+    const act = actionForEv(ev);
+    return `
+      <tr data-id="${ev.id}" data-href="${act.href}" role="button" tabindex="0" aria-label="${act.label}: ${ev.name}">
+        <td>
+          <div class="ev-row__name">
+            <span class="ev-row__emoji" aria-hidden="true">${ev.emoji}</span>
+            <div style="min-width:0">
+              <div class="ev-row__nm">${ev.name}</div>
+              <div class="ev-row__sport">${ev.sport}</div>
+            </div>
+          </div>
+        </td>
+        <td class="ev-row__dates">
+          <span class="ev-date ev-date--open">${ev.start}</span>
+          <span class="ev-date ev-date--close">${ev.end}</span>
+        </td>
+        <td class="ev-row__place"><div class="ev-place">${alcanceBadge(ev)}${ev.alcance === 'internacional' ? '' : `<span class="ev-place__txt">${ev.place}</span>`}</div></td>
+        <td><span class="badge s-${ev.status}">${STATUS_LABEL[ev.status]}</span></td>
+        <td>
+          <div class="ev-row__counts">
+            <span class="ev-cnt" title="Deportistas inscritos"><b>${num(ev.insc.done)}</b> insc.</span>
+            <span class="ev-cnt" title="Resultados cargados"><b>${num(ev.res.done)}</b> res.</span>
+            <span class="ev-cnt" title="Medallas otorgadas"><b>${num(ev.med.done)}</b> med.</span>
+          </div>
+        </td>
+        <td style="text-align:right">
+          <div class="ev-row__actions">
+            ${canReporteria ? `<a class="ev-row__icon-act" href="reporteria.html?id=${encodeURIComponent(ev.id)}&role=${roleCode}" title="Ver analítica" aria-label="Ver analítica de ${ev.name}">${I.chart}</a>` : ''}
+            <button type="button" class="ev-row__action" data-action data-id="${ev.id}" title="${act.label}"><span class="ev-row__action-lbl">${act.label}</span> ${I.arrow}</button>
+          </div>
+        </td>
+      </tr>`;
+  }
+
+  /* ─── Estado (vista + filtros) ─── */
+  const VIEW_KEY = 'naowee-eventos-events-view';
+  /* Calendario SOLO se activa con ?view=calendar (opción "Calendario" del sidebar
+     o al volver del detalle abierto desde el calendario). "Eventos" (sin ?view) usa
+     la preferencia de lista guardada (tarjetas/tabla) — nunca queda fijo en calendario,
+     así siempre puedes volver a la lista. */
+  const _urlView = new URLSearchParams(location.search).get('view');
+  const _storedView = localStorage.getItem(VIEW_KEY);
+  let currentView = _urlView === 'calendar' ? 'calendar'
+                  : ['cards', 'table'].includes(_urlView) ? _urlView
+                  : ['cards', 'table'].includes(_storedView) ? _storedView
+                  : 'cards';
+  let activeFilter = 'todos';
+  let query = '';
+
+  function getSource() {
+    const pool = getPool();
+    if (isGestor && gestorScope === 'mine') {
+      return pool.filter((ev) => ev.assignedGestorId === myGestorId);
+    }
+    return pool;
+  }
+
+  function filtered() {
+    return getSource().filter((ev) => {
+      const matchStatus = activeFilter === 'todos' || ev.status === activeFilter;
+      const q = query.trim().toLowerCase();
+      const matchQuery = !q || `${ev.name} ${ev.sport} ${ev.place} ${ev.org}`.toLowerCase().includes(q);
+      return matchStatus && matchQuery;
+    });
+  }
+
+  /* Subtítulo del page-head refleja la vista activa. */
+  function headSubtitle() {
+    if (isGestor) {
+      return gestorScope === 'mine'
+        ? 'Mis eventos asignados · acción directa a cargues'
+        : 'Todos los eventos del Ministerio · solo lectura';
+    }
+    return canCreate
+      ? 'Crea, asocia deportes y asigna un gestor.'
+      : 'Consulta el estado y el detalle de cada evento.';
+  }
+
+  /* Tabs GESTOR: "Mis eventos" | "Todos los eventos" (solo GESTOR) — canónicos
+     (.naowee-tabs), van DENTRO del card con divider edge-to-edge. */
+  function gestorTabsHTML() {
+    if (!isGestor) return '';
+    const pool = getPool();
+    const mineCount = pool.filter((ev) => ev.assignedGestorId === myGestorId).length;
+    const allCount = pool.length;
+    return `
+      <div class="naowee-tabs ev-scope-tabs" id="gestorScopeTabs" role="tablist" aria-label="Alcance de eventos">
+        <button class="naowee-tab${gestorScope === 'mine' ? ' naowee-tab--selected' : ''}" data-scope="mine" type="button" role="tab" aria-selected="${gestorScope === 'mine'}">Mis eventos <span class="naowee-tab__count">${mineCount}</span></button>
+        <button class="naowee-tab${gestorScope === 'all' ? ' naowee-tab--selected' : ''}" data-scope="all" type="button" role="tab" aria-selected="${gestorScope === 'all'}">Todos los eventos <span class="naowee-tab__count">${allCount}</span></button>
+      </div>`;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     VISTA CALENDARIO (mes) — eventos como barras multi-día; clic → detalle.
+     ═══════════════════════════════════════════════════════════════ */
+  const MESES_ABBR = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const MESES_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const DOW = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  /* "Hoy" del demo (el módulo está ambientado en jun 2026). */
+  const DEMO_TODAY = new Date(2026, 5, 5);
+  let calCursor = new Date(DEMO_TODAY.getFullYear(), DEMO_TODAY.getMonth(), 1);
+  const CHEV_L = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
+  const CHEV_R = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+  const MS_DAY = 86400000;
+  const MAX_LANES = 3;          // carriles visibles por celda; el resto → "+N más"
+  let _calEvs = [];             // eventos parseados del mes (para el popover de día)
+  const CLOSE_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+
+  function parseEvDate(s) {
+    const p = String(s).trim().split(/\s+/);
+    return new Date(parseInt(p[2], 10), MESES_ABBR.indexOf((p[1] || '').toLowerCase()), parseInt(p[0], 10));
+  }
+  function sameDay(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+
+  function renderCalendar(slot) {
+    const y = calCursor.getFullYear(), m = calCursor.getMonth();
+    /* Eventos del organismo (liga) → se reflejan en el calendario del módulo.
+       Aplican búsqueda; el filtro de estado los muestra en "Todos". */
+    const _q = query.trim().toLowerCase();
+    const orgEvs = (activeFilter === 'todos')
+      ? organismoEventsForCalendar().filter((ev) => !_q || `${ev.name} ${ev.org}`.toLowerCase().includes(_q))
+      : [];
+    const evs = [...filtered(), ...orgEvs]
+      .map((ev) => ({ ev, s: parseEvDate(ev.start), e: parseEvDate(ev.end) }))
+      .filter((o) => !isNaN(o.s) && !isNaN(o.e) && o.e >= o.s);
+    _calEvs = evs;
+
+    const first = new Date(y, m, 1);
+    const gridStart = new Date(y, m, 1 - first.getDay());
+    const last = new Date(y, m + 1, 0);
+    const gridEnd = new Date(y, m, last.getDate() + (6 - last.getDay()));
+
+    const weeks = [];
+    let cur = new Date(gridStart);
+    while (cur <= gridEnd) {
+      const days = [];
+      for (let i = 0; i < 7; i++) { days.push(new Date(cur)); cur.setDate(cur.getDate() + 1); }
+      weeks.push(days);
+    }
+
+    /* Contexto cuando el mes visible no tiene eventos del filtro/scope:
+       si hay coincidencias en otros meses → botón para saltar al más cercano;
+       si no hay ninguna en el scope → mensaje claro (p.ej. el gestor sin finalizados). */
+    const inView = evs.filter((o) => o.s <= gridEnd && o.e >= gridStart);
+    const FILTER_LBL = { todos: '', activo: 'activos', borrador: 'en preparación', finalizado: 'finalizados' };
+    const flbl = FILTER_LBL[activeFilter] || '';
+    let hintHTML = '';
+    if (inView.length === 0) {
+      if (evs.length === 0) {
+        const scopeSfx = (isGestor && gestorScope === 'mine') ? ' entre tus eventos asignados' : '';
+        hintHTML = `<div class="cal-hint"><span class="cal-hint__txt">No hay eventos${flbl ? ' ' + flbl : ''}${scopeSfx}.</span></div>`;
+      } else {
+        const nearest = evs.reduce((a, b) => Math.abs(b.s - calCursor) < Math.abs(a.s - calCursor) ? b : a);
+        const ny = nearest.s.getFullYear(), nmo = nearest.s.getMonth();
+        hintHTML = `<div class="cal-hint">
+          <span class="cal-hint__txt">No hay eventos${flbl ? ' ' + flbl : ''} en ${MESES_FULL[m]} ${y}.</span>
+          <button class="cal-hint__jump" type="button" data-jump-y="${ny}" data-jump-m="${nmo}">Ir a ${MESES_FULL[nmo]} ${ny} →</button>
+        </div>`;
+      }
+    }
+
+    let html = `
+      <div class="cal-bar">
+        <div class="cal-nav">
+          <button class="naowee-btn naowee-btn--quiet naowee-btn--sm cal-nav__btn" data-cal="prev" type="button" aria-label="Mes anterior">${CHEV_L}</button>
+          <button class="naowee-btn naowee-btn--quiet naowee-btn--sm cal-nav__btn" data-cal="next" type="button" aria-label="Mes siguiente">${CHEV_R}</button>
+          <button class="naowee-btn naowee-btn--quiet naowee-btn--sm" data-cal="today" type="button">Hoy</button>
+        </div>
+        <div class="cal-title">${MESES_FULL[m]} ${y}</div>
+      </div>
+      ${hintHTML}
+      <div class="cal-grid">
+        <div class="cal-dow">${DOW.map((d) => `<span>${d}</span>`).join('')}</div>`;
+
+    weeks.forEach((week) => {
+      const weekStart = week[0], weekEnd = week[6];
+      const items = evs
+        .filter((o) => o.s <= weekEnd && o.e >= weekStart)
+        .map((o) => ({
+          o,
+          sc: Math.max(0, Math.min(6, Math.round((o.s - weekStart) / MS_DAY))),
+          ec: Math.max(0, Math.min(6, Math.round((o.e - weekStart) / MS_DAY)))
+        }))
+        .sort((a, b) => a.sc - b.sc || (b.ec - b.sc) - (a.ec - a.sc));
+
+      /* Carriles (lanes) — evita que barras del mismo día se solapen */
+      const lanes = [];
+      items.forEach((it) => {
+        let lane = 0;
+        for (;;) {
+          const occ = lanes[lane] || (lanes[lane] = []);
+          if (occ.every((r) => it.sc > r.ec || it.ec < r.sc)) { it.lane = lane; occ.push(it); break; }
+          lane++;
+        }
+      });
+      const visibleLanes = Math.min(lanes.length, MAX_LANES);
+      /* Conteo de eventos ocultos (carril ≥ MAX_LANES) por columna → "+N más" */
+      const hidden = [0, 0, 0, 0, 0, 0, 0];
+      items.forEach((it) => { if (it.lane >= MAX_LANES) for (let c = it.sc; c <= it.ec; c++) hidden[c]++; });
+      const hasOverflow = hidden.some((n) => n > 0);
+      const weekH = Math.max(104, 34 + visibleLanes * 24 + (hasOverflow ? 20 : 8));
+
+      let cells = '';
+      week.forEach((d, c) => {
+        const out = d.getMonth() !== m;
+        const today = sameDay(d, DEMO_TODAY);
+        const dayCount = items.filter((it) => it.sc <= c && it.ec >= c).length;
+        const numTag = dayCount > 0
+          ? `<button class="cal-daynum cal-daynum--has" data-day="${d.getTime()}" type="button" aria-label="Ver ${dayCount} evento(s) del ${d.getDate()}">${d.getDate()}</button>`
+          : `<span class="cal-daynum">${d.getDate()}</span>`;
+        cells += `<div class="cal-cell ${out ? 'cal-cell--out' : ''} ${today ? 'cal-cell--today' : ''}">${numTag}</div>`;
+      });
+
+      let bars = '';
+      items.forEach((it) => {
+        if (it.lane >= MAX_LANES) return;                 // sobra el cupo → se cuenta en "+N más"
+        const { o, sc, ec, lane } = it;
+        const span = ec - sc + 1;
+        const contLeft = o.s < weekStart, contRight = o.e > weekEnd;
+        const isOrg = o.ev.kind === 'organismo';
+        const href = isOrg ? o.ev.link : `${actionForEv(o.ev).href}&from=calendar`;
+        const tag = href ? 'a' : 'span';
+        const linkAttrs = href ? `href="${href}"${isOrg ? ' target="_blank" rel="noopener"' : ''}` : '';
+        bars += `<${tag} class="cal-ev cal-ev--${o.ev.status} ${contLeft ? 'cal-ev--cont-left' : ''} ${contRight ? 'cal-ev--cont-right' : ''}"
+                    ${linkAttrs}
+                    style="left:calc(${sc} / 7 * 100% + 3px);width:calc(${span} / 7 * 100% - 6px);top:${34 + lane * 24}px"
+                    title="${o.ev.name} · ${o.ev.start} — ${o.ev.end}${isOrg ? ' · ' + o.ev.org : ''}">
+                   ${contLeft ? '' : `<span class="cal-ev__emoji">${o.ev.emoji}</span>`}<span class="cal-ev__name">${o.ev.name}</span></${tag}>`;
+      });
+
+      /* "+N más" por día con eventos ocultos → abre el popover del día */
+      let more = '';
+      hidden.forEach((n, c) => {
+        if (n <= 0) return;
+        more += `<button class="cal-more" data-day="${week[c].getTime()}" type="button"
+                    style="left:calc(${c} / 7 * 100% + 3px);width:calc(1 / 7 * 100% - 6px);top:${34 + visibleLanes * 24}px">+${n} más</button>`;
+      });
+
+      html += `<div class="cal-week" style="min-height:${weekH}px">${cells}<div class="cal-bars">${bars}${more}</div></div>`;
+    });
+
+    html += `</div>`;
+    slot.innerHTML = html;
+
+    slot.querySelectorAll('[data-cal]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const a = btn.dataset.cal;
+        if (a === 'prev') calCursor = new Date(y, m - 1, 1);
+        else if (a === 'next') calCursor = new Date(y, m + 1, 1);
+        else calCursor = new Date(DEMO_TODAY.getFullYear(), DEMO_TODAY.getMonth(), 1);
+        renderList();
+      });
+    });
+
+    /* Día con eventos (número) o "+N más" → popover de día con TODOS sus eventos */
+    slot.querySelectorAll('[data-day]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openDayPopover(new Date(parseInt(btn.dataset.day, 10)), btn);
+      });
+    });
+
+    /* "Ir a [mes]" del hint → salta al mes más cercano con eventos del filtro */
+    slot.querySelectorAll('[data-jump-y]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        calCursor = new Date(parseInt(btn.dataset.jumpY, 10), parseInt(btn.dataset.jumpM, 10), 1);
+        renderList();
+      });
+    });
+  }
+
+  /* ─── Popover de día: expande y lista TODOS los eventos de ese día ─── */
+  let _dayPop = null, _dayPopBd = null;
+  function _dayPopEsc(e) { if (e.key === 'Escape') closeDayPopover(); }
+  function closeDayPopover() {
+    if (_dayPop) { _dayPop.remove(); _dayPop = null; }
+    if (_dayPopBd) { _dayPopBd.remove(); _dayPopBd = null; }
+    document.removeEventListener('keydown', _dayPopEsc, true);
+  }
+  function openDayPopover(date, anchorEl) {
+    closeDayPopover();
+    const STA = { activo: 'Activo', borrador: 'Borrador', finalizado: 'Finalizado' };
+    const DOW_FULL = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const dayEvs = _calEvs
+      .filter((o) => o.s <= date && o.e >= date)
+      .sort((a, b) => a.s - b.s || (a.e - a.s) - (b.e - b.s));
+    const list = dayEvs.length
+      ? dayEvs.map((o) => {
+        const isOrg = o.ev.kind === 'organismo';
+        const href = isOrg ? o.ev.link : `${actionForEv(o.ev).href}&from=calendar`;
+        const tag = href ? 'a' : 'div';
+        const linkAttrs = href ? `href="${href}"${isOrg ? ' target="_blank" rel="noopener"' : ''}` : '';
+        return `
+        <${tag} class="cal-pop__item" ${linkAttrs}>
+          <span class="cal-pop__dot cal-ev--${o.ev.status}"></span>
+          <span class="cal-pop__txt">
+            <span class="cal-pop__name">${o.ev.emoji} ${o.ev.name}</span>
+            <span class="cal-pop__sub">${o.ev.start} — ${o.ev.end} · ${isOrg ? o.ev.org : STA[o.ev.status]}</span>
+          </span>
+        </${tag}>`; }).join('')
+      : `<p class="cal-pop__empty">Sin eventos este día.</p>`;
+
+    _dayPopBd = document.createElement('div');
+    _dayPopBd.className = 'cal-pop-backdrop';
+    _dayPopBd.addEventListener('click', closeDayPopover);
+
+    _dayPop = document.createElement('div');
+    _dayPop.className = 'cal-pop';
+    _dayPop.setAttribute('role', 'dialog');
+    _dayPop.setAttribute('aria-label', `Eventos del ${date.getDate()} de ${MESES_FULL[date.getMonth()]}`);
+    _dayPop.innerHTML = `
+      <div class="cal-pop__head">
+        <div>
+          <div class="cal-pop__dow">${DOW_FULL[date.getDay()]}</div>
+          <div class="cal-pop__day">${date.getDate()} ${MESES_FULL[date.getMonth()].toLowerCase()}</div>
+        </div>
+        <button class="cal-pop__close" type="button" aria-label="Cerrar">${CLOSE_X}</button>
+      </div>
+      <div class="cal-pop__list">${list}</div>`;
+
+    document.body.appendChild(_dayPopBd);
+    document.body.appendChild(_dayPop);
+    _dayPop.querySelector('.cal-pop__close').addEventListener('click', closeDayPopover);
+
+    /* Posición anclada a la celda, con clamp al viewport. */
+    const r = anchorEl.getBoundingClientRect();
+    const pw = _dayPop.offsetWidth, ph = _dayPop.offsetHeight;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const left = Math.min(Math.max(8, r.left), vw - pw - 8);
+    let top = r.bottom + 6;
+    if (top + ph > vh - 8) top = Math.max(8, r.top - ph - 6);
+    _dayPop.style.left = `${left}px`;
+    _dayPop.style.top = `${top}px`;
+    document.addEventListener('keydown', _dayPopEsc, true);
+  }
+
+  /* Refleja la vista activa en el sidebar (Eventos ⇄ Calendario) al alternar in-page. */
+  function setSidebarActive(id) {
+    document.querySelectorAll('#sidebarRoot .nav-row').forEach((r) => {
+      const on = r.dataset.id === id;
+      r.classList.toggle('active', on);
+      let bar = r.querySelector('.active-bar');
+      if (on && !bar) { bar = document.createElement('span'); bar.className = 'active-bar'; bar.setAttribute('aria-hidden', 'true'); r.prepend(bar); }
+      if (!on && bar) bar.remove();
+    });
+  }
+
+  function render() {
+    const pool = getPool();
+    document.getElementById('eventosPage').innerHTML = `
+      <div class="page-head">
+        <div class="page-head__title">
+          <h2>Eventos</h2>
+          <p id="evSubtitle">${headSubtitle()}</p>
+        </div>
+        <div class="page-head__actions">
+          ${canCreate ? `<a class="naowee-btn naowee-btn--loud" href="evento-crear.html?role=${roleCode}">${I.plus} Crear evento</a>` : ''}
+        </div>
+      </div>
+
+      <div class="naowee-table-card" id="evCard">
+        ${gestorTabsHTML()}
+        <div class="tc-toolbar">
+          <div class="naowee-searchbox naowee-searchbox--medium" id="evSearchbox">
+            <div class="naowee-searchbox__input-wrap">
+              <div class="naowee-searchbox__icon">${I.search}</div>
+              <input type="text" class="naowee-searchbox__input" id="evSearch" placeholder="Buscar evento, deporte, lugar u organismo…" aria-label="Buscar eventos">
+              <button type="button" class="naowee-searchbox__clear" id="evSearchClear" aria-label="Limpiar búsqueda">${I.clear}</button>
+            </div>
+          </div>
+          <div class="naowee-segment" role="tablist" aria-label="Filtrar por estado" data-segmented>
+            <span class="naowee-segment__pill naowee-segment__pill--no-anim" data-pill></span>
+            <button class="naowee-segment__item naowee-segment__item--active" data-filter="todos" role="tab" aria-selected="true">Todos</button>
+            <button class="naowee-segment__item" data-filter="activo" role="tab" aria-selected="false">Activos</button>
+            <button class="naowee-segment__item" data-filter="borrador" role="tab" aria-selected="false">En preparación</button>
+            <button class="naowee-segment__item" data-filter="finalizado" role="tab" aria-selected="false">Finalizados</button>
+          </div>
+          <div class="view-toggle" role="group" aria-label="Cambiar vista">
+            <button type="button" class="view-toggle__btn ${currentView === 'cards' ? 'is-active' : ''}" data-view="cards" aria-pressed="${currentView === 'cards'}" aria-label="Vista de tarjetas">${I.gridV}</button>
+            <button type="button" class="view-toggle__btn ${currentView === 'table' ? 'is-active' : ''}" data-view="table" aria-pressed="${currentView === 'table'}" aria-label="Vista de tabla">${I.listV}</button>
+            <button type="button" class="view-toggle__btn ${currentView === 'calendar' ? 'is-active' : ''}" data-view="calendar" aria-pressed="${currentView === 'calendar'}" aria-label="Vista de calendario">${I.cal}</button>
+          </div>
+          <span class="toolbar__count" id="evCount"></span>
+        </div>
+
+        <div id="evSlot"></div>
+
+        <div class="empty" id="evEmpty">
+          <div class="empty__icon">${I.inbox}</div>
+          <h3>No hay eventos que coincidan</h3>
+          <p>Ajusta la búsqueda o el filtro de estado para ver más resultados.</p>
+        </div>
+      </div>
+    `;
+    bindGestorToggle();
+    bindToolbar();
+    renderList();
+  }
+
+  function renderList() {
+    const slot = document.getElementById('evSlot');
+    const empty = document.getElementById('evEmpty');
+    const count = document.getElementById('evCount');
+    const source = getSource();
+    const rows = filtered();
+    count.textContent = `${rows.length} de ${source.length} eventos`;
+    if (currentView === 'calendar') { empty.classList.remove('is-shown'); renderCalendar(slot); return; }
+    if (rows.length === 0) { slot.innerHTML = ''; empty.classList.add('is-shown'); return; }
+    empty.classList.remove('is-shown');
+
+    if (currentView === 'cards') {
+      slot.innerHTML = `<div class="events-grid">${rows.map((ev, i) => eventCard(ev, i)).join('')}</div>`;
+      slot.querySelectorAll('.event-card').forEach((card) => {
+        const open = () => window.location.href = card.dataset.href;
+        card.addEventListener('click', open);
+        card.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(); });
+      });
+    } else {
+      slot.innerHTML = `
+        <div class="naowee-table-card__table-wrap">
+          <table class="naowee-table--in-card">
+            <colgroup>
+              <col class="col-evento"><col class="col-fechas"><col class="col-lugar">
+              <col class="col-estado"><col class="col-prog"><col class="col-accion">
+            </colgroup>
+            <thead><tr>
+              <th>Evento</th><th>Fechas</th><th>Lugar</th><th>Estado</th><th>Cargues</th><th style="text-align:right">Acción</th>
+            </tr></thead>
+            <tbody>${rows.map((ev) => eventRow(ev)).join('')}</tbody>
+          </table>
+        </div>`;
+      slot.querySelectorAll('[data-action]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const row = btn.closest('tr');
+          if (row && row.dataset.href) window.location.href = row.dataset.href;
+        });
+      });
+      slot.querySelectorAll('tr[data-href]').forEach((row) => {
+        row.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); window.location.href = row.dataset.href; }
+        });
+      });
+    }
+    requestAnimationFrame(() => slot.querySelectorAll('.prog-fill').forEach((f) => f.classList.add('is-filled')));
+  }
+
+  function positionSegmentPill(segEl, animate) {
+    if (!segEl) return;
+    const pill = segEl.querySelector('[data-pill]');
+    const active = segEl.querySelector('.naowee-segment__item--active');
+    if (!pill || !active) return;
+    if (!animate) pill.classList.add('naowee-segment__pill--no-anim');
+    pill.style.width = active.offsetWidth + 'px';
+    pill.style.setProperty('--seg-x', active.offsetLeft + 'px');
+    if (!animate) requestAnimationFrame(() => requestAnimationFrame(() => pill.classList.remove('naowee-segment__pill--no-anim')));
+  }
+
+  /* Bind de las tabs GESTOR (Mis eventos / Todos los eventos) — underline ::after. */
+  function bindGestorToggle() {
+    const tabs = document.getElementById('gestorScopeTabs');
+    if (!tabs) return;
+    tabs.querySelectorAll('.naowee-tab').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (btn.dataset.scope === gestorScope) return;
+        tabs.querySelectorAll('.naowee-tab').forEach((b) => {
+          const on = b === btn;
+          b.classList.toggle('naowee-tab--selected', on); b.setAttribute('aria-selected', String(on));
+        });
+        gestorScope = btn.dataset.scope;
+        /* Actualiza subtítulo */
+        const sub = document.getElementById('evSubtitle');
+        if (sub) sub.textContent = headSubtitle();
+        /* Resetea filtro de estado y re-renderiza */
+        activeFilter = 'todos';
+        const statusSeg = document.querySelector('.naowee-segment[data-segmented]');
+        if (statusSeg) {
+          statusSeg.querySelectorAll('.naowee-segment__item').forEach((b) => {
+            const on = b.dataset.filter === 'todos';
+            b.classList.toggle('naowee-segment__item--active', on); b.setAttribute('aria-selected', String(on));
+          });
+          positionSegmentPill(statusSeg, false);
+        }
+        renderList();
+      });
+    });
+  }
+
+  function bindToolbar() {
+    const sbox = document.getElementById('evSearchbox');
+    const search = document.getElementById('evSearch');
+    const sclear = document.getElementById('evSearchClear');
+    const syncHasValue = () => sbox.classList.toggle('naowee-searchbox--has-value', search.value.length > 0);
+    search.addEventListener('input', (e) => { query = e.target.value; syncHasValue(); renderList(); });
+    sclear.addEventListener('click', () => { search.value = ''; query = ''; syncHasValue(); renderList(); search.focus(); });
+    syncHasValue();
+
+    const statusSeg = document.querySelector('.naowee-segment[data-segmented]');
+    if (statusSeg) {
+      statusSeg.querySelectorAll('.naowee-segment__item').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          statusSeg.querySelectorAll('.naowee-segment__item').forEach((b) => { b.classList.remove('naowee-segment__item--active'); b.setAttribute('aria-selected', 'false'); });
+          btn.classList.add('naowee-segment__item--active'); btn.setAttribute('aria-selected', 'true');
+          activeFilter = btn.dataset.filter;
+          positionSegmentPill(statusSeg, true);
+          renderList();
+        });
+      });
+      positionSegmentPill(statusSeg, false);
+      window.addEventListener('resize', () => positionSegmentPill(statusSeg, false));
+    }
+
+    document.querySelectorAll('.view-toggle__btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (btn.dataset.view === currentView) return;
+        currentView = btn.dataset.view;
+        /* Tarjetas/tabla → preferencia de lista (localStorage), sin ?view.
+           Calendario → solo en la URL (?view=calendar), reload-safe; al volver a
+           "Eventos" se respeta la última lista, no queda fijo en calendario. */
+        const url = new URL(location.href);
+        if (currentView === 'calendar') {
+          url.searchParams.set('view', 'calendar');
+        } else {
+          url.searchParams.delete('view');
+          localStorage.setItem(VIEW_KEY, currentView);
+        }
+        history.replaceState(null, '', url);
+        setSidebarActive(currentView === 'calendar' ? 'calendario-eventos' : 'eventos');
+        document.querySelectorAll('.view-toggle__btn').forEach((b) => {
+          const on = b.dataset.view === currentView;
+          b.classList.toggle('is-active', on); b.setAttribute('aria-pressed', String(on));
+        });
+        renderList();
+      });
+    });
+  }
+
+  /* ─── Bootstrap ─── */
+  mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: currentView === 'calendar' ? 'calendario-eventos' : 'eventos' });
+  mountHeader({ headerEl: document.getElementById('topHeader'), role, title: 'Eventos', subtitle: 'Listado · Ministerio del Deporte' });
+  mountBackdrop();
+  mountDemoSwitcher({ roleCode });
+  render();
+
+  /* Si llegamos con ?created=1 (volviendo de crear), confirma con toast. */
+  if (new URLSearchParams(location.search).get('created') === '1') {
+    setTimeout(() => window.naoweeToast('Evento creado en estado Borrador.', 'success'), 200);
+  }
+
+  document.title = `Naowee Eventos — Eventos (${role.label})`;
+</script>
+
+</body>
+</html>

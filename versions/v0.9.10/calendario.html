@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Naowee Eventos — Calendario del organismo</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="shared/tokens.css?v=0.9.1">
+<link rel="stylesheet" href="shared/shell.css?v=0.4.5">
+<link rel="stylesheet" href="shared/list-components.css?v=0.9.1">
+<link rel="stylesheet" href="shared/forms.css?v=0.9.3">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.9.1">
+<script src="shared/naowee-footer.js?v=0.9.10" defer></script>
+
+<style>
+  /* ═══════════════════════════════════════════════════════════════
+     CALENDARIO DEL ORGANISMO — Solo ORGANISMO puede crear.
+     Guard: roles distintos a ORGANISMO son redirigidos a su home.
+     v1.0.0
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* ── Page head ── */
+  .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
+  .page-head__title h2 { font-size: 24px; font-weight: 800; letter-spacing: -.4px; color: var(--text-primary); margin: 0 0 5px; }
+  .page-head__title p { font-size: 13px; color: var(--text-secondary); margin: 0; max-width: 600px; }
+  .page-head__actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+  /* ── Tabla de calendario: card-table CANÓNICA (.naowee-table-card +
+        .naowee-table--in-card) desde list-components.css. Aquí solo el contenido
+        de las celdas; el info/caution usan .naowee-message canónico. ── */
+  .cal-table-card__wrap { overflow-x: clip; overflow-y: visible; }
+  .cal-link-cell a {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12.5px; font-weight: 600; color: var(--accent);
+    max-width: 100%; overflow: hidden; white-space: nowrap;
+  }
+  /* Ícono de link: tamaño fijo y sin encoger (antes se reducía al truncar el texto). */
+  .cal-link-cell a svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .cal-link-cell a .cal-link-url { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .cal-link-cell a:hover .cal-link-url { text-decoration: underline; }
+  .cal-link--none { font-size: 12.5px; color: var(--text-muted); font-style: italic; }
+  .cal-fecha { color: var(--text-secondary); white-space: nowrap; }
+  .cal-fecha-fin { font-size: 12px; color: var(--text-muted); margin-top: 2px; font-weight: 500; }
+  .cal-opt { color: var(--text-muted); font-weight: 400; }
+  .cal-name { display: flex; align-items: center; gap: 11px; min-width: 0; }
+  .cal-emoji { font-size: 20px; line-height: 1; flex-shrink: 0; }
+  .cal-title { font-size: 14px; font-weight: 700; color: var(--text-primary); min-width: 0; }
+
+  .cal-empty {
+    padding: 40px 16px; text-align: center;
+    font-size: 13px; color: var(--text-muted);
+  }
+
+  /* ── MODAL CREAR EVENTO — CSS BASE COMPLETO ──
+     Desktop: centrado, radius-xl, max 600px, max-height 90vh.
+     Móvil (<640px): bottom-sheet (sube desde abajo, radius arriba).
+     Solo transform/opacity; honra prefers-reduced-motion.
+     ═══════════════════════════════════════════════════════════════ */
+  .cal-modal-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+    background: rgba(40, 40, 52, .50);
+    opacity: 0; pointer-events: none;
+    transition: opacity .22s ease;
+  }
+  .cal-modal-overlay.is-open { opacity: 1; pointer-events: auto; }
+
+  .cal-modal {
+    background: var(--surface); border-radius: var(--radius-xl);
+    width: 95vw; max-width: 580px; max-height: 90vh;
+    /* overflow visible → los popovers (datepicker/dropdown) escapan el modal
+       sin recortarse; el form es corto y no requiere scroll interno. */
+    display: flex; flex-direction: column; overflow: visible;
+    box-shadow: var(--shadow-card, 0 20px 60px rgba(0,0,0,.22));
+    transform: translateY(24px) scale(.97); opacity: 0;
+    transition: transform .28s cubic-bezier(.4,0,.2,1), opacity .22s ease;
+  }
+  .cal-modal-overlay.is-open .cal-modal {
+    /* transform:none (no translateY/scale) — un transform ≠ none crearía un
+       containing block y rompería el position:fixed del datepicker interno. */
+    transform: none; opacity: 1;
+  }
+
+  /* Sticky header */
+  .cal-modal__header {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+    padding: 22px 28px 16px; border-bottom: 1px solid var(--border);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    position: sticky; top: 0; background: var(--surface); z-index: 2; flex-shrink: 0;
+  }
+  .cal-modal__title { font-size: 18px; font-weight: 700; color: var(--text-primary); margin: 0; line-height: 1.3; }
+  .cal-modal__subtitle { font-size: 13px; color: var(--text-secondary); margin: 4px 0 0; }
+  .cal-modal__dismiss {
+    width: 34px; height: 34px; flex-shrink: 0; margin-top: -2px;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent; border: none; border-radius: var(--radius-md);
+    color: var(--text-muted); cursor: pointer;
+    transition: background var(--duration-fast), color var(--duration-fast);
+  }
+  .cal-modal__dismiss:hover { background: var(--bg-soft); color: var(--text-primary); }
+  .cal-modal__dismiss:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215,64,9,.18); }
+  .cal-modal__dismiss svg { width: 18px; height: 18px; }
+
+  /* Body — overflow visible para que el datepicker/dropdown no se recorten */
+  .cal-modal__body { padding: 24px 28px; overflow: visible; flex: 1; }
+  .cal-modal__body .form-group { margin-bottom: 18px; }
+  .cal-modal__body .form-group:last-child { margin-bottom: 0; }
+
+  /* Sticky footer */
+  .cal-modal__footer {
+    padding: 28px; border-top: 1px solid var(--border);
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+    position: sticky; bottom: 0; background: var(--surface); z-index: 2; flex-shrink: 0;
+  }
+
+  /* Row fecha + hora */
+  .fecha-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+
+  /* Mobile bottom-sheet */
+  @media (max-width: 640px) {
+    .cal-modal-overlay { align-items: flex-end; padding: 0; }
+    .cal-modal {
+      width: 100%; max-width: 100%; max-height: 92vh;
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+      transform: translateY(100%); opacity: 1;
+    }
+    .cal-modal-overlay.is-open .cal-modal { transform: translateY(0); }
+    .cal-modal__header { padding: 18px 20px 14px; }
+    .cal-modal__body { padding: 18px 20px; }
+    .cal-modal__footer { padding: 20px; }
+    .fecha-row { grid-template-columns: 1fr; }
+  }
+
+  /* Toast */
+  /* #evToast: estilos del snackbar canónico viven en naowee-footer.css (compartido). */
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .naowee-table-card, .cal-modal, .cal-modal-overlay { animation: none !important; transition: none !important; }
+  }
+
+  @media (max-width: 600px) {
+    .page-head { gap: 12px; }
+    .page-head__title h2 { font-size: 20px; }
+    .page-head__actions { width: 100%; }
+    .page-head__actions .naowee-btn { flex: 1; justify-content: center; }
+    .cal-table thead th:nth-child(3),
+    .cal-table tbody td:nth-child(3) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div id="sidebarRoot"></div>
+  <div class="main">
+    <header class="top-header" id="topHeader"></header>
+    <div class="page">
+      <div class="page-inner">
+
+        <div class="page-head">
+          <div class="page-head__title">
+            <h2>Calendario de eventos</h2>
+            <p>Eventos del organismo que se reflejan en el calendario de la landing pública. Solo visible para el organismo.</p>
+          </div>
+          <div class="page-head__actions">
+            <button type="button" class="naowee-btn naowee-btn--loud naowee-btn--lg" id="btnCrearEvento">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Crear evento
+            </button>
+          </div>
+        </div>
+
+        <div class="naowee-message naowee-message--informative" style="margin-bottom:20px">
+          <div class="naowee-message__header">
+            <span class="naowee-message__icon"><svg viewBox="0 0 16 16" fill="none"><path d="M7 7h2v4H7z" fill="#fff"/><circle cx="8" cy="5" r="1" fill="#fff"/></svg></span>
+            <span class="naowee-message__body">Los eventos aquí publicados se reflejan en el <strong>calendario de la landing pública</strong>. El render en la landing es responsabilidad del equipo de desarrollo de la Landing (fuera del alcance de esta demo).</span>
+          </div>
+        </div>
+
+        <!-- Tabla de eventos del organismo -->
+        <div class="naowee-table-card">
+          <div class="tc-head">
+            <h3 class="tc-head__title">Eventos publicados</h3>
+            <p class="tc-head__sub">Liga de Natación del Valle</p>
+          </div>
+          <div class="tc-toolbar">
+            <div class="naowee-searchbox" id="calSearchbox" style="width:260px">
+              <div class="naowee-searchbox__input-wrap">
+                <span class="naowee-searchbox__icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </span>
+                <input id="calSearch" type="text" class="naowee-searchbox__input" placeholder="Buscar evento…">
+                <button class="naowee-searchbox__clear" id="calSearchClear" type="button" aria-label="Limpiar" style="display:none">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+            </div>
+            <span class="toolbar__count" id="calCount">3 eventos</span>
+          </div>
+          <div class="naowee-table-card__table-wrap cal-table-card__wrap">
+            <table class="naowee-table--in-card">
+              <colgroup><col style="width:46%"><col style="width:24%"><col style="width:30%"></colgroup>
+              <thead>
+                <tr>
+                  <th>Título del evento</th>
+                  <th>Fechas</th>
+                  <th>Link</th>
+                </tr>
+              </thead>
+              <tbody id="calBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Crear Evento -->
+<div class="cal-modal-overlay" id="calModalOverlay" role="dialog" aria-modal="true" aria-labelledby="calModalTitle">
+  <div class="cal-modal" id="calModal">
+    <div class="cal-modal__header">
+      <div>
+        <h2 class="cal-modal__title" id="calModalTitle">Crear evento de calendario</h2>
+        <p class="cal-modal__subtitle">El evento aparecerá en el calendario de la landing pública.</p>
+      </div>
+      <button type="button" class="cal-modal__dismiss" id="calModalDismiss" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="cal-modal__body">
+      <form id="calForm" novalidate>
+
+        <!-- Nota super-admin (solo ADMIN): habilita registrar eventos ya realizados -->
+        <div class="naowee-message naowee-message--informative" id="superAdminNote" style="display:none;margin-bottom:18px">
+          <div class="naowee-message__header">
+            <span class="naowee-message__icon"><svg viewBox="0 0 16 16" fill="none"><path d="M7 7h2v4H7z" fill="#fff"/><circle cx="8" cy="5" r="1" fill="#fff"/></svg></span>
+            <span class="naowee-message__body">Modo <strong>super-admin</strong>: puedes registrar eventos con fecha pasada para migrar los ya realizados. Un organismo solo programa de hoy en adelante.</span>
+          </div>
+        </div>
+
+        <!-- Título -->
+        <div class="form-group">
+          <div class="naowee-textfield" id="fieldTitulo">
+            <label class="naowee-textfield__label naowee-textfield__label--required" for="evTitulo">Título del evento</label>
+            <div class="naowee-textfield__input-wrap">
+              <input id="evTitulo" class="naowee-textfield__input" type="text"
+                placeholder="Ej. Copa Departamental de Natación 2026" maxlength="120">
+            </div>
+            <span class="naowee-textfield__msg" role="alert">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              El título es obligatorio.
+            </span>
+          </div>
+        </div>
+
+        <!-- Fechas: inicio + cierre -->
+        <div class="form-group">
+          <div class="fecha-row">
+            <div id="fieldFecha">
+              <label class="naowee-textfield__label naowee-textfield__label--required" id="lbl-calFecha">Fecha de inicio</label>
+              <div class="naowee-datepicker" data-datepicker="calFecha">
+                <button type="button" class="naowee-datepicker__trigger" aria-haspopup="dialog" aria-labelledby="lbl-calFecha">
+                  <span class="naowee-datepicker__ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+                  <span class="naowee-datepicker__val is-placeholder" data-dp-val>Selecciona una fecha</span>
+                </button>
+              </div>
+              <span class="naowee-textfield__msg" id="msgFecha" role="alert" style="display:none">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                La fecha de inicio es obligatoria.
+              </span>
+            </div>
+            <div id="fieldFin">
+              <label class="naowee-textfield__label" id="lbl-calFin">Fecha de cierre <span class="cal-opt">(opcional)</span></label>
+              <div class="naowee-datepicker" data-datepicker="calFin">
+                <button type="button" class="naowee-datepicker__trigger" aria-haspopup="dialog" aria-labelledby="lbl-calFin">
+                  <span class="naowee-datepicker__ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+                  <span class="naowee-datepicker__val is-placeholder" data-dp-val>Selecciona una fecha</span>
+                </button>
+              </div>
+              <span class="naowee-textfield__msg" id="msgFin" role="alert" style="display:none">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                El cierre no puede ser antes del inicio.
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hora -->
+        <div class="form-group">
+          <div id="fieldHora" style="max-width:220px">
+            <label class="naowee-textfield__label" id="lbl-calHora">Hora de inicio (opcional)</label>
+            <div class="naowee-dropdown" data-dd="calHora" data-sheet-title="Hora del evento">
+              <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-labelledby="lbl-calHora">
+                <span class="naowee-dropdown__value is-placeholder" data-dd-val>— Sin hora —</span>
+                <span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+              </button>
+              <div class="naowee-dropdown__menu" role="listbox"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Link -->
+        <div class="form-group">
+          <div class="naowee-textfield" id="fieldLink">
+            <label class="naowee-textfield__label" for="evLink">Link (opcional)</label>
+            <div class="naowee-textfield__input-wrap">
+              <span class="naowee-textfield__prefix-ico">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              </span>
+              <input id="evLink" class="naowee-textfield__input" type="url"
+                placeholder="https://…">
+            </div>
+            <span class="naowee-textfield__msg" role="alert">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              El link no tiene un formato de URL válido.
+            </span>
+          </div>
+        </div>
+
+        <!-- Nota (caution canónico) -->
+        <div class="naowee-message naowee-message--caution">
+          <div class="naowee-message__header">
+            <span class="naowee-message__icon"><svg viewBox="0 0 16 16" fill="none"><path d="M7 5h2v4H7z" fill="#fff"/><circle cx="8" cy="11" r="1" fill="#fff"/></svg></span>
+            <span class="naowee-message__body">Este evento se reflejará en el calendario de la Landing pública. El render en la Landing <strong>no es parte de esta demo</strong> — lo asume el equipo de desarrollo de la Landing.</span>
+          </div>
+        </div>
+
+      </form>
+    </div>
+    <div class="cal-modal__footer">
+      <button type="button" class="naowee-btn naowee-btn--loud" id="calModalSave">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Guardar evento
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="evToast" role="status"></div>
+
+<script type="module">
+import {
+  mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher,
+  getRoleFromQuery, ROLES, homeForRole
+} from './shared/sidebar.js';
+
+/* ─── Guard de rol: ORGANISMO (dueño del calendario) o ADMIN (super-admin que
+   migra eventos ya realizados). Otros roles → su home. ─── */
+const roleCode = getRoleFromQuery();
+if (roleCode !== 'ORGANISMO' && roleCode !== 'ADMIN') {
+  window.location.replace(`${homeForRole(roleCode)}?role=${roleCode}`);
+}
+/* Super-admin: puede registrar eventos con fecha pasada (migración histórica).
+   Un organismo normal solo programa de hoy en adelante (feedback Juanma 25-jun). */
+const isSuperAdmin = roleCode === 'ADMIN';
+
+/* ─── Shell ─── */
+const { role } = mountSidebar({
+  rootEl: document.getElementById('sidebarRoot'),
+  roleCode,
+  activeId: 'calendario'
+});
+mountHeader({ headerEl: document.getElementById('topHeader'), role });
+mountBackdrop();
+mountDemoSwitcher({ roleCode });
+document.title = `Calendario — ${role.label}`;
+if (isSuperAdmin) document.getElementById('superAdminNote').style.display = '';
+
+/* ─── Datos mock en sessionStorage ─── */
+const SS_KEY = 'naowee-eventos-calendario';
+
+const MOCK_INICIAL = [
+  {
+    id: 'c1', emoji: '🏊',
+    titulo: 'Copa Departamental de Natación Categorías Menores 2026',
+    fecha: '2026-07-12',
+    fechaFin: '2026-07-14',
+    hora: '08:00',
+    link: 'https://liganatacionvalle.com/copa-departamental-2026'
+  },
+  {
+    id: 'c2', emoji: '🌊',
+    titulo: 'Festival Acuático Interligas Valle del Cauca',
+    fecha: '2026-09-05',
+    fechaFin: '2026-09-06',
+    hora: '09:30',
+    link: ''
+  },
+  {
+    id: 'c3', emoji: '🤽',
+    titulo: 'Campeonato Zonal de Natación Artística 2026',
+    fecha: '2026-10-22',
+    hora: '',
+    link: 'https://liganatacionvalle.com/artistica-2026'
+  }
+];
+
+function cargarEventos() {
+  try {
+    const raw = sessionStorage.getItem(SS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (_) { /* noop */ }
+  return [...MOCK_INICIAL];
+}
+
+function guardarEventos(evs) {
+  try { sessionStorage.setItem(SS_KEY, JSON.stringify(evs)); } catch (_) { /* noop */ }
+}
+
+let eventos = cargarEventos();
+
+/* ─── Render tabla ─── */
+function fmtFecha(fecha, hora) {
+  const [y, m, d] = fecha.split('-');
+  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const base = `${parseInt(d)} ${meses[parseInt(m)-1]} ${y}`;
+  return hora ? `${base}, ${hora}` : base;
+}
+
+function renderTabla(lista) {
+  const body = document.getElementById('calBody');
+  const count = document.getElementById('calCount');
+  count.textContent = `${lista.length} evento${lista.length !== 1 ? 's' : ''}`;
+  if (!lista.length) {
+    body.innerHTML = `<tr><td colspan="3" class="cal-empty">No hay eventos publicados aún. Usa "Crear evento" para agregar el primero.</td></tr>`;
+    return;
+  }
+  body.innerHTML = lista.map(ev => `
+    <tr>
+      <td><div class="cal-name"><span class="cal-emoji" aria-hidden="true">${ev.emoji || '📅'}</span><span class="cal-title">${ev.titulo}</span></div></td>
+      <td class="cal-fecha">
+        <div>${fmtFecha(ev.fecha, ev.hora)}</div>
+        ${ev.fechaFin ? `<div class="cal-fecha-fin">hasta ${fmtFecha(ev.fechaFin, '')}</div>` : ''}
+      </td>
+      <td class="cal-link-cell">${ev.link
+        ? `<a href="${ev.link}" target="_blank" rel="noopener noreferrer">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+             <span class="cal-link-url">${ev.link.replace(/^https?:\/\//, '')}</span>
+           </a>`
+        : '<span class="cal-link--none">Sin link</span>'}
+      </td>
+    </tr>`).join('');
+}
+
+renderTabla(eventos);
+
+/* ─── Buscador ─── */
+const calSearch = document.getElementById('calSearch');
+const calSearchClear = document.getElementById('calSearchClear');
+
+calSearch.addEventListener('input', () => {
+  const q = calSearch.value.trim().toLowerCase();
+  calSearchClear.style.display = q ? 'flex' : 'none';
+  document.getElementById('calSearchbox').classList.toggle('naowee-searchbox--has-value', !!q);
+  const filtered = q ? eventos.filter(e => e.titulo.toLowerCase().includes(q)) : eventos;
+  renderTabla(filtered);
+});
+calSearchClear.addEventListener('click', () => {
+  calSearch.value = '';
+  calSearchClear.style.display = 'none';
+  document.getElementById('calSearchbox').classList.remove('naowee-searchbox--has-value');
+  renderTabla(eventos);
+});
+
+/* ════════════════════════════════════════════════════════════════
+   DATEPICKER + DROPDOWN CANÓNICOS — portados desde evento-crear.html
+   ════════════════════════════════════════════════════════════════ */
+
+/* ─── Helpers de fecha ─── */
+const MES_ABBR = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const MES_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+function fmtDate(d) { return `${String(d.getDate()).padStart(2,'0')} ${MES_ABBR[d.getMonth()]} ${d.getFullYear()}`; }
+function sameDay(a, b) { return a && b && a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+
+const ICON_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+
+/* ─── Sheet backdrop (datepicker + dropdown móvil) ─── */
+let _sheetBackdrop = null;
+function ensureBackdrop() {
+  if (_sheetBackdrop) return _sheetBackdrop;
+  _sheetBackdrop = document.createElement('div');
+  _sheetBackdrop.className = 'naowee-sheet-backdrop';
+  document.body.appendChild(_sheetBackdrop);
+  _sheetBackdrop.addEventListener('click', closeAllPopovers);
+  return _sheetBackdrop;
+}
+function isMobile() { return window.matchMedia('(max-width: 760px)').matches; }
+function closeAllPopovers() {
+  document.querySelectorAll('.naowee-dropdown.is-open, .naowee-datepicker.is-open').forEach(el => el.classList.remove('is-open'));
+  if (_sheetBackdrop) _sheetBackdrop.classList.remove('is-open');
+}
+
+/* ─── setupDropdown genérico ─── */
+function setupDropdown(name, opts, onSelect, getSelected) {
+  const dd = document.querySelector(`[data-dd="${name}"]`);
+  const menu = dd.querySelector('.naowee-dropdown__menu');
+  const valEl = dd.querySelector('[data-dd-val]');
+  const trigger = dd.querySelector('.naowee-dropdown__trigger');
+  const sheetTitle = dd.getAttribute('data-sheet-title') || 'Selecciona';
+
+  function paint() {
+    const sel = getSelected ? getSelected() : null;
+    const sheetHead = `<div class="naowee-dropdown__sheet-head"><span class="naowee-dropdown__sheet-title">${sheetTitle}</span><button type="button" class="naowee-dropdown__sheet-close" data-close aria-label="Cerrar">${ICON_X}</button></div>`;
+    const body = opts.length
+      ? opts.map(o => `
+          <button type="button" class="naowee-dropdown__opt ${o.value === sel ? 'is-selected' : ''}" data-val="${o.value}">
+            <span>${o.label}</span>
+            <span class="naowee-dropdown__opt-check">${ICON_CHECK}</span>
+          </button>`).join('')
+      : `<div class="naowee-dropdown__empty">Sin opciones disponibles</div>`;
+    menu.innerHTML = sheetHead + body;
+    menu.querySelectorAll('.naowee-dropdown__opt').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const chosen = opts.find(o => o.value === btn.dataset.val);
+        onSelect(chosen);
+        close();
+      });
+    });
+    menu.querySelector('[data-close]')?.addEventListener('click', e => { e.stopPropagation(); close(); });
+  }
+  function open() {
+    if (dd.classList.contains('naowee-dropdown--disabled')) return;
+    closeAllPopovers();
+    paint();
+    dd.classList.remove('is-up');
+    if (!isMobile()) {
+      const r = trigger.getBoundingClientRect();
+      const espacioAbajo = window.innerHeight - r.bottom;
+      if (espacioAbajo < 300 && r.top > espacioAbajo) dd.classList.add('is-up');
+    }
+    dd.classList.add('is-open');
+    trigger.setAttribute('aria-expanded', 'true');
+    if (isMobile()) ensureBackdrop().classList.add('is-open');
+  }
+  function close() {
+    dd.classList.remove('is-open');
+    trigger.setAttribute('aria-expanded', 'false');
+    if (_sheetBackdrop && !document.querySelector('.naowee-dropdown.is-open, .naowee-datepicker.is-open')) _sheetBackdrop.classList.remove('is-open');
+  }
+  trigger.addEventListener('click', e => { e.stopPropagation(); dd.classList.contains('is-open') ? close() : open(); });
+  return {
+    el: dd, valEl,
+    setLabel(label, isPlaceholder) { valEl.textContent = label; valEl.classList.toggle('is-placeholder', !!isPlaceholder); },
+    setDisabled(d) { dd.classList.toggle('naowee-dropdown--disabled', d); },
+    setError(e) { dd.classList.toggle('naowee-dropdown--error', e); },
+    close
+  };
+}
+
+/* ─── setupDatepicker canónico ─── */
+const CHEV = {
+  left:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+  right: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>',
+  down:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
+  up:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>'
+};
+const DOW_CANON = ['Lun','Mar','Mié','Jue','Vie','Sab','Dom'];
+
+function setupDatepicker(name, onPick, opts = {}) {
+  const allowPast = !!opts.allowPast;   /* super-admin → permite fechas ya pasadas */
+  const dp = document.querySelector(`[data-datepicker="${name}"]`);
+  const trigger = dp.querySelector('.naowee-datepicker__trigger');
+  const valEl = dp.querySelector('[data-dp-val]');
+  let curMonth = 5, curYear = 2026;
+  let calView = 'days';
+  let cal = null;
+  let selected = null;
+
+  function buildCal() {
+    cal = document.createElement('div');
+    cal.className = 'naowee-cal';
+    dp.appendChild(cal);
+  }
+  function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function paint() {
+    const today = new Date(2026, 5, 3);
+    const headerTitle = calView === 'years' ? curYear : `${MES_FULL[curMonth]} de ${curYear}`;
+    const headerChev = calView === 'days' ? CHEV.down : CHEV.up;
+    let header = `<div class="naowee-datepicker__header">
+        <button type="button" class="naowee-datepicker__month-selector" data-toggleview aria-label="Cambiar vista">
+          <span class="naowee-datepicker__month">${headerTitle}</span>
+          <span class="naowee-datepicker__month-chevron">${headerChev}</span>
+        </button>`;
+    if (calView === 'days') {
+      header += `<div class="naowee-datepicker__controls">
+          <button type="button" class="naowee-datepicker__nav" data-nav="-1" aria-label="Anterior">${CHEV.left}</button>
+          <button type="button" class="naowee-datepicker__nav" data-nav="1" aria-label="Siguiente">${CHEV.right}</button>
+        </div>`;
+    }
+    header += `</div>`;
+
+    let body = '';
+    if (calView === 'months') {
+      body = '<div class="naowee-datepicker__month-grid">' +
+        MES_FULL.map((m, i) => `<button type="button" class="naowee-datepicker__month-item ${i === curMonth ? 'naowee-datepicker__month-item--selected' : ''}" data-month="${i}">${m}</button>`).join('') +
+        '</div>';
+    } else if (calView === 'years') {
+      const startY = curYear - (curYear % 4) - 4;
+      let cells = '';
+      for (let yi = 0; yi < 12; yi++) { const y = startY + yi; cells += `<button type="button" class="naowee-datepicker__month-item ${y === curYear ? 'naowee-datepicker__month-item--selected' : ''}" data-year="${y}">${y}</button>`; }
+      body = `<div class="naowee-datepicker__month-grid">${cells}</div>`;
+    } else {
+      const first = new Date(curYear, curMonth, 1);
+      const startOffset = (first.getDay() + 6) % 7;
+      const daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
+      const prevDays = new Date(curYear, curMonth, 0).getDate();
+      const total = 42;
+      const all = [];
+      for (let i = startOffset - 1; i >= 0; i--) all.push({ d: prevDays - i, other: true });
+      for (let d = 1; d <= daysInMonth; d++) all.push({ d, other: false });
+      while (all.length < total) all.push({ d: all.length - daysInMonth - startOffset + 1, other: true });
+      const wkHtml = '<div class="naowee-datepicker__week">' + DOW_CANON.map(w => `<span class="naowee-datepicker__weekday">${w}</span>`).join('') + '</div>';
+      let weeksHtml = '';
+      for (let w = 0; w < 6; w++) {
+        weeksHtml += '<div class="naowee-datepicker__week">';
+        for (let di = 0; di < 7; di++) {
+          const cell = all[w * 7 + di];
+          const cls = ['naowee-datepicker__day'];
+          let disabled = false;
+          if (cell.other) cls.push('naowee-datepicker__day--other-month');
+          else {
+            const date = new Date(curYear, curMonth, cell.d);
+            /* Días pasados deshabilitados salvo super-admin (migración histórica). */
+            if (!allowPast && date < startOfDay(today)) { disabled = true; cls.push('naowee-datepicker__day--disabled'); }
+            if (sameDay(date, selected)) cls.push('naowee-datepicker__day--selected');
+            if (sameDay(date, today)) cls.push('naowee-datepicker__day--today');
+          }
+          weeksHtml += `<button type="button" class="${cls.join(' ')}"${(cell.other || disabled) ? '' : ` data-d="${cell.d}"`}>${cell.d}</button>`;
+        }
+        weeksHtml += '</div>';
+      }
+      body = `<div class="naowee-datepicker__content">${wkHtml}${weeksHtml}</div>`;
+    }
+
+    cal.innerHTML =
+      `<div class="naowee-cal__sheet-head"><span class="naowee-cal__sheet-title">Fecha del evento</span><button type="button" class="naowee-cal__sheet-close" data-close aria-label="Cerrar">${ICON_X}</button></div>` +
+      `<div class="naowee-datepicker__calendar">${header}${body}</div>`;
+
+    cal.querySelector('[data-toggleview]')?.addEventListener('click', e => { e.stopPropagation(); calView = calView === 'days' ? 'months' : calView === 'months' ? 'years' : 'days'; paint(); });
+    cal.querySelectorAll('[data-nav]').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      const delta = Number(b.dataset.nav);
+      if (calView === 'days') { curMonth += delta; if (curMonth > 11) { curMonth = 0; curYear++; } if (curMonth < 0) { curMonth = 11; curYear--; } }
+      else if (calView === 'years') { curYear += delta * 4; }
+      paint();
+    }));
+    cal.querySelectorAll('[data-month]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); curMonth = Number(b.dataset.month); calView = 'days'; paint(); }));
+    cal.querySelectorAll('[data-year]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); curYear = Number(b.dataset.year); calView = 'months'; paint(); }));
+    cal.querySelectorAll('.naowee-datepicker__day[data-d]').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      const picked = new Date(curYear, curMonth, Number(b.dataset.d));
+      selected = picked;
+      valEl.textContent = fmtDate(picked);   /* refleja la fecha elegida en el campo */
+      valEl.classList.remove('is-placeholder');
+      onPick(picked);
+      close();
+    }));
+    cal.querySelector('[data-close]')?.addEventListener('click', e => { e.stopPropagation(); close(); });
+  }
+  function placeCal() {
+    cal.classList.remove('is-up', 'is-right');
+    cal.style.position = ''; cal.style.top = ''; cal.style.bottom = ''; cal.style.left = ''; cal.style.right = '';
+    const r = trigger.getBoundingClientRect();
+    const calH = cal.offsetHeight, calW = cal.offsetWidth;
+    const HDR = 96, FTR = 80, GAP = 6, M = 8;
+    const belowSpace = window.innerHeight - r.bottom - FTR;
+    const aboveSpace = r.top - HDR;
+    if (r.left + calW > window.innerWidth - M) cal.classList.add('is-right');
+    if (belowSpace >= calH + GAP) {
+      /* cabe abajo */
+    } else if (aboveSpace >= calH + GAP) {
+      cal.classList.add('is-up');
+    } else {
+      cal.classList.remove('is-right');
+      let top = Math.max(HDR, Math.min(r.bottom + GAP, window.innerHeight - FTR - calH - M));
+      let left = Math.max(M, Math.min(r.left, window.innerWidth - calW - M));
+      cal.style.position = 'fixed'; cal.style.top = top + 'px'; cal.style.bottom = 'auto';
+      cal.style.left = left + 'px'; cal.style.right = 'auto';
+    }
+  }
+  function open() {
+    closeAllPopovers();
+    if (!cal) buildCal();
+    if (selected) { curMonth = selected.getMonth(); curYear = selected.getFullYear(); }
+    calView = 'days';
+    paint();
+    if (!isMobile()) placeCal();
+    dp.classList.add('is-open');
+    if (isMobile()) ensureBackdrop().classList.add('is-open');
+  }
+  function close() {
+    dp.classList.remove('is-open');
+    if (cal) { cal.classList.remove('is-up', 'is-right'); cal.style.position = ''; cal.style.top = ''; cal.style.bottom = ''; cal.style.left = ''; cal.style.right = ''; }
+    if (_sheetBackdrop && !document.querySelector('.naowee-dropdown.is-open, .naowee-datepicker.is-open')) _sheetBackdrop.classList.remove('is-open');
+  }
+  trigger.addEventListener('click', e => { e.stopPropagation(); dp.classList.contains('is-open') ? close() : open(); });
+  return {
+    el: dp,
+    setValue(d) { selected = d || null; valEl.textContent = d ? fmtDate(d) : 'Selecciona una fecha'; valEl.classList.toggle('is-placeholder', !d); },
+    setError(e) { dp.classList.toggle('naowee-datepicker--error', e); },
+    getSelected() { return selected; },
+    reset() { selected = null; valEl.textContent = 'Selecciona una fecha'; valEl.classList.add('is-placeholder'); dp.classList.remove('naowee-datepicker--error'); },
+    close
+  };
+}
+
+/* ════════════════ Estado del form modal ════════════════ */
+const formState = { fecha: null, fin: null, hora: '' };
+
+/* ─── Validación: CTA deshabilitado hasta obligatorios + wiggle/scroll/helper ─── */
+const REDUCE_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function wiggle(el) {
+  if (!el || REDUCE_MOTION) return;
+  el.classList.remove('naowee-shake'); void el.offsetWidth;
+  el.classList.add('naowee-shake');
+  el.addEventListener('animationend', () => el.classList.remove('naowee-shake'), { once: true });
+}
+function controlOf(fieldEl) {
+  return fieldEl.querySelector('.naowee-textfield__input-wrap, .naowee-datepicker__trigger') || fieldEl;
+}
+/* El CTA "Guardar evento" sólo se habilita con los obligatorios (título + fecha de inicio). */
+function syncSaveEnabled() {
+  const ok = !!document.getElementById('evTitulo').value.trim() && !!formState.fecha;
+  document.getElementById('calModalSave').disabled = !ok;
+}
+document.getElementById('evTitulo').addEventListener('input', () => {
+  document.getElementById('fieldTitulo').classList.remove('naowee-textfield--error');
+  syncSaveEnabled();
+});
+
+/* ─── Horas disponibles (06:00 – 21:00, cada 30 min) ─── */
+const HORAS_OPTS = (() => {
+  const list = [{ value: '', label: '— Sin hora —' }];
+  for (let h = 6; h <= 21; h++) {
+    list.push({ value: `${String(h).padStart(2,'0')}:00`, label: `${String(h).padStart(2,'0')}:00` });
+    if (h < 21) list.push({ value: `${String(h).padStart(2,'0')}:30`, label: `${String(h).padStart(2,'0')}:30` });
+  }
+  return list;
+})();
+
+/* ─── Inicializar datepicker y dropdown de hora ─── */
+const dpFecha = setupDatepicker('calFecha', (d) => {
+  formState.fecha = d;
+  /* Quitar error al elegir fecha */
+  document.getElementById('fieldFecha').classList.remove('naowee-datepicker--error');
+  document.getElementById('msgFecha').style.display = 'none';
+  syncSaveEnabled();
+}, { allowPast: isSuperAdmin });
+
+const dpFin = setupDatepicker('calFin', (d) => {
+  formState.fin = d;
+  document.getElementById('fieldFin').classList.remove('naowee-datepicker--error');
+  document.getElementById('msgFin').style.display = 'none';
+}, { allowPast: isSuperAdmin });
+
+const ddHora = setupDropdown('calHora', HORAS_OPTS, (o) => {
+  formState.hora = o.value;
+  ddHora.setLabel(o.label, !o.value);
+}, () => formState.hora);
+
+/* ─── Modal ─── */
+const overlay = document.getElementById('calModalOverlay');
+
+function openModal() {
+  /* Reset estado form */
+  formState.fecha = null;
+  formState.fin = null;
+  formState.hora = '';
+  dpFecha.reset();
+  dpFin.reset();
+  ddHora.setLabel('— Sin hora —', true);
+  /* Reset textfields */
+  document.getElementById('calForm').reset();
+  ['fieldTitulo','fieldLink'].forEach(id =>
+    document.getElementById(id).classList.remove('naowee-textfield--error'));
+  document.getElementById('msgFecha').style.display = 'none';
+  document.getElementById('msgFin').style.display = 'none';
+  document.getElementById('fieldFin').classList.remove('naowee-datepicker--error');
+  syncSaveEnabled();   /* arranca deshabilitado: form vacío */
+  overlay.classList.add('is-open');
+  document.getElementById('evTitulo').focus();
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  closeAllPopovers();
+  overlay.classList.remove('is-open');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('btnCrearEvento').addEventListener('click', openModal);
+document.getElementById('calModalDismiss').addEventListener('click', closeModal);
+
+/* Cerrar al clic en overlay (fuera del panel) — no interfiere con popovers */
+overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+
+/* ESC cierra modal solo si no hay popover abierto */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (document.querySelector('.naowee-dropdown.is-open, .naowee-datepicker.is-open')) {
+      closeAllPopovers();
+    } else if (overlay.classList.contains('is-open')) {
+      closeModal();
+    }
+  }
+});
+
+/* Cerrar popovers con click fuera (sin cerrar el modal) */
+document.addEventListener('click', e => {
+  if (!e.target.closest('.naowee-dropdown') && !e.target.closest('.naowee-datepicker') && !e.target.closest('.naowee-cal')) {
+    closeAllPopovers();
+  }
+});
+
+/* ─── Validar y guardar ─── */
+document.getElementById('calModalSave').addEventListener('click', () => {
+  const titulo = document.getElementById('evTitulo').value.trim();
+  const fecha  = formState.fecha;   /* Date | null — del datepicker */
+  const hora   = formState.hora;    /* string "HH:MM" | "" — del dropdown */
+  const link   = document.getElementById('evLink').value.trim();
+
+  let valid = true;
+
+  const setError = (fieldId, hasErr) => {
+    document.getElementById(fieldId).classList.toggle('naowee-textfield--error', hasErr);
+  };
+
+  setError('fieldTitulo', !titulo);
+  if (!titulo) valid = false;
+
+  /* Error en datepicker */
+  const fechaFaltante = !fecha;
+  document.getElementById('fieldFecha').classList.toggle('naowee-datepicker--error', fechaFaltante);
+  document.getElementById('msgFecha').style.display = fechaFaltante ? '' : 'none';
+  if (fechaFaltante) valid = false;
+
+  /* Validar URL si no está vacía */
+  let linkInvalid = false;
+  if (link) {
+    try { new URL(link); }
+    catch(_) { linkInvalid = true; }
+  }
+  setError('fieldLink', linkInvalid);
+  if (linkInvalid) valid = false;
+
+  /* Cierre (opcional): si está, no puede ser anterior al inicio */
+  const fin = formState.fin;
+  const finInvalid = !!(fin && fecha && fin < fecha);
+  document.getElementById('fieldFin').classList.toggle('naowee-datepicker--error', finInvalid);
+  document.getElementById('msgFin').style.display = finInvalid ? '' : 'none';
+  if (finInvalid) valid = false;
+
+  if (!valid) {
+    const first = document.querySelector('.naowee-textfield--error, .naowee-datepicker--error');
+    if (first) {
+      first.scrollIntoView({ behavior: REDUCE_MOTION ? 'auto' : 'smooth', block: 'center' });
+      wiggle(controlOf(first));
+    }
+    return;
+  }
+
+  /* Serializar fechas como "YYYY-MM-DD" para compatibilidad con fmtFecha */
+  const toISO = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+  const fechaStr = toISO(fecha);
+  const fechaFinStr = fin ? toISO(fin) : '';
+
+  const nuevoEv = {
+    id: `c${Date.now()}`,
+    emoji: '🏊',
+    titulo, fecha: fechaStr, fechaFin: fechaFinStr, hora, link
+  };
+  eventos = [nuevoEv, ...eventos];
+  guardarEventos(eventos);
+  renderTabla(eventos);
+  closeModal();
+  showToast(`Evento "${titulo}" publicado en el calendario.`);
+});
+
+/* ─── Toast (snackbar canónico DS · window.naoweeToast) ─── */
+function showToast(msg, type = 'success') { window.naoweeToast(msg, type); }
+</script>
+</body>
+</html>

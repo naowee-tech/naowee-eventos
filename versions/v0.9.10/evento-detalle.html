@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Naowee Eventos — Detalle del evento</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="shared/tokens.css?v=0.9.1">
+<link rel="stylesheet" href="shared/shell.css?v=0.4.5">
+<link rel="stylesheet" href="shared/list-components.css?v=0.9.1">
+<link rel="stylesheet" href="shared/event-detail.css?v=0.9.1">
+<link rel="stylesheet" href="shared/forms.css?v=0.9.3">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.9.1">
+<script src="shared/naowee-footer.js?v=0.9.10" defer></script>
+
+<style>
+  /* ═══════════════════════════════════════════════════════════════
+     EVENTO-DETALLE — Fase 3 (Administrador / Gestor)
+     UN SOLO container superior cohesivo (`.det-card`) que consolida:
+       (1) header — chevron "‹" de retroceso (accent) → NOMBRE → BADGE
+           de estado inline; a la derecha acciones ghost (Editar · Ir a
+           cargues, esta última con su gate de "Activo");
+       (2) franja de metadata "stat strip" de 4 columnas (Inicio · Fin ·
+           Lugar · Organismo);
+       (3) bloque inferior 2-col: GESTOR asignado (tile con avatar + nombre
+           + rol) + DESCRIPCIÓN.
+     Separadores finos (hairlines) marcan las 3 zonas → jerarquía clara sin
+     amontonar. Sin card aparte "Datos del evento" (se fusionó aquí). Sin
+     subtítulo de deporte (módulo LIGHT). El estado vive solo como badge;
+     Activo lo decide el Sistema al llegar la fecha de inicio.
+     Debajo del container: "Seguimiento del evento" (barras de progreso).
+     Reusa shell, tokens, badges (.badge.s-*), progreso (.prog-*),
+     botones (.naowee-btn--ghost) y el toast (#evToast).
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* ── Patrón "Detalle del evento" (det-card · meta-strip · det-foot ·
+        gestor-field · det-section · track-grid · empty-state) →
+        movido a shared/event-detail.css (fuente única, reusado por
+        cargue.html del Gestor). No re-declarar aquí. ── */
+
+  /* ═══════════════════════════════════════════════════════════════
+     MODAL EDITAR EVENTO — canónico DS
+     Desktop: centrado, radius-xl, max 860px, max-height 90vh.
+     Móvil: bottom-sheet (sube desde abajo, radius arriba).
+     Solo transform/opacity; honra prefers-reduced-motion.
+     ═══════════════════════════════════════════════════════════════ */
+  .ev-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.48); z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .22s ease;
+  }
+  .ev-modal-overlay.is-open { opacity: 1; pointer-events: all; }
+  .ev-modal {
+    background: var(--surface); border-radius: var(--radius-xl);
+    width: 95vw; max-width: 860px; max-height: 90vh;
+    display: flex; flex-direction: column; overflow: visible;
+    box-shadow: var(--shadow-card);
+    transform: translateY(24px) scale(.97); opacity: 0;
+    transition: transform .28s cubic-bezier(.4,0,.2,1), opacity .22s ease;
+  }
+  /* transform:none (no scale/translate) — un transform ≠ none crea containing block
+     y rompería el position:fixed del datepicker dentro del modal (mismo fix que calendario). */
+  .ev-modal-overlay.is-open .ev-modal { transform: none; opacity: 1; }
+
+  /* Header sticky */
+  .ev-modal__head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .ev-modal__title { font-size: 17px; font-weight: 700; color: var(--text-primary); margin: 0; }
+  .ev-modal__close {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: var(--radius-md);
+    background: transparent; border: none; cursor: pointer; color: var(--text-secondary);
+    transition: background var(--duration-fast), color var(--duration-fast);
+    flex-shrink: 0;
+  }
+  .ev-modal__close:hover { background: var(--bg-soft); color: var(--text-primary); }
+  .ev-modal__close:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215,64,9,.18); }
+  .ev-modal__close svg { width: 18px; height: 18px; }
+
+  /* Body scrolleable — overflow:visible para que datepicker/dropdown escapen */
+  .ev-modal__body { flex: 1; overflow: visible; padding: 22px 24px; }
+
+  /* Notes del modal = .naowee-message canónico (--caution / --informative) de forms.css. */
+
+  /* Campos deshabilitados (solo lectura) dentro del modal */
+  .ev-modal__body .naowee-textfield--readonly .naowee-textfield__input-wrap,
+  .ev-modal__body .naowee-dropdown--disabled .naowee-dropdown__trigger {
+    background: var(--bg-soft); cursor: not-allowed; opacity: .72;
+  }
+  .ev-modal__body .naowee-textfield--readonly .naowee-textfield__input { pointer-events: none; }
+  .ev-modal__body .field-readonly-val {
+    font-size: 14px; font-weight: 600; color: var(--text-secondary);
+    padding: 0 2px; margin-top: 2px;
+  }
+  /* Icono candado junto al label de campo bloqueado */
+  .ev-modal__body .lbl-locked { display: flex; align-items: center; gap: 5px; }
+  .ev-modal__body .lbl-locked svg { width: 12px; height: 12px; color: var(--text-muted); }
+
+  /* Grid de campos (1-col en el modal, 2-col para fechas) */
+  .ev-modal__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .ev-modal__grid .col-2 { grid-column: span 2; }
+  @media (max-width: 600px) {
+    .ev-modal__grid { grid-template-columns: 1fr; }
+    .ev-modal__grid .col-2 { grid-column: span 1; }
+  }
+
+  /* Footer sticky */
+  .ev-modal__foot {
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 10px; padding: 24px;
+    border-top: 1px solid var(--border); flex-shrink: 0;
+  }
+
+  /* dd-opt-rich en modal (igual que crear) */
+  .ev-modal .dd-opt-rich { display: flex; flex-direction: column; line-height: 1.3; }
+  .ev-modal .dd-opt-rich small { font-size: 11.5px; color: var(--text-secondary); }
+
+  /* Mobile bottom-sheet */
+  @media (max-width: 680px) {
+    .ev-modal-overlay { align-items: flex-end; padding: 0; }
+    .ev-modal {
+      width: 100%; max-width: 100%; border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+      max-height: 94vh;
+      transform: translateY(100%); opacity: 1;
+    }
+    .ev-modal-overlay.is-open .ev-modal { transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ev-modal, .ev-modal-overlay { transition: none !important; animation: none !important; }
+  }
+
+  /* ═══ Configuración del evento (catálogo deportivo + organizaciones) — se edita
+     en la EDICIÓN (no en la creación). Acta 25-jun. ═══ */
+  .cfg-addrow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  /* La sección con un dropdown abierto se eleva por encima de la siguiente card
+     (las .det-section crean stacking context por el transform de su animación,
+     así que el menú canónico (z-index 999) no escapaba). */
+  .cfg-section { position: relative; }
+  .cfg-section.cfg-section--front { z-index: 30; }
+  .cfg-dd { width: 248px; position: relative; }
+  .cfg-dd--tipo { width: 156px; }
+  .cfg-dd--org { flex: 1; min-width: 220px; width: auto; }
+  /* Buscador dentro del menú del dropdown de catálogo (organizaciones por tipo). */
+  .cfg-dd-search { position: sticky; top: 0; background: var(--surface); padding: 8px 8px 6px; border-bottom: 1px solid var(--border); z-index: 1; }
+  .cfg-dd-search__input { width: 100%; height: 36px; padding: 0 10px; border: 1px solid var(--border-dark); border-radius: var(--radius-md); font-family: inherit; font-size: 13px; color: var(--text-primary); background: var(--surface); }
+  .cfg-dd-search__input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(215,64,9,.1); }
+  .cfg-org-empty { padding: 12px 14px; font-size: 13px; color: var(--text-muted); }
+  /* CTA a la misma altura que el dropdown/input (canónico --field-h = 48px). */
+  .cfg-addrow .naowee-btn { height: var(--field-h); }
+  .cfg-input { height: var(--field-h); padding: 0 12px; border: 1px solid var(--field-border-idle); border-radius: var(--radius-md); font-family: inherit; font-size: 14px; color: var(--text-primary); flex: 1; min-width: 180px; background: var(--surface); }
+  .cfg-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(215,64,9,.12); }
+  /* Multi-selector de deportes: cada opción es un checkbox (el menú NO se cierra al
+     elegir); los deportes ya agregados salen deshabilitados con su check fijo. */
+  .cfg-opt-multi { display: flex; align-items: center; gap: 10px; }
+  .cfg-opt-multi .cfg-opt-lbl { flex: 1; min-width: 0; }
+  .cfg-opt-box { width: 18px; height: 18px; flex-shrink: 0; border: 1.5px solid var(--border-dark); border-radius: var(--radius-sm); display: inline-flex; align-items: center; justify-content: center; color: #fff; transition: background var(--duration-fast), border-color var(--duration-fast); }
+  .cfg-opt-box svg { width: 13px; height: 13px; }
+  .cfg-opt-multi.is-checked .cfg-opt-box { background: var(--accent); border-color: var(--accent); }
+  .cfg-opt-multi.is-added { opacity: .55; cursor: default; }
+  .cfg-opt-multi.is-added .cfg-opt-box { background: var(--border-dark); border-color: var(--border-dark); }
+  .cfg-opt-added { font-size: 11px; font-weight: 600; color: var(--text-muted); flex-shrink: 0; }
+  .cfg-list { display: flex; flex-direction: column; gap: 12px; }
+  /* Acordeón por deporte: colapsado por defecto para no volcar todas las
+     competencias al agregarlo (feedback Doug). El header es el toggle. */
+  .cfg-sport { border: 1px solid var(--border); border-radius: var(--radius-lg); }
+  .cfg-sport__head { display: flex; align-items: center; gap: 6px; padding: 6px; }
+  .cfg-sport__toggle { flex: 1; min-width: 0; display: flex; align-items: center; gap: 9px; padding: 6px; border: none; background: transparent; cursor: pointer; font-family: inherit; text-align: left; border-radius: var(--radius-md); transition: background var(--duration-fast); }
+  .cfg-sport__toggle:hover { background: var(--bg-soft); }
+  .cfg-sport__toggle:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215,64,9,.15); }
+  .cfg-sport__chev { width: 18px; height: 18px; flex-shrink: 0; color: var(--text-secondary); display: flex; transition: transform var(--duration-normal) var(--easing-smoothout); }
+  .cfg-sport__chev svg { width: 18px; height: 18px; }
+  .cfg-sport.is-open .cfg-sport__chev { transform: rotate(180deg); }
+  .cfg-sport__name { font-size: 14px; font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cfg-sport__count { flex-shrink: 0; }
+  .cfg-x { width: 28px; height: 28px; border: none; background: transparent; border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .cfg-x:hover { background: var(--red-bg); color: var(--red); }
+  .cfg-x svg { width: 16px; height: 16px; }
+  .cfg-chips { display: flex; flex-wrap: wrap; gap: 7px; padding: 2px 14px 14px; }
+  .cfg-sport:not(.is-open) .cfg-chips { display: none; }
+  .cfg-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px 4px 10px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius-full); font-size: 12px; color: var(--text-secondary); }
+  .cfg-chip__x { border: none; background: transparent; color: var(--text-muted); cursor: pointer; display: flex; padding: 1px; border-radius: var(--radius-full); }
+  .cfg-chip__x svg { width: 12px; height: 12px; }
+  .cfg-chip__x:hover { color: var(--red); background: var(--red-bg); }
+  .cfg-empty, .cfg-empty-inline { font-size: 13px; color: var(--text-muted); }
+  .cfg-orgs { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cfg-org { display: inline-flex; align-items: center; gap: 8px; padding: 6px 8px 6px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-full); font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .cfg-org__tipo { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--accent); background: var(--accent-bg); padding: 2px 7px; border-radius: var(--radius-full); }
+  /* Organización fuera del alcance geográfico del evento (la sede cambió tras invitarla). */
+  .cfg-org--out { border-color: var(--orange-border); background: var(--orange-bg); }
+  .cfg-org__flag { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: #b45309; }
+  .cfg-org__flag svg { width: 13px; height: 13px; }
+  .cfg-scope-hint { margin: 0 0 12px; font-size: 12.5px; color: var(--text-secondary); }
+  .cfg-scope-hint strong { color: var(--text-primary); font-weight: 600; }
+  .cfg-msg { margin-top: 14px; }
+
+  /* La meta-strip de ESTE detalle tiene 5 campos (se sumó "Alcance" en v0.7.1):
+     en desktop van en una sola fila de 5 columnas, así "Organismo" no queda
+     huérfano en una 2ª fila bajo "Fecha de inicio". El responsive (≤720 / ≤480)
+     lo maneja event-detail.css compartido (2 col / 1 col) — por eso el override
+     es min-width y no pisa esos breakpoints. cargue.html mantiene 4 (no se toca). */
+  @media (min-width: 721px) {
+    .meta-strip { grid-template-columns: repeat(5, 1fr); }
+    /* Foot alineado a la meta de 5 col: Gestor = 1/5 → su divisor cae sobre la
+       1ª línea de grid de la meta-strip (ritmo vertical alineado). */
+    .det-foot { grid-template-columns: 1fr 4fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div id="sidebarRoot"></div>
+  <div class="main">
+    <header class="top-header" id="topHeader"></header>
+    <div class="page">
+      <div class="page-inner" id="detailPage"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Editar evento (canónico DS) -->
+<div class="ev-modal-overlay" id="evEditOverlay" role="dialog" aria-modal="true" aria-labelledby="evModalTitle">
+  <div class="ev-modal" id="evEditModal">
+    <header class="ev-modal__head">
+      <h2 class="ev-modal__title" id="evModalTitle">Editar evento</h2>
+      <button type="button" class="ev-modal__close" id="evModalClose" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </header>
+    <div class="ev-modal__body" id="evModalBody"><!-- Contenido dinámico --></div>
+    <footer class="ev-modal__foot" id="evModalFoot"><!-- Botones dinámicos --></footer>
+  </div>
+</div>
+
+<script type="module">
+  import {
+    mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher,
+    getRoleFromQuery, ROLES
+  } from './shared/sidebar.js?v=0.4.5';
+  import { allEvents, STATUS_LABEL, getUploadHistory, updateEvent, placeLabel, placeTitle, eventDeptos, eventMunicipios } from './shared/events-data.js?v=0.9.0';
+  /* Módulo LIGHT: el detalle NO carga catálogo deportivo (deportes/pruebas
+     viven solo como columnas de los archivos de cargue — Fase 4). Solo se
+     usa el catálogo de gestores para mostrar el responsable asignado. */
+  import { PERFILES_ASIGNABLES, DEPARTAMENTOS, municipiosDeDepto, DEPORTES_POR_TIPO, LIGAS, CLUBES, MUNICIPIOS_POR_DEPTO,
+           ligasDeDeptos, clubesDeDeptos, municipiosDeDeptos, deptoDeLiga, deptoDeClub, deptoDeMunicipio } from './shared/catalogo.js?v=0.9.0';
+
+  /* ─── Iconos (stroke currentColor, paridad módulo). Solo los usados en
+     el container consolidado + Seguimiento + acciones del header. ─── */
+  const I = {
+    cal:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+    pin:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+    org:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg>',
+    user:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+    doc:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>',
+    chevL: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
+    edit:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+    ticket:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9a3 3 0 0 0 0 6v2a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z"/><line x1="13" y1="5" x2="13" y2="19" stroke-dasharray="2 3"/></svg>',
+    activity: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+    chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>'
+  };
+
+  const roleCode = getRoleFromQuery();
+  const role = ROLES[roleCode] || ROLES.USER;
+
+  /* Evento por querystring (?id=). Por defecto, un Activo representativo
+     (el Festival Departamental de Atletismo). Fallback: primer Activo o el primero. */
+  const params = new URLSearchParams(location.search);
+  const wantId = params.get('id');
+  const DEFAULT_ID = 'EV-2026-002';
+
+  function findEv() {
+    const evts = allEvents();
+    return evts.find((e) => e.id === wantId) ||
+           evts.find((e) => e.id === DEFAULT_ID) ||
+           evts.find((e) => e.status === 'activo') ||
+           evts[0];
+  }
+  let ev = findEv();
+
+  let isActivo  = ev.status === 'activo';
+  let isBorrador = ev.status === 'borrador';
+  let isFinal   = ev.status === 'finalizado';
+
+  /* GATE: módulo LIGHT — los cargues se habilitan solo cuando el evento
+     está Activo (sin dependencia de catálogo deportivo). Activo lo decide
+     el Sistema al llegar la fecha de inicio. */
+  let gateOpen = isActivo;
+
+  /* Gestor asignado (mock determinístico por evento, o del campo gestorId si existe). */
+  const GESTOR_MAP = {
+    'EV-2026-001': 'g-marcela', 'EV-2026-002': 'g-andrea', 'EV-2026-003': 'g-andrea',
+    'EV-2026-004': 'g-julian', 'EV-2026-005': 'g-paola', 'EV-2026-006': 'g-diego'
+  };
+  function gestorFor() {
+    const gid = ev.gestorId || GESTOR_MAP[ev.id];
+    return PERFILES_ASIGNABLES.find((g) => g.id === gid) || PERFILES_ASIGNABLES[0];
+  }
+  let gestor = gestorFor();
+
+  /* ─── (2) Franja de metadata (stat strip): 4 campos LIGHT ───
+     Fecha de inicio · Fecha final · Lugar · Organismo. Va embebida dentro
+     del container consolidado (.det-card), entre hairlines. */
+  function metaStripHTML() {
+    return `
+      <div class="meta-strip" role="group" aria-label="Fechas, lugar y organismo">
+        <div class="meta-strip__col">
+          <span class="meta-strip__lbl">${I.cal} Fecha de inicio</span>
+          <span class="meta-strip__val">${ev.start}</span>
+        </div>
+        <div class="meta-strip__col">
+          <span class="meta-strip__lbl">${I.cal} Fecha final</span>
+          <span class="meta-strip__val">${ev.end}</span>
+        </div>
+        <div class="meta-strip__col">
+          <span class="meta-strip__lbl">${I.pin} Lugar</span>
+          <span class="meta-strip__val" title="${escH(placeTitle(ev))}">${escH(placeLabel(ev))}</span>
+        </div>
+        <div class="meta-strip__col">
+          <span class="meta-strip__lbl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Alcance</span>
+          <span class="meta-strip__val">${ev.alcance === 'internacional' ? 'Internacional' : 'Nacional'}</span>
+        </div>
+        <div class="meta-strip__col">
+          <span class="meta-strip__lbl">${I.org} Organismo</span>
+          <span class="meta-strip__val">${ev.org}</span>
+        </div>
+      </div>`;
+  }
+
+  /* ─── (3) Bloque inferior del container: gestor asignado + descripción ───
+     El gestor se muestra como un tile (avatar + nombre + rol); la
+     descripción ocupa el resto del ancho. (Sin card aparte "Datos del
+     evento": todo vive en el container consolidado.) */
+  function footHTML() {
+    return `
+      <div class="det-foot">
+        <div class="det-foot__block">
+          <span class="det-foot__lbl">${I.user} Gestor asignado</span>
+          <div class="gestor-field">
+            <span class="gestor-field__av" style="background:${gestor.color}" aria-hidden="true">${gestor.avatar}</span>
+            <span class="gestor-field__meta">
+              <span class="gestor-field__nm">${gestor.name}</span>
+              <span class="gestor-field__role">${gestor.area || gestor.role}</span>
+            </span>
+          </div>
+        </div>
+        <div class="det-foot__block">
+          <span class="det-foot__lbl">${I.doc} Descripción</span>
+          <p class="det-foot__desc${ev.descripcion ? '' : ' det-foot__desc--empty'}">${ev.descripcion ? escH(ev.descripcion) : 'Sin descripción.'}</p>
+        </div>
+      </div>`;
+  }
+
+  /* ─── Seguimiento (progreso) ─── */
+  function pct(d, t) { return t > 0 ? Math.round((d / t) * 100) : 0; }
+  function trackItem(lbl, fill, o) {
+    const p = pct(o.done, o.total);
+    const empty = o.total === 0;
+    return `
+      <div class="prog-item">
+        <span class="prog-item__lbl">${lbl}</span>
+        <div class="prog-track"><div class="prog-fill ${fill}" style="width:${p}%"></div></div>
+        <span class="prog-item__val ${empty ? 'is-empty' : ''}">${empty ? '—' : `${o.done.toLocaleString('es-CO')} / ${o.total.toLocaleString('es-CO')} · ${p}%`}</span>
+      </div>`;
+  }
+  function trackHTML() {
+    const noData = ev.insc.total === 0 && ev.res.total === 0 && ev.med.total === 0;
+    const body = noData
+      ? `<div class="empty-state">
+            <div class="empty-state__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <p class="empty-state__title">Sin cargues registrados</p>
+            <p class="empty-state__desc">El seguimiento se llenará a medida que el gestor cargue inscripciones, resultados y medallería.</p>
+          </div>`
+      : `<div class="track-grid">
+          ${trackItem('Inscripciones', 'f-insc', ev.insc)}
+          ${trackItem('Resultados', 'f-res', ev.res)}
+          ${trackItem('Medallería', 'f-med', ev.med)}
+        </div>`;
+    return `
+      <section class="det-section" aria-labelledby="track-title" style="animation-delay:.16s">
+        <div class="det-section__head">${I.activity}<h3 id="track-title">Seguimiento del evento</h3></div>
+        ${body}
+      </section>`;
+  }
+
+  /* ─── Acciones del header (ghost/link canónico del DS: label accent,
+     hover naranja claro, con ícono). Role-aware:
+       • "Editar evento" → SOLO Administrador (el Usuario del módulo y el
+         Gestor son de lectura para los datos del evento → no la ven).
+       • "Ir a cargues" → SOLO Gestor (opera) y Admin (oversight lectura);
+         feedback Danna 2026-06: el Usuario del módulo NO carga — el botón no
+         se le muestra. Mantiene además su gate por estado Activo (gateOpen). ─── */
+  const canEdit = roleCode === 'ADMIN';
+  const canCargue = roleCode === 'GESTOR' || roleCode === 'ADMIN';
+  /* Reportería (analítica de Diego) = consumo de lectura → ADMIN y Usuario.
+     Es el drill-down por evento: lleva al tablero de ESTE evento. */
+  const canReporteria = roleCode === 'ADMIN' || roleCode === 'USER';
+  function headActions() {
+    const btns = [];
+    if (canEdit) {
+      btns.push(`<button type="button" class="naowee-btn naowee-btn--ghost naowee-btn--sm" data-action="editar">${I.edit} Editar evento</button>`);
+    }
+    if (canReporteria) {
+      btns.push(`<button type="button" class="naowee-btn naowee-btn--ghost naowee-btn--sm" data-action="reporteria">${I.chart} Ver reportería</button>`);
+    }
+    if (gateOpen && canCargue) {
+      btns.push(`<button type="button" class="naowee-btn naowee-btn--loud naowee-btn--sm" data-gate="inscripciones">${I.ticket} Ir a cargues</button>`);
+    }
+    return btns.join('');
+  }
+
+  /* ─── Render ───
+     Container superior consolidado (.det-card): header + franja de metadata
+     + bloque gestor/descripción. Debajo, "Seguimiento del evento". */
+  /* ════════════ Configuración del evento (catálogo deportivo + organizaciones) ════════════
+     Acta 25-jun: la creación es liviana; en la EDICIÓN se agregan deportes+competencias
+     (sencillo, sin categoría/sexo/cupos) y las organizaciones invitadas (solo nacional).
+     Editable por ADMIN; lectura para el resto. Persiste vía updateEvent → allEvents(). */
+  const DEPORTES_FLAT = Object.values(DEPORTES_POR_TIPO).flat()
+    .map((d) => ({ nombre: d.label, emoji: d.emoji || '', pruebas: d.pruebas || [] }));
+  /* Tipos de organización invitables. "Departamento" se OCULTA cuando el evento
+     tiene UN solo departamento (queda implícito: ya se sabe cuál); visible si es
+     multi-departamental o si aún no tiene ubicación definida (feedback Doug). */
+  const orgTiposFor = (deptos) => ['Liga', ...(deptos.length === 1 ? [] : ['Departamento']), 'Municipio', 'Club'];
+  /* El buscador de organizaciones trae el catálogo del TIPO elegido, ACOTADO a
+     la(s) sede(s) del evento (feedback Doug): si el evento es en Antioquia, solo
+     ligas/clubes/municipios de Antioquia. Multi-sede → unión. Sin sede → todo. */
+  const orgCatalogFor = (tipo, deptos) =>
+      tipo === 'Liga' ? ligasDeDeptos(deptos)
+    : tipo === 'Club' ? clubesDeDeptos(deptos)
+    : tipo === 'Departamento' ? (deptos.length ? deptos.slice() : DEPARTAMENTOS)
+    : tipo === 'Municipio' ? municipiosDeDeptos(deptos)
+    : [];
+  const phOrgFor = (tipo) => tipo === 'Liga' ? 'Busca una liga…' : tipo === 'Departamento' ? 'Busca un departamento…' : tipo === 'Municipio' ? 'Busca un municipio…' : 'Busca un club…';
+  /* ¿La organización ya invitada queda dentro del alcance geográfico del evento?
+     (Si la sede cambia después de invitar, se MARCA — no se borra dato guardado.) */
+  const orgEnAlcance = (o, deptos) => {
+    if (!deptos.length) return true;
+    if (o.tipo === 'Liga') return deptos.includes(deptoDeLiga(o.nombre));
+    if (o.tipo === 'Club') return deptos.includes(deptoDeClub(o.nombre));
+    if (o.tipo === 'Departamento') return deptos.includes(o.nombre);
+    /* Municipio: chequeo directo contra los municipios de la(s) sede(s) — a prueba
+       de homónimos (evita el reverse-lookup de primer match de deptoDeMunicipio). */
+    if (o.tipo === 'Municipio') return municipiosDeDeptos(deptos).includes(o.nombre);
+    return true;
+  };
+  const escH = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const ICON_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+  const ICON_CHEVD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+  const ICON_WARN = '<svg viewBox="0 0 16 16" fill="none"><path d="M7 5h2v4H7z" fill="#fff"/><circle cx="8" cy="11.2" r="1" fill="#fff"/></svg>';
+  const ICON_SPORT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20M2 12h20"/></svg>';
+
+  const getDeportes = (e) => Array.isArray(e.deportes) ? e.deportes : [];
+  const getOrgs = (e) => Array.isArray(e.organizaciones) ? e.organizaciones : [];
+  function persistCfg(patch) {
+    updateEvent(ev.id, patch);
+    ev = allEvents().find((e) => e.id === ev.id) || ev;
+    render();
+  }
+  function ddMarkupCfg(name, ph, cls) {
+    return `<div class="naowee-dropdown cfg-dd ${cls || ''}" data-dd="${name}">
+      <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox"><span class="naowee-dropdown__value is-placeholder" data-dd-val>${escH(ph)}</span><span class="naowee-dropdown__chevron">${ICON_CHEVD}</span></button>
+      <div class="naowee-dropdown__menu" role="listbox"></div>
+    </div>`;
+  }
+  function configHTML() {
+    const deportes = getDeportes(ev), orgs = getOrgs(ev), intl = ev.alcance === 'internacional';
+    const deportesSec = `
+      <section class="det-section cfg-section" aria-labelledby="cfg-dep-title" style="animation-delay:.12s">
+        <div class="det-section__head">${ICON_SPORT}<h3 id="cfg-dep-title">Deportes y competencias</h3></div>
+        ${canEdit ? `<div class="cfg-addrow">${ddMarkupCfg('cfgDeporte', 'Selecciona deportes…')}<button type="button" class="naowee-btn naowee-btn--loud" id="cfgAddDeporte" disabled>${ICON_PLUS} Agregar deporte</button></div>` : ''}
+        <div class="cfg-list">
+          ${deportes.length ? deportes.map((d, i) => { const nc = (d.competencias || []).length; return `
+            <div class="cfg-sport">
+              <div class="cfg-sport__head">
+                <button type="button" class="cfg-sport__toggle" data-toggle="${i}" aria-expanded="false">
+                  <span class="cfg-sport__chev">${ICON_CHEVD}</span>
+                  <span class="cfg-sport__name">${d.emoji ? d.emoji + ' ' : ''}${escH(d.deporte)}</span>
+                  <span class="naowee-badge naowee-badge--neutral naowee-badge--quiet cfg-sport__count">${nc} ${nc === 1 ? 'competencia' : 'competencias'}</span>
+                </button>
+                ${canEdit ? `<button type="button" class="cfg-x" data-rm-deporte="${i}" title="Quitar deporte">${ICON_XM}</button>` : ''}
+              </div>
+              <div class="cfg-chips">${nc ? d.competencias.map((c, j) => `<span class="cfg-chip">${escH(c)}${canEdit ? `<button type="button" class="cfg-chip__x" data-rm-comp="${i}:${j}" aria-label="Quitar competencia">${ICON_XM}</button>` : ''}</span>`).join('') : '<span class="cfg-empty-inline">Sin competencias</span>'}</div>
+            </div>`; }).join('') : `<div class="cfg-empty">Aún no hay deportes asociados.${canEdit ? ' Agrega los deportes y sus competencias.' : ''}</div>`}
+        </div>
+      </section>`;
+    const evDeptos = eventDeptos(ev);
+    const anyOut = orgs.some((o) => !orgEnAlcance(o, evDeptos));
+    /* Sede del evento acota las organizaciones (feedback Doug). El placeholder del
+       tipo refleja si "Departamento" aplica (oculto cuando hay 1 solo depto). */
+    const scopeHint = evDeptos.length
+      ? `<p class="cfg-scope-hint">Solo organizaciones de: <strong>${escH(evDeptos.join(', '))}</strong></p>`
+      : '';
+    const orgsSec = intl ? '' : `
+      <section class="det-section cfg-section" aria-labelledby="cfg-org-title" style="animation-delay:.14s">
+        <div class="det-section__head">${I.org}<h3 id="cfg-org-title">Organizaciones invitadas</h3></div>
+        ${canEdit ? scopeHint : ''}
+        ${canEdit ? `<div class="cfg-addrow">${ddMarkupCfg('cfgTipo', 'Liga', 'cfg-dd--tipo')}${ddMarkupCfg('cfgOrg', 'Busca una liga…', 'cfg-dd--org')}<button type="button" class="naowee-btn naowee-btn--loud" id="cfgAddOrg" disabled>${ICON_PLUS} Invitar</button></div>` : ''}
+        <div class="cfg-orgs">${orgs.length ? orgs.map((o, i) => { const out = !orgEnAlcance(o, evDeptos); return `<span class="cfg-org${out ? ' cfg-org--out' : ''}"${out ? ' title="Fuera del alcance geográfico actual del evento"' : ''}><span class="cfg-org__tipo">${escH(o.tipo)}</span> ${escH(o.nombre)}${out ? `<span class="cfg-org__flag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> fuera del alcance</span>` : ''}${canEdit ? `<button type="button" class="cfg-chip__x" data-rm-org="${i}" aria-label="Quitar organización">${ICON_XM}</button>` : ''}</span>`; }).join('') : `<div class="cfg-empty">Aún no hay organizaciones invitadas.</div>`}</div>
+        ${canEdit && anyOut ? `<div class="naowee-message naowee-message--caution cfg-msg"><div class="naowee-message__header"><span class="naowee-message__icon">${ICON_WARN}</span><span class="naowee-message__body">Hay organizaciones fuera del alcance geográfico actual (la sede del evento cambió). Revisa si siguen aplicando.</span></div></div>` : (canEdit && orgs.length ? `<div class="naowee-message naowee-message--caution cfg-msg"><div class="naowee-message__header"><span class="naowee-message__icon">${ICON_WARN}</span><span class="naowee-message__body">Al quitar una organización con inscritos, resultados o medallas ya cargados, el sistema validará antes de eliminarla.</span></div></div>` : '')}
+      </section>`;
+    return deportesSec + orgsSec;
+  }
+  function closeAllCfgDd() {
+    document.querySelectorAll('.cfg-dd.is-open').forEach((x) => x.classList.remove('is-open'));
+    document.querySelectorAll('.cfg-section--front').forEach((s) => s.classList.remove('cfg-section--front'));
+  }
+  function cfgDropdown(dd, opts, onSelect) {
+    if (!dd) return;
+    const menu = dd.querySelector('.naowee-dropdown__menu');
+    const valEl = dd.querySelector('[data-dd-val]');
+    const trigger = dd.querySelector('.naowee-dropdown__trigger');
+    function paint() {
+      menu.innerHTML = opts.map((o) => `<button type="button" class="naowee-dropdown__opt" data-val="${escH(o.value)}"><span>${escH(o.label)}</span></button>`).join('');
+      menu.querySelectorAll('.naowee-dropdown__opt').forEach((b) => b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const o = opts.find((x) => x.value === b.dataset.val);
+        valEl.textContent = o.label; valEl.classList.remove('is-placeholder');
+        closeAllCfgDd(); onSelect(o);
+      }));
+    }
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const willOpen = !dd.classList.contains('is-open');
+      closeAllCfgDd();
+      if (willOpen) { paint(); dd.classList.add('is-open'); dd.closest('.cfg-section')?.classList.add('cfg-section--front'); }
+    });
+  }
+  document.addEventListener('click', (e) => { if (!e.target.closest('.cfg-dd')) closeAllCfgDd(); });
+  /* Variante MULTI-select de cfgDropdown: cada opción es un checkbox, el menú se
+     mantiene ABIERTO al elegir, y los ya agregados salen deshabilitados. onChange se
+     dispara en cada toggle (para sincronizar el botón "Agregar N deportes"). */
+  function cfgMultiDropdown(dd, opts, pickedSet, onChange, cfg = {}) {
+    if (!dd) return;
+    const menu = dd.querySelector('.naowee-dropdown__menu');
+    const valEl = dd.querySelector('[data-dd-val]');
+    const trigger = dd.querySelector('.naowee-dropdown__trigger');
+    let placeholder = valEl.textContent;
+    /* opts puede ser array O función (catálogo dinámico, p.ej. orgs por tipo). */
+    const getOpts = () => (typeof opts === 'function' ? opts() : opts);
+    const triggerText = cfg.triggerText || ((n) => `${n} deporte${n > 1 ? 's' : ''} seleccionado${n > 1 ? 's' : ''}`);
+    const searchPh = cfg.searchPh || 'Buscar deporte…';
+    const CHK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    function updateTrigger() {
+      const n = pickedSet.size;
+      if (!n) { valEl.textContent = placeholder; valEl.classList.add('is-placeholder'); }
+      else { valEl.textContent = triggerText(n); valEl.classList.remove('is-placeholder'); }
+    }
+    const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    let q = '';
+    function paintList() {
+      const listEl = menu.querySelector('[data-dep-list]');
+      if (!listEl) return;
+      const list = getOpts();
+      const f = q ? list.filter((o) => norm(o.label).includes(norm(q))) : list;
+      listEl.innerHTML = f.length
+        ? f.map((o) => {
+            const checked = pickedSet.has(o.value);
+            return `<button type="button" class="naowee-dropdown__opt cfg-opt-multi${checked ? ' is-checked' : ''}${o.added ? ' is-added' : ''}" data-val="${escH(o.value)}"${o.added ? ' disabled aria-disabled="true"' : ''}>
+              <span class="cfg-opt-box">${checked || o.added ? CHK : ''}</span>
+              <span class="cfg-opt-lbl">${escH(o.label)}</span>
+              ${o.added ? '<span class="cfg-opt-added">ya agregado</span>' : ''}
+            </button>`;
+          }).join('')
+        : '<div class="cfg-org-empty">Sin coincidencias.</div>';
+      listEl.querySelectorAll('.cfg-opt-multi:not(.is-added)').forEach((b) => b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const v = b.dataset.val;
+        if (pickedSet.has(v)) pickedSet.delete(v); else pickedSet.add(v);
+        const on = pickedSet.has(v);
+        b.classList.toggle('is-checked', on);
+        b.querySelector('.cfg-opt-box').innerHTML = on ? CHK : '';
+        updateTrigger();
+        onChange && onChange();
+      }));
+    }
+    function paint() {
+      menu.innerHTML = `<div class="cfg-dd-search"><input type="text" class="cfg-dd-search__input" placeholder="${searchPh}" autocomplete="off"></div><div data-dep-list></div>`;
+      const inp = menu.querySelector('.cfg-dd-search__input');
+      inp.addEventListener('click', (e) => e.stopPropagation());
+      inp.addEventListener('input', () => { q = inp.value; paintList(); });
+      paintList();
+      setTimeout(() => inp.focus(), 30);
+    }
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const willOpen = !dd.classList.contains('is-open');
+      closeAllCfgDd();
+      if (willOpen) { q = ''; paint(); dd.classList.add('is-open'); dd.closest('.cfg-section')?.classList.add('cfg-section--front'); }
+    });
+    updateTrigger();
+    return { reset(ph) { if (ph !== undefined) placeholder = ph; pickedSet.clear(); updateTrigger(); } };
+  }
+  /* Dropdown de catálogo CON BUSCADOR acento-insensible (organizaciones por tipo).
+     getOpts() devuelve el catálogo vigente (depende del tipo); onSelect(valor) al elegir. */
+  function cfgSearchDropdown(dd, getOpts, onSelect) {
+    if (!dd) return null;
+    const menu = dd.querySelector('.naowee-dropdown__menu');
+    const valEl = dd.querySelector('[data-dd-val]');
+    const trigger = dd.querySelector('.naowee-dropdown__trigger');
+    const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    let q = '';
+    function paintList() {
+      const f = q ? getOpts().filter((o) => norm(o).includes(norm(q))) : getOpts();
+      const listEl = menu.querySelector('[data-org-list]');
+      listEl.innerHTML = f.length
+        ? f.map((o) => `<button type="button" class="naowee-dropdown__opt cfg-org-opt" data-val="${escH(o)}"><span>${escH(o)}</span></button>`).join('')
+        : '<div class="cfg-org-empty">Sin coincidencias.</div>';
+      listEl.querySelectorAll('.cfg-org-opt').forEach((b) => b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        valEl.textContent = b.dataset.val; valEl.classList.remove('is-placeholder');
+        closeAllCfgDd(); onSelect(b.dataset.val);
+      }));
+    }
+    function paint() {
+      menu.innerHTML = '<div class="cfg-dd-search"><input type="text" class="cfg-dd-search__input" placeholder="Buscar…" autocomplete="off"></div><div data-org-list></div>';
+      const inp = menu.querySelector('.cfg-dd-search__input');
+      inp.addEventListener('click', (e) => e.stopPropagation());
+      inp.addEventListener('input', () => { q = inp.value; paintList(); });
+      paintList();
+      setTimeout(() => inp.focus(), 30);
+    }
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const willOpen = !dd.classList.contains('is-open');
+      closeAllCfgDd();
+      if (willOpen) { q = ''; paint(); dd.classList.add('is-open'); dd.closest('.cfg-section')?.classList.add('cfg-section--front'); }
+    });
+    return { reset(ph) { valEl.textContent = ph; valEl.classList.add('is-placeholder'); q = ''; } };
+  }
+  function bindConfig() {
+    if (!canEdit) return;
+    const page = document.getElementById('detailPage');
+    /* Multi-selector de deportes (feedback Doug): elige varios y agrégalos de una. */
+    const pickedDeportes = new Set();
+    const addDepBtn = page.querySelector('#cfgAddDeporte');
+    const syncAddDep = () => { if (!addDepBtn) return; const n = pickedDeportes.size; addDepBtn.disabled = n === 0; addDepBtn.innerHTML = `${ICON_PLUS} ${n > 1 ? 'Agregar ' + n + ' deportes' : 'Agregar deporte'}`; };
+    const depOpts = DEPORTES_FLAT.map((d) => ({ value: d.nombre, label: `${d.emoji} ${d.nombre}`.trim(), added: getDeportes(ev).some((x) => x.deporte === d.nombre) }));
+    cfgMultiDropdown(page.querySelector('[data-dd="cfgDeporte"]'), depOpts, pickedDeportes, syncAddDep);
+    addDepBtn?.addEventListener('click', () => {
+      if (!pickedDeportes.size) { flash('Selecciona al menos un deporte.'); return; }
+      const cur = getDeportes(ev);
+      const existing = new Set(cur.map((d) => d.deporte));
+      const toAdd = [...pickedDeportes].filter((name) => !existing.has(name)).map((name) => { const src = DEPORTES_FLAT.find((d) => d.nombre === name); return { deporte: name, emoji: src?.emoji || '', competencias: src?.pruebas || [] }; });
+      if (!toAdd.length) { flash('Esos deportes ya están agregados.'); return; }
+      persistCfg({ deportes: [...cur, ...toAdd] });
+    });
+    page.querySelectorAll('.cfg-sport__toggle').forEach((b) => b.addEventListener('click', () => {
+      const card = b.closest('.cfg-sport'); const open = card.classList.toggle('is-open');
+      b.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }));
+    page.querySelectorAll('[data-rm-deporte]').forEach((b) => b.addEventListener('click', () => {
+      const cur = getDeportes(ev).slice(); cur.splice(+b.dataset.rmDeporte, 1); persistCfg({ deportes: cur });
+    }));
+    page.querySelectorAll('[data-rm-comp]').forEach((b) => b.addEventListener('click', () => {
+      const [i, j] = b.dataset.rmComp.split(':').map(Number);
+      const cur = getDeportes(ev).map((d) => ({ ...d, competencias: [...(d.competencias || [])] }));
+      cur[i].competencias.splice(j, 1); persistCfg({ deportes: cur });
+    }));
+    let pickedTipo = 'Liga';
+    /* Multi-selector de organizaciones (feedback Doug): elige varias y invítalas de una. */
+    const pickedOrgs = new Set();
+    const orgBtn = page.querySelector('#cfgAddOrg');
+    const cfgDeptos = eventDeptos(ev);   /* sede(s) del evento → acota el catálogo */
+    const syncOrgBtn = () => { if (!orgBtn) return; const n = pickedOrgs.size; orgBtn.disabled = n === 0; orgBtn.innerHTML = `${ICON_PLUS} ${n > 1 ? 'Invitar ' + n : 'Invitar'}`; };
+    /* Catálogo = tipo elegido ACOTADO a la(s) sede(s); las ya invitadas salen "ya agregado". */
+    const orgOpts = () => orgCatalogFor(pickedTipo, cfgDeptos).map((name) => ({ value: name, label: name, added: getOrgs(ev).some((o) => o.tipo === pickedTipo && o.nombre === name) }));
+    const orgMulti = cfgMultiDropdown(page.querySelector('[data-dd="cfgOrg"]'), orgOpts, pickedOrgs, syncOrgBtn, {
+      triggerText: (n) => n > 1 ? `${n} organizaciones seleccionadas` : '1 organización seleccionada',
+      searchPh: 'Buscar organización…'
+    });
+    cfgDropdown(page.querySelector('[data-dd="cfgTipo"]'), orgTiposFor(cfgDeptos).map((t) => ({ value: t, label: t })), (o) => {
+      pickedTipo = o.value;
+      if (orgMulti) orgMulti.reset(phOrgFor(o.value));   // al cambiar de tipo, limpia las organizaciones elegidas
+      syncOrgBtn();
+    });
+    const addOrg = () => {
+      if (!pickedOrgs.size) { flash('Selecciona al menos una organización.'); return; }
+      const cur = getOrgs(ev);
+      const isDup = (name) => cur.some((o) => o.tipo === pickedTipo && o.nombre === name);
+      const toAdd = [...pickedOrgs].filter((name) => !isDup(name)).map((name) => ({ tipo: pickedTipo, nombre: name }));
+      if (!toAdd.length) { flash('Esas organizaciones ya están invitadas.'); return; }
+      persistCfg({ organizaciones: [...cur, ...toAdd] });
+    };
+    orgBtn?.addEventListener('click', addOrg);
+    page.querySelectorAll('[data-rm-org]').forEach((b) => b.addEventListener('click', () => {
+      const cur = getOrgs(ev).slice();
+      const org = cur[+b.dataset.rmOrg];
+      /* Validación al quitar (feedback Juanma): confirmar; en real, el sistema
+         verificaría inscritos/resultados/medallería cargados para esa organización. */
+      const ok = window.confirm(`¿Quitar «${org ? org.nombre : ''}» de las organizaciones invitadas?\n\nSi ya tuviera inscritos, resultados o medallería cargados, el sistema los validaría antes de eliminarla.`);
+      if (!ok) return;
+      cur.splice(+b.dataset.rmOrg, 1); persistCfg({ organizaciones: cur });
+    }));
+  }
+
+  function render() {
+    document.getElementById('detailPage').innerHTML = `
+      <section class="det-card" aria-label="Datos del evento">
+        <header class="det-head">
+          <div class="det-head__id">
+            <a class="det-back" href="eventos.html?role=${roleCode}${params.get('from') === 'calendar' ? '&view=calendar' : ''}" aria-label="Volver a eventos" title="Volver a eventos">${I.chevL}</a>
+            <h2 class="det-head__name">${ev.name}</h2>
+            <span class="badge s-${ev.status}">${STATUS_LABEL[ev.status]}</span>
+          </div>
+          <div class="det-head__actions">${headActions()}</div>
+        </header>
+        ${metaStripHTML()}
+        ${footHTML()}
+      </section>
+
+      ${configHTML()}
+      ${trackHTML()}
+    `;
+    bind();
+    /* Anima barras de progreso tras pintar (rAF doble para garantizar transición). */
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      document.querySelectorAll('.prog-fill').forEach((f) => f.classList.add('is-filled'));
+    }));
+  }
+
+  /* ─── Toast placeholder (cargues = Fase 4) ─── */
+  let _t = null;
+  /* Snackbar canónico (DS): window.naoweeToast en naowee-footer.js. */
+  function flash(msg, type = 'info') { window.naoweeToast(msg, type); }
+
+  function bind() {
+    document.querySelectorAll('[data-gate]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const tipo = el.dataset.gate;
+        const fromCal = params.get('from') === 'calendar' ? '&from=calendar' : '';
+        window.location.href = `cargue.html?tipo=${tipo}&id=${ev.id}&role=${roleCode}${fromCal}`;
+      });
+    });
+    const editBtn = document.querySelector('[data-action="editar"]');
+    if (editBtn) editBtn.addEventListener('click', () => openEditModal());
+    const repBtn = document.querySelector('[data-action="reporteria"]');
+    if (repBtn) repBtn.addEventListener('click', () => {
+      window.location.href = `reporteria.html?id=${ev.id}&role=${roleCode}`;
+    });
+    bindConfig();
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     MODAL EDITAR EVENTO — lógica completa
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* ── Helpers de fecha (datepicker) — mismos que evento-crear ── */
+  const MES_ABBR_M = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const MES_FULL_M = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  function fmtDateM(d) { return `${String(d.getDate()).padStart(2,'0')} ${MES_ABBR_M[d.getMonth()]} ${d.getFullYear()}`; }
+  function sameDayM(a, b) { return a && b && a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+  function parseDate(str) {
+    if (!str) return null;
+    const m = str.match(/^(\d{1,2})\s+(\w+)\s+(\d{4})$/);
+    if (!m) return null;
+    const day = parseInt(m[1],10), mon = MES_ABBR_M.indexOf(m[2].toLowerCase()), yr = parseInt(m[3],10);
+    if (mon === -1) return null;
+    return new Date(yr, mon, day);
+  }
+
+  const ICON_XM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+  const ICON_CHECK_M = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  const CHEV_M = {
+    left:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+    right: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>',
+    down:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
+    up:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>'
+  };
+  const DOW_M = ['Lun','Mar','Mié','Jue','Vie','Sab','Dom'];
+
+  const ICON_LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+  const ICON_INFO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
+
+  const REDUCE_MOTION_M = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ── Estado del modal ── */
+  let mState = {};
+  let mSaveAttempts = 0;
+  let mBaseline = '';
+
+  /* Snapshot comparable de los campos editables (para detectar cambios). */
+  function mSnapshot() {
+    /* Ubicación multi → se serializa ORDENADA para que revertir re-deshabilite Guardar. */
+    const deps = (mState.departamentos || []).slice().sort();
+    const munis = (mState.municipios || []).map((m) => `${m.depto}${'›'}${m.nombre}`).sort();
+    return JSON.stringify({
+      nombre: (mState.nombre || '').trim(),
+      inicio: mState.inicio ? mState.inicio.getTime() : null,
+      fin: mState.fin ? mState.fin.getTime() : null,
+      departamentos: deps,
+      municipios: munis,
+      gestorId: mState.gestorId || '',
+      descripcion: (mState.descripcion || '').trim()
+    });
+  }
+  /* "Guardar cambios" solo se habilita si hay cambios respecto al estado inicial. */
+  function syncDirty() {
+    const btn = document.getElementById('mBtnSave');
+    if (btn) btn.disabled = (mSnapshot() === mBaseline);
+  }
+
+  /* ── Sheet backdrop del modal ── */
+  let _mBackdrop = null;
+  function ensureMBackdrop() {
+    if (_mBackdrop) return _mBackdrop;
+    _mBackdrop = document.createElement('div');
+    _mBackdrop.className = 'naowee-sheet-backdrop';
+    document.getElementById('evEditModal').appendChild(_mBackdrop);
+    _mBackdrop.addEventListener('click', closeAllMPopovers);
+    return _mBackdrop;
+  }
+  function isMobileM() { return window.matchMedia('(max-width: 760px)').matches; }
+  function closeAllMPopovers() {
+    document.querySelectorAll('#evEditModal .naowee-dropdown.is-open, #evEditModal .naowee-datepicker.is-open').forEach((el) => el.classList.remove('is-open'));
+    if (_mBackdrop) _mBackdrop.classList.remove('is-open');
+  }
+
+  /* ── Dropdown del modal ── */
+  function setupMDropdown(name, opts, onSelect, getSelected, container, cfg = {}) {
+    const root = container || document.getElementById('evEditModal');
+    const dd = root.querySelector(`[data-dd="${name}"]`);
+    if (!dd) return null;
+    const menu = dd.querySelector('.naowee-dropdown__menu');
+    const valEl = dd.querySelector('[data-dd-val]');
+    const trigger = dd.querySelector('.naowee-dropdown__trigger');
+    const sheetTitle = dd.getAttribute('data-sheet-title') || 'Selecciona';
+    const multi = !!cfg.multi;   /* multi-select: checkbox + no cierra al elegir + grupos opcionales */
+
+    function paint() {
+      const sel = getSelected ? getSelected() : null;
+      const sheetHead = `<div class="naowee-dropdown__sheet-head"><span class="naowee-dropdown__sheet-title">${sheetTitle}</span><button type="button" class="naowee-dropdown__sheet-close" data-close aria-label="Cerrar">${ICON_XM}</button></div>`;
+      const renderOpt = (o) => {
+        const checked = multi ? cfg.isSelected(o.value) : (o.value === sel);
+        return `<button type="button" class="naowee-dropdown__opt ${multi ? 'naowee-dropdown__opt--multi' : ''} ${checked ? (multi ? 'is-checked' : 'is-selected') : ''}" data-val="${o.value}">${multi ? `<span class="dd-check-box">${checked ? ICON_CHECK_M : ''}</span>` : ''}${o.emoji ? `<span class="naowee-dropdown__opt-emoji">${o.emoji}</span>` : ''}${o.html || `<span>${o.label}</span>`}${multi ? '' : `<span class="naowee-dropdown__opt-check">${ICON_CHECK_M}</span>`}</button>`;
+      };
+      const groupsData = (multi && cfg.groups) ? cfg.groups() : null;
+      const flat = groupsData ? groupsData.flatMap((g) => g.opts) : opts;
+      let bodyRows;
+      if (groupsData) {
+        bodyRows = groupsData.length
+          ? groupsData.map((g) => `<div class="dd-group-hd">${g.label}</div>${g.opts.map(renderOpt).join('')}`).join('')
+          : `<div class="naowee-dropdown__empty">Elige un departamento primero</div>`;
+      } else {
+        bodyRows = flat.length ? flat.map(renderOpt).join('') : `<div class="naowee-dropdown__empty">Sin opciones disponibles</div>`;
+      }
+      menu.innerHTML = sheetHead + bodyRows;
+      menu.querySelectorAll('.naowee-dropdown__opt').forEach((btn) => {
+        btn.addEventListener('click', (e) => { e.stopPropagation(); const chosen = flat.find((o) => o.value===btn.dataset.val); if (!chosen) return; onSelect(chosen); if (multi) paint(); else close(); });
+      });
+      menu.querySelector('[data-close]')?.addEventListener('click', (e) => { e.stopPropagation(); close(); });
+    }
+    function open() {
+      if (dd.classList.contains('naowee-dropdown--disabled')) return;
+      closeAllMPopovers();
+      paint();
+      dd.classList.remove('is-up');
+      if (!isMobileM()) {
+        const r = trigger.getBoundingClientRect();
+        if (window.innerHeight - r.bottom < 300 && r.top > window.innerHeight - r.bottom) dd.classList.add('is-up');
+      }
+      dd.classList.add('is-open');
+      trigger.setAttribute('aria-expanded','true');
+      if (isMobileM()) ensureMBackdrop().classList.add('is-open');
+    }
+    function close() {
+      dd.classList.remove('is-open');
+      trigger.setAttribute('aria-expanded','false');
+      if (_mBackdrop && !document.querySelector('#evEditModal .is-open')) _mBackdrop.classList.remove('is-open');
+    }
+    trigger.addEventListener('click', (e) => { e.stopPropagation(); dd.classList.contains('is-open') ? close() : open(); });
+    return {
+      el: dd, valEl,
+      setLabel(label, isPlaceholder) { valEl.textContent=label; valEl.classList.toggle('is-placeholder',!!isPlaceholder); },
+      setDisabled(d) { dd.classList.toggle('naowee-dropdown--disabled', d); },
+      setError(e) { dd.classList.toggle('naowee-dropdown--error', e); },
+      setOpts(next) { opts = next; },
+      repaint() { paint(); },
+      close
+    };
+  }
+
+  /* ── Datepicker del modal ── */
+  let mDpInstances = {};
+  function setupMDatepicker(name, onPick, getMin) {
+    const dp = document.querySelector(`#evEditModal [data-datepicker="${name}"]`);
+    if (!dp) return null;
+    const trigger = dp.querySelector('.naowee-datepicker__trigger');
+    const valEl = dp.querySelector('[data-dp-val]');
+    let curMonth = 5, curYear = 2026;
+    let calView = 'days';
+    let cal = null;
+
+    function buildCal() {
+      cal = document.createElement('div');
+      cal.className = 'naowee-cal';
+      dp.appendChild(cal);
+    }
+    function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+    function paint() {
+      const selected = name === 'm-inicio' ? mState.inicio : mState.fin;
+      const minRaw = getMin ? getMin() : null;
+      const min = minRaw ? startOfDay(minRaw) : null;
+      const today = new Date(2026, 5, 2);
+      const displayName = name === 'm-inicio' ? 'Fecha de inicio' : 'Fecha de fin';
+      const headerTitle = calView==='years' ? curYear : `${MES_FULL_M[curMonth]} de ${curYear}`;
+      const headerChev = calView==='days' ? CHEV_M.down : CHEV_M.up;
+      let header = `<div class="naowee-datepicker__header">
+        <button type="button" class="naowee-datepicker__month-selector" data-toggleview aria-label="Cambiar vista">
+          <span class="naowee-datepicker__month">${headerTitle}</span>
+          <span class="naowee-datepicker__month-chevron">${headerChev}</span>
+        </button>`;
+      if (calView==='days') {
+        header += `<div class="naowee-datepicker__controls">
+          <button type="button" class="naowee-datepicker__nav" data-nav="-1" aria-label="Anterior">${CHEV_M.left}</button>
+          <button type="button" class="naowee-datepicker__nav" data-nav="1" aria-label="Siguiente">${CHEV_M.right}</button>
+        </div>`;
+      }
+      header += `</div>`;
+      let body = '';
+      if (calView==='months') {
+        body = '<div class="naowee-datepicker__month-grid">' +
+          MES_FULL_M.map((m,i) => `<button type="button" class="naowee-datepicker__month-item ${i===curMonth?'naowee-datepicker__month-item--selected':''}" data-month="${i}">${m}</button>`).join('') + '</div>';
+      } else if (calView==='years') {
+        const sy = curYear - (curYear%4) - 4; let cells = '';
+        for (let yi=0; yi<12; yi++) { const y=sy+yi; cells+=`<button type="button" class="naowee-datepicker__month-item ${y===curYear?'naowee-datepicker__month-item--selected':''}" data-year="${y}">${y}</button>`; }
+        body = `<div class="naowee-datepicker__month-grid">${cells}</div>`;
+      } else {
+        const first = new Date(curYear, curMonth, 1);
+        const startOffset = (first.getDay()+6)%7;
+        const daysInMonth = new Date(curYear, curMonth+1, 0).getDate();
+        const prevDays = new Date(curYear, curMonth, 0).getDate();
+        const all = [];
+        for (let pi=startOffset-1; pi>=0; pi--) all.push({d:prevDays-pi, other:true});
+        for (let ci=1; ci<=daysInMonth; ci++) all.push({d:ci, other:false});
+        const rem = 42-all.length;
+        for (let ni=1; ni<=rem; ni++) all.push({d:ni, other:true});
+        const wkHtml = '<div class="naowee-datepicker__week">'+DOW_M.map((w)=>`<span class="naowee-datepicker__weekday">${w}</span>`).join('')+'</div>';
+        let weeksHtml = '';
+        for (let w=0; w<6; w++) {
+          weeksHtml += '<div class="naowee-datepicker__week">';
+          for (let di=0; di<7; di++) {
+            const cell = all[w*7+di];
+            const cls = ['naowee-datepicker__day'];
+            let disabled = false;
+            if (cell.other) cls.push('naowee-datepicker__day--other-month');
+            else {
+              const date = new Date(curYear, curMonth, cell.d);
+              if (min && date < min) { cls.push('naowee-datepicker__day--disabled'); disabled = true; }
+              if (sameDayM(date, selected)) cls.push('naowee-datepicker__day--selected');
+              if (sameDayM(date, today)) cls.push('naowee-datepicker__day--today');
+            }
+            weeksHtml += `<button type="button" class="${cls.join(' ')}"${(cell.other||disabled)?'':` data-d="${cell.d}"`}>${cell.d}</button>`;
+          }
+          weeksHtml += '</div>';
+        }
+        body = `<div class="naowee-datepicker__content">${wkHtml}${weeksHtml}</div>`;
+      }
+      cal.innerHTML =
+        `<div class="naowee-cal__sheet-head"><span class="naowee-cal__sheet-title">${displayName}</span><button type="button" class="naowee-cal__sheet-close" data-close aria-label="Cerrar">${ICON_XM}</button></div>` +
+        `<div class="naowee-datepicker__calendar">${header}${body}</div>`;
+      cal.querySelector('[data-toggleview]')?.addEventListener('click', (e) => { e.stopPropagation(); calView=calView==='days'?'months':calView==='months'?'years':'days'; paint(); });
+      cal.querySelectorAll('[data-nav]').forEach((b) => b.addEventListener('click', (e) => {
+        e.stopPropagation(); const delta=Number(b.dataset.nav);
+        if (calView==='days') { curMonth+=delta; if (curMonth>11){curMonth=0;curYear++;} if (curMonth<0){curMonth=11;curYear--;} }
+        else if (calView==='years') { curYear+=delta*4; }
+        paint();
+      }));
+      cal.querySelectorAll('[data-month]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); curMonth=Number(b.dataset.month); calView='days'; paint(); }));
+      cal.querySelectorAll('[data-year]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); curYear=Number(b.dataset.year); calView='months'; paint(); }));
+      cal.querySelectorAll('.naowee-datepicker__day[data-d]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); onPick(new Date(curYear, curMonth, Number(b.dataset.d))); close(); }));
+      cal.querySelector('[data-close]')?.addEventListener('click', (e) => { e.stopPropagation(); close(); });
+    }
+    function placeCal() {
+      cal.classList.remove('is-up','is-right');
+      cal.style.position=''; cal.style.top=''; cal.style.bottom=''; cal.style.left=''; cal.style.right='';
+      const r = trigger.getBoundingClientRect();
+      const calH=cal.offsetHeight, calW=cal.offsetWidth;
+      const HDR=96, FTR=80, GAP=6, M=8;
+      const belowSpace = window.innerHeight - r.bottom - FTR;
+      const aboveSpace = r.top - HDR;
+      if (r.left+calW > window.innerWidth-M) cal.classList.add('is-right');
+      if (belowSpace >= calH+GAP) { /* cabe abajo */ }
+      else if (aboveSpace >= calH+GAP) { cal.classList.add('is-up'); }
+      else {
+        cal.classList.remove('is-right');
+        const top = Math.max(HDR, Math.min(r.bottom+GAP, window.innerHeight-FTR-calH-M));
+        const left = Math.max(M, Math.min(r.left, window.innerWidth-calW-M));
+        cal.style.position='fixed'; cal.style.top=top+'px'; cal.style.bottom='auto';
+        cal.style.left=left+'px'; cal.style.right='auto';
+      }
+    }
+    function open() {
+      closeAllMPopovers();
+      if (!cal) buildCal();
+      const sel = name==='m-inicio' ? mState.inicio : mState.fin;
+      if (sel) { curMonth=sel.getMonth(); curYear=sel.getFullYear(); }
+      calView='days'; paint();
+      if (!isMobileM()) placeCal();
+      dp.classList.add('is-open');
+      if (isMobileM()) ensureMBackdrop().classList.add('is-open');
+    }
+    function close() {
+      dp.classList.remove('is-open');
+      if (cal) { cal.classList.remove('is-up','is-right'); cal.style.position=''; cal.style.top=''; cal.style.bottom=''; cal.style.left=''; cal.style.right=''; }
+      if (_mBackdrop && !document.querySelector('#evEditModal .is-open')) _mBackdrop.classList.remove('is-open');
+    }
+    trigger.addEventListener('click', (e) => { e.stopPropagation(); dp.classList.contains('is-open') ? close() : open(); });
+    return {
+      el: dp,
+      setValue(d) { valEl.textContent=d?fmtDateM(d):'Selecciona una fecha'; valEl.classList.toggle('is-placeholder',!d); },
+      setError(e) { dp.classList.toggle('naowee-datepicker--error', e); },
+      close
+    };
+  }
+
+  /* ── Helpers de error del modal ── */
+  function mFieldEl(name) { return document.querySelector(`#evEditModal [data-field="${name}"]`); }
+  function mControlEl(f) { return f.querySelector('.naowee-textfield__input-wrap, .naowee-datepicker__trigger, .naowee-dropdown__trigger'); }
+  function mWiggle(el) {
+    if (!el || REDUCE_MOTION_M) return;
+    el.classList.remove('naowee-shake'); void el.offsetWidth;
+    el.classList.add('naowee-shake');
+    el.addEventListener('animationend', () => el.classList.remove('naowee-shake'), {once:true});
+  }
+  function mSetError(name, msg, doWiggle) {
+    const f = mFieldEl(name); if (!f) return;
+    f.classList.add('naowee-textfield--error');
+    const m = f.querySelector('[data-msg]');
+    if (m) { m.innerHTML='<span class="naowee-helper naowee-helper--negative naowee-helper--loud"><span class="naowee-helper__text"><span class="naowee-helper__badge"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="6" style="fill:var(--field-border-error)"/><path d="M3.75 6h4.5" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg></span><span>'+msg+'</span></span></span>'; m.style.display='block'; m.setAttribute('aria-live','polite'); }
+    if (name==='m-inicio' && mDpInstances['m-inicio']) mDpInstances['m-inicio'].setError(true);
+    if (name==='m-fin'    && mDpInstances['m-fin'])    mDpInstances['m-fin'].setError(true);
+    if (doWiggle) mWiggle(mControlEl(f));
+  }
+  function mClearError(name) {
+    const f = mFieldEl(name); if (!f) return;
+    f.classList.remove('naowee-textfield--error');
+    const m = f.querySelector('[data-msg]'); if (m) m.style.display='none';
+    if (name==='m-inicio' && mDpInstances['m-inicio']) mDpInstances['m-inicio'].setError(false);
+    if (name==='m-fin'    && mDpInstances['m-fin'])    mDpInstances['m-fin'].setError(false);
+  }
+
+  /* ── Construir HTML del cuerpo del modal según estado ── */
+  function buildModalBody() {
+    const body = document.getElementById('evModalBody');
+    const foot = document.getElementById('evModalFoot');
+    const isLockedAll = isFinal;
+    const lockPlace = isActivo; /* Activo: inicio + lugar bloqueados */
+
+    const lockNote = lockPlace && !isLockedAll
+      ? `<div class="naowee-message naowee-message--caution" style="margin-bottom:20px">
+           <div class="naowee-message__header">
+             <span class="naowee-message__icon">${ICON_LOCK}</span>
+             <span class="naowee-message__body">El evento ya está activo: la <strong>fecha de inicio</strong> y el <strong>lugar</strong> no se pueden modificar.</span>
+           </div>
+         </div>`
+      : '';
+    const readonlyNote = isLockedAll
+      ? `<div class="naowee-message naowee-message--informative" style="margin-bottom:20px">
+           <div class="naowee-message__header">
+             <span class="naowee-message__icon">${ICON_INFO}</span>
+             <span class="naowee-message__body">Evento finalizado &middot; <strong>solo lectura.</strong> No es posible editar sus datos.</span>
+           </div>
+         </div>`
+      : '';
+
+    /* ── Campo Fecha inicio (disabled si Activo o Finalizado) ── */
+    const inicioLocked = lockPlace || isLockedAll;
+    const finLocked = isLockedAll;
+    const lugarLocked = lockPlace || isLockedAll;
+    const allLocked = isLockedAll;
+    const intl = ev.alcance === 'internacional';   /* internacional → el lugar (depto/municipio) NO aplica */
+
+    const dpIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+    const ddChevIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+
+    body.innerHTML = `
+      ${readonlyNote}${lockNote}
+      <div class="ev-modal__grid">
+        <!-- Nombre -->
+        <div class="naowee-textfield col-2 ${allLocked?'naowee-textfield--readonly':''}" data-field="m-nombre">
+          <label class="naowee-textfield__label ${allLocked?'':'naowee-textfield__label--required'}" for="mf-nombre">Nombre del evento</label>
+          <div class="naowee-textfield__input-wrap">
+            <input type="text" class="naowee-textfield__input" id="mf-nombre" autocomplete="off"
+              value="${ev.name.replace(/"/g,'&quot;')}" ${allLocked?'disabled':''}
+              placeholder="Nombre del evento">
+          </div>
+          <span class="naowee-textfield__msg" data-msg style="display:none"></span>
+        </div>
+
+        <!-- Fecha inicio (locked si Activo/Finalizado) -->
+        <div data-field="m-inicio">
+          <label class="naowee-textfield__label ${inicioLocked?'lbl-locked':''}" id="mlbl-inicio">
+            ${inicioLocked?ICON_LOCK+' ':''}Fecha de inicio
+          </label>
+          ${inicioLocked
+            ? `<div class="field-readonly-val">${ev.start}</div>`
+            : `<div class="naowee-datepicker" data-datepicker="m-inicio">
+                <button type="button" class="naowee-datepicker__trigger" aria-haspopup="dialog" aria-labelledby="mlbl-inicio">
+                  <span class="naowee-datepicker__ico">${dpIcon}</span>
+                  <span class="naowee-datepicker__val is-placeholder" data-dp-val>Selecciona una fecha</span>
+                </button>
+              </div>`
+          }
+          <span class="naowee-textfield__msg" data-msg style="display:none"></span>
+        </div>
+
+        <!-- Fecha fin -->
+        <div data-field="m-fin">
+          <label class="naowee-textfield__label ${finLocked?'lbl-locked':''}" id="mlbl-fin">
+            ${finLocked?ICON_LOCK+' ':''}Fecha de fin
+          </label>
+          ${finLocked
+            ? `<div class="field-readonly-val">${ev.end}</div>`
+            : `<div class="naowee-datepicker" data-datepicker="m-fin">
+                <button type="button" class="naowee-datepicker__trigger" aria-haspopup="dialog" aria-labelledby="mlbl-fin">
+                  <span class="naowee-datepicker__ico">${dpIcon}</span>
+                  <span class="naowee-datepicker__val is-placeholder" data-dp-val>Selecciona una fecha</span>
+                </button>
+              </div>`
+          }
+          <span class="naowee-textfield__msg" data-msg style="display:none"></span>
+        </div>
+
+        <!-- Departamento(s) / Municipio(s): MULTI (multi-departamental/municipal).
+             NO aplican en eventos internacionales; solo lectura si Activo/Finalizado
+             (se muestra el resumen del lugar). -->
+        <div data-field="m-departamento" ${(lugarLocked && !intl) ? 'class="col-2"' : ''}>
+          <label class="naowee-textfield__label ${(lugarLocked||intl)?'lbl-locked':''}" id="mlbl-depto">
+            ${(lugarLocked||intl)?ICON_LOCK+' ':''}${intl ? 'Alcance' : (lugarLocked ? 'Lugar' : 'Departamento(s)')}
+          </label>
+          ${intl
+            ? `<div class="field-readonly-val">🌐 Internacional — el lugar no aplica</div>`
+            : lugarLocked
+              ? `<div class="field-readonly-val">${escH(placeLabel(ev))}</div>`
+              : `<div class="naowee-dropdown" data-dd="m-departamento" data-sheet-title="Departamentos">
+                  <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-labelledby="mlbl-depto">
+                    <span class="naowee-dropdown__value is-placeholder" data-dd-val>Selecciona departamentos…</span>
+                    <span class="naowee-dropdown__chevron">${ddChevIcon}</span>
+                  </button>
+                  <div class="naowee-dropdown__menu" role="listbox"></div>
+                </div>`
+          }
+          <span class="naowee-textfield__msg" data-msg style="display:none"></span>
+        </div>
+
+        <!-- Municipio(s): opcional, multi, agrupado por depto. Oculto si locked/internacional. -->
+        <div data-field="m-municipio" id="mMuniField" hidden>
+          <label class="naowee-textfield__label" id="mlbl-muni">Municipio(s) <span class="lbl-opt">· opcional</span></label>
+          <div class="naowee-dropdown" data-dd="m-municipio" data-sheet-title="Municipios">
+            <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-labelledby="mlbl-muni">
+              <span class="naowee-dropdown__value is-placeholder" data-dd-val>Municipios (opcional)…</span>
+              <span class="naowee-dropdown__chevron">${ddChevIcon}</span>
+            </button>
+            <div class="naowee-dropdown__menu" role="listbox"></div>
+          </div>
+          <span class="naowee-textfield__msg" data-msg style="display:none"></span>
+        </div>
+
+        <!-- Gestor -->
+        <div data-field="m-gestor" class="col-2">
+          <label class="naowee-textfield__label" id="mlbl-gestor">Gestor asignado</label>
+          ${allLocked
+            ? `<div class="field-readonly-val">${gestor.name}</div>`
+            : `<div class="naowee-dropdown" data-dd="m-gestor" data-sheet-title="Asignar al gestor">
+                <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-labelledby="mlbl-gestor">
+                  <span class="naowee-dropdown__value is-placeholder" data-dd-val>Selecciona un gestor…</span>
+                  <span class="naowee-dropdown__chevron">${ddChevIcon}</span>
+                </button>
+                <div class="naowee-dropdown__menu" role="listbox"></div>
+              </div>`
+          }
+          <span class="naowee-textfield__msg" data-msg style="display:none"></span>
+        </div>
+
+        <!-- Descripción -->
+        <div class="naowee-textfield naowee-textfield--textarea col-2 ${allLocked?'naowee-textfield--readonly':''}" data-field="m-descripcion">
+          <label class="naowee-textfield__label" for="mf-desc">Descripción</label>
+          <div class="naowee-textfield__input-wrap">
+            <textarea class="naowee-textfield__input" id="mf-desc" rows="3"
+              placeholder="Resumen del evento, alcance y notas para los participantes (opcional)."
+              ${allLocked?'disabled':''}></textarea>
+          </div>
+        </div>
+      </div>`;
+
+    foot.innerHTML = isLockedAll
+      ? `<button type="button" class="naowee-btn naowee-btn--ghost" id="mBtnClose">Cerrar</button>`
+      : `<button type="button" class="naowee-btn naowee-btn--loud" id="mBtnSave">
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+           Guardar cambios
+         </button>`;
+  }
+
+  /* ── Inicializar controles del modal con valores preexistentes ── */
+  function initModalControls() {
+    const lockPlace  = isActivo;
+    const allLocked  = isFinal;
+
+    /* Precargar estado del modal desde ev. Ubicación MULTI: se normaliza desde
+       las arrays estructuradas o, si es un evento legacy, desde ev.place. */
+    mState = {
+      nombre: ev.name,
+      inicio: parseDate(ev.start),
+      fin:    parseDate(ev.end),
+      departamentos: eventDeptos(ev).slice(),
+      municipios:    eventMunicipios(ev).map((m) => ({ depto: m.depto, nombre: m.nombre })),
+      gestorId: ev.gestorId || ((() => { return (GESTOR_MAP[ev.id] || 'g-andrea'); })()),
+      descripcion: ev.descripcion || ''
+    };
+    mSaveAttempts = 0;
+    mBaseline = mSnapshot();
+
+    if (allLocked) {
+      /* Solo lectura: precarga valores visuales */
+      const ta = document.getElementById('mf-desc');
+      if (ta) ta.value = mState.descripcion;
+      return;
+    }
+
+    /* Nombre */
+    const nomInput = document.getElementById('mf-nombre');
+    if (nomInput) {
+      nomInput.value = mState.nombre;
+      nomInput.addEventListener('input', () => { mState.nombre = nomInput.value; if (nomInput.value.trim()) mClearError('m-nombre'); syncDirty(); });
+    }
+
+    /* Descripción */
+    const descTA = document.getElementById('mf-desc');
+    if (descTA) {
+      descTA.value = mState.descripcion;
+      descTA.addEventListener('input', () => { mState.descripcion = descTA.value; syncDirty(); });
+    }
+
+    /* Fecha inicio (solo si Borrador) */
+    if (!inicioLocked()) {
+      mDpInstances['m-inicio'] = setupMDatepicker('m-inicio', (d) => {
+        mState.inicio = d;
+        mDpInstances['m-inicio'].setValue(d);
+        mClearError('m-inicio');
+        if (mState.fin && mState.fin < d) mSetError('m-fin','La fecha de fin debe ser igual o posterior al inicio.');
+        else if (mState.fin) mClearError('m-fin');
+        syncDirty();
+      });
+      if (mState.inicio) { mDpInstances['m-inicio'].setValue(mState.inicio); }
+      else mDpInstances['m-inicio'].setValue(null);
+    }
+
+    /* Fecha fin (disponible si no Finalizado) */
+    mDpInstances['m-fin'] = setupMDatepicker('m-fin', (d) => {
+      mState.fin = d;
+      mDpInstances['m-fin'].setValue(d);
+      if (mState.inicio && d < mState.inicio) mSetError('m-fin','La fecha de fin debe ser igual o posterior al inicio.');
+      else mClearError('m-fin');
+      syncDirty();
+    }, () => mState.inicio);
+    if (mState.fin) mDpInstances['m-fin'].setValue(mState.fin);
+    else mDpInstances['m-fin'].setValue(null);
+
+    /* Lugar (solo si Borrador) — cascada MULTI departamento(s) → municipio(s). */
+    if (!lockPlace) {
+      const deptoOpts = DEPARTAMENTOS.map((d) => ({ value:d, label:d }));
+      const mMuniField = document.getElementById('mMuniField');
+      const MSEP = '›';
+      let ddMDepto, ddMMunicipio;
+      const syncDeptoLbl = () => { const n = mState.departamentos.length; if (ddMDepto) ddMDepto.setLabel(n===0?'Selecciona departamentos…':n===1?mState.departamentos[0]:`${n} departamentos`, n===0); };
+      const syncMuniLbl = () => { const n = mState.municipios.length; if (ddMMunicipio) ddMMunicipio.setLabel(n===0?'Municipios (opcional)…':n===1?mState.municipios[0].nombre:`${n} municipios`, n===0); };
+      const muniGroups = () => mState.departamentos.map((d) => ({ label: d, opts: municipiosDeDepto(d).map((m) => ({ value: `${d}${MSEP}${m}`, label: m })) }));
+
+      ddMMunicipio = setupMDropdown('m-municipio', [], (o) => {
+        const i = o.value.indexOf(MSEP);
+        const depto = o.value.slice(0, i), nombre = o.value.slice(i + 1);
+        const at = mState.municipios.findIndex((m) => m.depto === depto && m.nombre === nombre);
+        if (at >= 0) mState.municipios.splice(at, 1); else mState.municipios.push({ depto, nombre });
+        syncMuniLbl(); mClearError('m-municipio'); syncDirty();
+      }, null, undefined, {
+        multi: true,
+        groups: muniGroups,
+        isSelected: (v) => { const i = v.indexOf(MSEP); return mState.municipios.some((m) => m.depto === v.slice(0, i) && m.nombre === v.slice(i + 1)); }
+      });
+
+      ddMDepto = setupMDropdown('m-departamento', deptoOpts, (o) => {
+        const i = mState.departamentos.indexOf(o.value);
+        if (i >= 0) { mState.departamentos.splice(i, 1); mState.municipios = mState.municipios.filter((m) => m.depto !== o.value); }
+        else mState.departamentos.push(o.value);
+        syncDeptoLbl(); mClearError('m-departamento');
+        if (mMuniField) mMuniField.hidden = mState.departamentos.length === 0;
+        syncMuniLbl(); syncDirty();
+      }, null, undefined, { multi: true, isSelected: (v) => mState.departamentos.includes(v) });
+
+      /* Precargar valores existentes */
+      syncDeptoLbl();
+      if (mState.departamentos.length && mMuniField) mMuniField.hidden = false;
+      syncMuniLbl();
+    }
+
+    /* Gestor — perfiles de la plataforma con su rol (paridad con evento-crear).
+       Reasignable en borrador y activo; solo lectura en finalizado. */
+    const gestorOpts = PERFILES_ASIGNABLES.map((p) => ({
+      value: p.id, label: p.name,
+      html: `<span class="dd-opt-rich"><span>${p.name}</span><small>${p.area ? `${p.role} · <span style="color:var(--text-muted)">${p.area}</span>` : p.role}</small></span>`
+    }));
+    const ddMGestor = setupMDropdown('m-gestor', gestorOpts, (o) => {
+      mState.gestorId = o.value;
+      const gFound = PERFILES_ASIGNABLES.find((x) => x.id === o.value);
+      if (ddMGestor && gFound) ddMGestor.setLabel(gFound.name, false);
+      mClearError('m-gestor');
+      syncDirty();
+    }, () => mState.gestorId);
+    if (mState.gestorId && ddMGestor) {
+      const gFound = PERFILES_ASIGNABLES.find((x) => x.id === mState.gestorId);
+      if (gFound) ddMGestor.setLabel(gFound.name, false);
+    }
+
+    /* Botones del footer */
+    document.getElementById('mBtnSave')?.addEventListener('click', () => {
+      closeAllMPopovers();
+      if (mValidate()) { doSaveEdit(); return; }
+      mSaveAttempts++;
+      if (mSaveAttempts >= 2) {
+        flash('Continuando con datos incompletos (modo demo).');
+        doSaveEdit();
+      } else {
+        flash('Revisa los campos marcados. Vuelve a tocar Guardar para continuar.', 'caution');
+      }
+    });
+
+    /* Estado inicial: sin cambios → "Guardar cambios" arranca deshabilitado. */
+    syncDirty();
+  }
+
+  function inicioLocked() { return isActivo || isFinal; }
+
+  /* ── Validación del modal ── */
+  function mValidate() {
+    let firstErr = null;
+    const fail = (name, msg) => { if (!firstErr) firstErr = name; mSetError(name, msg, false); };
+
+    if (!mState.nombre.trim()) fail('m-nombre','El nombre del evento es obligatorio.');
+    if (!inicioLocked() && !mState.inicio) fail('m-inicio','Selecciona la fecha de inicio.');
+    if (!isFinal && !mState.fin) fail('m-fin','Selecciona la fecha de fin.');
+    if (!inicioLocked() && mState.inicio && mState.fin && mState.fin < mState.inicio) fail('m-fin','La fecha de fin debe ser igual o posterior al inicio.');
+    const mIntl = ev.alcance === 'internacional';   /* internacional → no se exige lugar */
+    /* Nacional editable: ≥1 departamento; municipios OPCIONALES (multi-sede). */
+    if (!isActivo && !isFinal && !mIntl && !mState.departamentos.length) fail('m-departamento','Selecciona al menos un departamento.');
+
+    if (firstErr) {
+      const f = mFieldEl(firstErr);
+      if (f) { f.scrollIntoView({ behavior: REDUCE_MOTION_M?'auto':'smooth', block:'center' }); mWiggle(mControlEl(f)); }
+      return false;
+    }
+    return true;
+  }
+
+  /* ── Guardar edición ── */
+  function doSaveEdit() {
+    const patch = { name: mState.nombre.trim() };
+    if (!inicioLocked() && mState.inicio) patch.start = fmtDateM(mState.inicio);
+    if (!isFinal && mState.fin) patch.end = fmtDateM(mState.fin);
+    if (!isActivo && !isFinal && ev.alcance !== 'internacional') {
+      if (mState.departamentos.length) {
+        const departamentos = mState.departamentos.slice();
+        const municipios = mState.municipios.slice();
+        patch.departamentos = departamentos;
+        patch.municipios = municipios;
+        patch.place = placeLabel({ alcance: 'nacional', departamentos, municipios });   /* string derivado */
+        /* espejos singulares (retro-compat con lectores viejos) */
+        patch.departamento = departamentos[0] || null;
+        patch.municipio = (municipios[0] && municipios[0].nombre) || null;
+      }
+    }
+    if (mState.gestorId) patch.gestorId = mState.gestorId;
+    patch.descripcion = mState.descripcion || '';
+
+    updateEvent(ev.id, patch);
+
+    /* Re-read ev from store and re-render */
+    ev = findEv();
+    isActivo  = ev.status === 'activo';
+    isBorrador = ev.status === 'borrador';
+    isFinal   = ev.status === 'finalizado';
+    gateOpen  = isActivo;
+    gestor    = gestorFor();
+
+    closeEditModal();
+    render();
+    flash('Cambios guardados.', 'success');
+  }
+
+  /* ── Abrir / Cerrar modal ── */
+  let _mTriggerEl = null; /* Elemento que disparó el modal (para devolver el foco al cerrar) */
+
+  const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+
+  function trapFocus(e) {
+    const modal = document.getElementById('evEditModal');
+    const focusable = Array.from(modal.querySelectorAll(FOCUSABLE)).filter((el) => !el.closest('[hidden]'));
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last  = focusable[focusable.length - 1];
+    if (e.key === 'Tab') {
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last)  { e.preventDefault(); first.focus(); }
+      }
+    }
+  }
+
+  function openEditModal() {
+    /* Recuerda el disparador para devolver el foco al cerrar */
+    _mTriggerEl = document.activeElement;
+    mDpInstances = {};
+    const overlay = document.getElementById('evEditOverlay');
+    buildModalBody();
+    overlay.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+    initModalControls();
+    /* Botón cerrar del header */
+    document.getElementById('evModalClose').addEventListener('click', closeEditModal, { once: true });
+    document.getElementById('mBtnClose')?.addEventListener('click', closeEditModal);
+    /* Foco al primer control (o al botón cerrar como fallback) */
+    /* Foco tras la transición de apertura (.22s): el panel arranca en opacity:0 y
+       el navegador descarta .focus() si corre durante la transición (rAF era muy pronto). */
+    setTimeout(() => {
+      const modal = document.getElementById('evEditModal');
+      const first = modal.querySelector(FOCUSABLE);
+      (first || document.getElementById('evModalClose'))?.focus({ preventScroll: true });
+    }, 240);
+    /* Escape + trap de Tab */
+    document.addEventListener('keydown', onModalEsc);
+    document.addEventListener('keydown', trapFocus);
+  }
+  function closeEditModal() {
+    const overlay = document.getElementById('evEditOverlay');
+    overlay.classList.remove('is-open');
+    document.body.style.overflow = '';
+    document.removeEventListener('keydown', onModalEsc);
+    document.removeEventListener('keydown', trapFocus);
+    closeAllMPopovers();
+    /* Devuelve el foco al disparador */
+    if (_mTriggerEl && typeof _mTriggerEl.focus === 'function') {
+      requestAnimationFrame(() => _mTriggerEl.focus());
+    }
+  }
+  function onModalEsc(e) { if (e.key === 'Escape') closeEditModal(); }
+
+  /* Click en overlay (fuera del .ev-modal) cierra */
+  document.getElementById('evEditOverlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeEditModal();
+  });
+
+  /* ─── Bootstrap ─── */
+  mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: 'eventos' });
+  mountHeader({ headerEl: document.getElementById('topHeader'), role, title: 'Detalle del evento', subtitle: `${ev.id} · Ministerio del Deporte` });
+  mountBackdrop();
+  mountDemoSwitcher({ roleCode });
+  render();
+
+  document.title = `Naowee Eventos — ${ev.name}`;
+</script>
+
+</body>
+</html>

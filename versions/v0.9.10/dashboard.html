@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Naowee Eventos — Dashboard</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="shared/tokens.css?v=0.9.1">
+<link rel="stylesheet" href="shared/shell.css?v=0.4.5">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.9.1">
+<script src="shared/naowee-footer.js?v=0.9.10" defer></script>
+
+<style>
+  /* ═══════════════════════════════════════════════════════════════
+     DASHBOARD DE EVENTOS — overrides locales de página.
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* ─── Cabecera de página ─── */
+  .dash-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
+  .dash-head__title h2 { font-size: 24px; font-weight: 800; letter-spacing: -.4px; color: var(--text-primary); margin: 0 0 5px; }
+  .dash-head__title p { font-size: 13px; color: var(--text-secondary); margin: 0; max-width: 640px; }
+
+  /* ═══════════════════════════════════════════════════════════════
+     WIDGETS DE REPORTERÍA — bento grid (analítica nutrida por Diego)
+     Gráficos SVG/CSS vanilla, sin librerías.
+     ═══════════════════════════════════════════════════════════════ */
+  .section-eyebrow {
+    display: flex; align-items: center; gap: 8px; margin: 4px 0 14px;
+    font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .section-eyebrow::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .widgets {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-bottom: 30px;
+  }
+  /* Cajas planas: solo border 1px, sin sombra (lineamiento Doug). */
+  .widget {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 18px 20px 20px; display: flex; flex-direction: column; min-width: 0;
+    animation: fadeInUp .44s var(--easing-smoothout) both;
+  }
+  .widget:nth-child(1) { animation-delay: .06s; } .widget:nth-child(2) { animation-delay: .1s; }
+  .widget:nth-child(3) { animation-delay: .14s; } .widget:nth-child(4) { animation-delay: .18s; }
+  .widget:nth-child(5) { animation-delay: .22s; } .widget:nth-child(6) { animation-delay: .26s; }
+  .widget:nth-child(7) { animation-delay: .30s; } .widget:nth-child(8) { animation-delay: .34s; }
+  .widget:nth-child(9) { animation-delay: .38s; }
+  /* Spans del bento (6 columnas) */
+  .w-estado    { grid-column: span 2; }
+  .w-insc      { grid-column: span 2; }
+  .w-resultados{ grid-column: span 2; }
+  .w-medallero { grid-column: span 3; }
+  .w-inscritos-evento { grid-column: span 2; }
+  .w-proximos  { grid-column: span 6; }
+  .w-cargues   { grid-column: span 2; }
+  .w-mes       { grid-column: span 2; }
+  .w-organismo { grid-column: span 2; }
+
+  .widget__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+  .widget__title { font-size: 13.5px; font-weight: 700; color: var(--text-primary); line-height: 1.3; }
+  .widget__hint { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .widget__tag {
+    font-size: 10px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase;
+    color: var(--text-secondary); background: var(--bg-soft);
+    padding: 3px 8px; border-radius: var(--radius-full); white-space: nowrap; flex-shrink: 0;
+  }
+
+  /* ── Donut (eventos por estado / resultados) ── */
+  .donut-wrap { display: flex; align-items: center; gap: 18px; }
+  .donut { width: 116px; height: 116px; flex-shrink: 0; transform: rotate(-90deg); }
+  .donut__track { fill: none; stroke: var(--bg-soft); }
+  /* Sweep del anillo al cargar: arranca con el arco "colapsado" (dasharray 0)
+     y se anima hasta su longitud final. Solo anima stroke-dasharray (no layout).
+     La duración real se inyecta inline para escalonar (stagger) por segmento. */
+  .donut__seg {
+    fill: none; stroke-linecap: round;
+    transition: stroke-dasharray 900ms var(--easing-smoothout);
+  }
+  .donut-center { position: relative; }
+  /* El texto central NO se rota: el donut SVG va con rotate(-90deg) para que el
+     primer segmento arranque arriba, pero el overlay vive fuera del SVG y se lee
+     horizontal (0°). */
+  .donut-center__big {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .donut-center__num { font-size: 24px; font-weight: 800; color: var(--text-primary); line-height: 1; font-feature-settings: 'tnum'; }
+  .donut-center__lbl { font-size: 9.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .4px; margin-top: 2px; }
+  .legend { display: flex; flex-direction: column; gap: 9px; flex: 1; min-width: 0; }
+  .legend__row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .legend__dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
+  .legend__name { color: var(--text-secondary); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .legend__val { font-weight: 700; color: var(--text-primary); font-feature-settings: 'tnum'; }
+
+  /* ── Inscripciones: big number + stacked bar ── */
+  .stat-big { font-size: 34px; font-weight: 800; color: var(--text-primary); line-height: 1; font-feature-settings: 'tnum'; }
+  .stat-big small { font-size: 14px; font-weight: 600; color: var(--text-muted); }
+  .stat-cap { font-size: 12px; color: var(--text-secondary); margin: 6px 0 16px; }
+  .stack-bar { height: 12px; border-radius: var(--radius-full); background: var(--bg-soft); overflow: hidden; display: flex; }
+  /* Llenado compositor-friendly: el ancho final es estático; el llenado
+     0→valor se revela con clip-path (no se anima width — regla CLAUDE.md;
+     clip-path es propiedad permitida). Colapsado = recortado por la derecha. */
+  .stack-seg {
+    height: 100%;
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 760ms var(--easing-smoothout);
+  }
+  .stack-seg.is-filled { clip-path: inset(0 0 0 0); }
+  .stack-legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+  .stack-legend__row { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-secondary); }
+  .stack-legend__val { font-weight: 700; color: var(--text-primary); }
+
+  /* ── Barras horizontales (medallero · inscripciones por evento) ── */
+  .hbars { display: flex; flex-direction: column; gap: 13px; }
+  .hbar { display: grid; grid-template-columns: 116px 1fr auto; align-items: center; gap: 12px; }
+  .hbar__lbl { font-size: 12px; font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hbar__track { height: 9px; border-radius: var(--radius-full); background: var(--bg-soft); overflow: hidden; display: flex; }
+  /* Llenado 0→valor vía clip-path (no width). El ancho final queda inline;
+     el clip revela la barra de izquierda a derecha. */
+  .hbar__fill {
+    height: 100%; border-radius: var(--radius-full);
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 760ms var(--easing-smoothout);
+  }
+  .hbar__fill.is-filled { clip-path: inset(0 0 0 0); }
+  /* En el medallero apilado, el track se revela como una sola unidad
+     (los 3 segmentos internos no se recortan: aparecen con el track). */
+  .hbar__track.is-stacked {
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 760ms var(--easing-smoothout);
+  }
+  .hbar__track.is-stacked.is-filled { clip-path: inset(0 0 0 0); }
+  .hbar__track.is-stacked .hbar__fill { clip-path: none; transition: none; }
+  .hbar__val { font-size: 11.5px; font-weight: 700; color: var(--text-secondary); font-feature-settings: 'tnum'; min-width: 30px; text-align: right; }
+  /* ── Barras verticales (eventos por mes) ── */
+  .vbars { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; height: 138px; padding-top: 6px; }
+  .vbar { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; flex: 1; min-width: 0; height: 100%; }
+  .vbar__val { font-size: 11px; font-weight: 700; color: var(--text-secondary); font-feature-settings: 'tnum'; line-height: 1; min-height: 11px; }
+  .vbar__col { width: 100%; max-width: 28px; flex: 1; display: flex; align-items: flex-end; }
+  .vbar__fill { width: 100%; min-height: 4px; border-radius: var(--radius-sm) var(--radius-sm) 0 0; background: linear-gradient(180deg, var(--naranja), var(--accent)); }
+  .vbar__lbl { font-size: 10.5px; font-weight: 600; color: var(--text-muted); }
+  /* Medallero: 3 segmentos oro/plata/bronce */
+  .medal-seg.gold   { background: #e8b923; }
+  .medal-seg.silver { background: #aab2c5; }
+  .medal-seg.bronze { background: #c8814b; }
+  .medal-head { display: flex; gap: 16px; margin-bottom: 14px; }
+  .medal-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+  .medal-chip__dot { width: 11px; height: 11px; border-radius: 50%; }
+  .medal-chip strong { color: var(--text-primary); font-feature-settings: 'tnum'; }
+
+  /* ═══ Próximos eventos — cronograma vertical (ui-ux-pro-max) ═══
+     Timeline con línea conectora continua + nodos de fecha tipo "calendar chip".
+     Todo contenido dentro del card (sin íconos que se desborden). El connector
+     vive en un track de ancho fijo a la izquierda; los nodos se centran sobre él.
+     Jerarquía por tamaño/peso/contraste (no solo color). */
+  .tl { display: flex; flex-direction: column; position: relative; }
+  .tl-item {
+    display: grid; grid-template-columns: 46px 1fr; gap: 14px;
+    align-items: stretch; position: relative;
+    animation: fadeInUp .4s var(--easing-smoothout) both;
+  }
+  .tl-item:nth-child(1) { animation-delay: .04s; } .tl-item:nth-child(2) { animation-delay: .09s; }
+  .tl-item:nth-child(3) { animation-delay: .14s; } .tl-item:nth-child(4) { animation-delay: .19s; }
+  /* Rail (línea conectora) centrado en la columna de 46px (eje en 23px). */
+  .tl-rail { position: relative; display: flex; flex-direction: column; align-items: center; }
+  .tl-rail::before {
+    content: ''; position: absolute; top: 0; bottom: 0; left: 50%;
+    width: 2px; background: var(--border); transform: translateX(-50%);
+  }
+  .tl-item:first-child .tl-rail::before { top: 22px; }
+  .tl-item:last-child  .tl-rail::before { bottom: calc(100% - 22px); }
+  /* Calendar chip = nodo de fecha (día grande + mes). */
+  .tl-chip {
+    position: relative; z-index: 1; width: 46px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: var(--surface); border: 1.5px solid var(--border-dark);
+    border-radius: var(--radius-md); padding: 5px 0 6px; margin-top: 12px;
+    line-height: 1;
+  }
+  .tl-chip__d { font-size: 16px; font-weight: 800; color: var(--text-primary); font-feature-settings: 'tnum'; }
+  .tl-chip__m { font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+  /* ── Fuerza por cercanía: el chip de fecha toma color según días restantes
+     (mismo tier que el badge "en X días"). Inminente=acento, próximo=azul,
+     lejano=gris apagado. Da jerarquía con color, no solo con tamaño. ── */
+  .tl-chip.tier-caution     { border-color: var(--accent); background: var(--accent-bg); }
+  .tl-chip.tier-caution     .tl-chip__d { color: var(--accent); }
+  .tl-chip.tier-caution     .tl-chip__m { color: var(--accent); opacity: .85; }
+  .tl-chip.tier-informative { border-color: var(--blue-info); background: var(--blue-bg); }
+  .tl-chip.tier-informative .tl-chip__d { color: var(--blue-info); }
+  .tl-chip.tier-informative .tl-chip__m { color: var(--blue-info); opacity: .8; }
+  .tl-chip.tier-neutral     { border-color: var(--border-dark); background: var(--surface); }
+  .tl-chip.tier-neutral     .tl-chip__d { color: var(--text-secondary); }
+  .tl-chip.tier-neutral     .tl-chip__m { color: var(--text-muted); }
+  /* Contenido del evento. */
+  .tl-body {
+    min-width: 0; padding: 12px 0 16px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tl-item:last-child .tl-body { border-bottom: 0; padding-bottom: 2px; }
+  .tl-main { min-width: 0; }
+  .tl-name { font-size: 13px; font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tl-meta { font-size: 11.5px; color: var(--text-secondary); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* ── Badge canónico .naowee-badge (port local mapeado a tokens del módulo).
+     El módulo carga solo tokens/shell, no el DS por CDN; portamos la base + las
+     3 variantes quiet que usamos (informative/caution/neutral) siguiendo el
+     patrón override. Quiet = fondo teñido + texto oscuro/semántico. ── */
+  .naowee-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 4px; height: 22px; min-width: 22px; padding: 2px 9px;
+    border-radius: var(--radius-full); border: none;
+    font-family: inherit; font-size: 11px; font-weight: 700; line-height: 14px;
+    letter-spacing: .2px; white-space: nowrap; flex-shrink: 0;
+    font-feature-settings: 'case' 1;
+  }
+  .naowee-badge--informative.naowee-badge--quiet { background: var(--blue-bg); color: var(--blue-info); }
+  .naowee-badge--caution.naowee-badge--quiet     { background: var(--accent-bg); color: var(--accent); }
+  .naowee-badge--neutral.naowee-badge--quiet      { background: var(--bg-soft); color: var(--text-secondary); }
+  /* Punto guía opcional (mismo color que el texto del badge). */
+  .naowee-badge__dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+  /* Empty inline de widget (modo guiado·vacío) */
+  .w-empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; gap: 6px; padding: 22px 12px; color: var(--text-muted);
+    border: 1px dashed var(--border-dark); border-radius: var(--radius-lg); min-height: 120px;
+  }
+  .w-empty svg { width: 26px; height: 26px; opacity: .7; }
+  .w-empty p { font-size: 12px; margin: 0; max-width: 220px; line-height: 1.45; }
+
+  /* View toggle (card/tabla) — SIN fondo gris: solo stroke claro alrededor.
+     El botón activo se distingue por color de ícono/acento (no por fondo). */
+  .view-toggle {
+    display: inline-flex; align-items: center; background: transparent;
+    border: 1px solid var(--border-dark); border-radius: var(--radius-md); padding: 3px; gap: 2px;
+  }
+  .view-toggle__btn {
+    width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
+    border: none; background: transparent; border-radius: var(--radius-sm); cursor: pointer;
+    color: var(--text-muted);
+    transition: color var(--duration-fast);
+  }
+  .view-toggle__btn:hover { color: var(--text-secondary); }
+  /* Activo = ícono en accent; sin background gris. */
+  .view-toggle__btn.is-active { color: var(--accent); }
+  .view-toggle__btn svg { width: 17px; height: 17px; }
+
+  /* ─── Searchbox canónico (port .naowee-searchbox del DS) — inline porque
+     dashboard NO carga list-components.css (es autocontenido). Valores alineados
+     al componente compartido: input-wrap 48px, borde hover --field-border-hover,
+     ícono/clear 20px, tokens del módulo. ── */
+  .naowee-searchbox {
+    position: relative; flex: 1; min-width: 240px; max-width: 380px;
+    width: 100%;
+  }
+  .naowee-searchbox__input-wrap {
+    display: flex; align-items: center; gap: 8px;
+    height: 48px; padding: 0 12px;
+    background: var(--surface);
+    border: 1px solid var(--border-dark);
+    border-radius: var(--radius-full);
+    transition: border-color var(--duration-normal) var(--easing-smoothout),
+                box-shadow var(--duration-normal) var(--easing-smoothout);
+    overflow: hidden;
+    font-feature-settings: 'case' 1;
+  }
+  .naowee-searchbox__input-wrap:hover { border-color: var(--field-border-hover); }
+  .naowee-searchbox__input-wrap:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(215, 64, 9, .15);
+  }
+  .naowee-searchbox__icon {
+    width: 20px; height: 20px; flex-shrink: 0;
+    color: var(--text-muted);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .naowee-searchbox__icon svg { width: 20px; height: 20px; }
+  .naowee-searchbox__input {
+    flex: 1; min-width: 0; height: 100%;
+    border: none; background: transparent; outline: none;
+    font-family: inherit; font-size: 14px; font-weight: 400;
+    color: var(--text-primary); padding: 0;
+  }
+  .naowee-searchbox__input::placeholder { color: var(--text-muted); }
+  .naowee-searchbox__input::-webkit-search-decoration,
+  .naowee-searchbox__input::-webkit-search-cancel-button,
+  .naowee-searchbox__input::-webkit-search-results-button,
+  .naowee-searchbox__input::-webkit-search-results-decoration { -webkit-appearance: none; appearance: none; display: none; }
+  .naowee-searchbox__clear {
+    width: 24px; height: 24px; border-radius: var(--radius-md);
+    border: none; background: transparent;
+    color: var(--text-muted);
+    display: none; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+    transition: background var(--duration-fast), color var(--duration-fast);
+  }
+  .naowee-searchbox__clear svg { width: 20px; height: 20px; }
+  .naowee-searchbox__clear:hover { background: var(--bg-soft); color: var(--text-secondary); }
+  .naowee-searchbox--has-value .naowee-searchbox__clear { display: flex; }
+
+  /* ── Segmented control canónico (port .naowee-segment del DS v1.8.0) ──
+     Pill deslizante: fondo blanco + stroke accent (NO relleno gris en activo).
+     Mapeado a tokens locales del módulo. */
+  .naowee-segment {
+    position: relative; display: inline-flex;
+    background: var(--surface);
+    border: 1px solid var(--border-dark);
+    border-radius: var(--radius-lg);
+    padding: 4px; gap: 0; height: 40px; overflow: clip;
+    font-feature-settings: 'case' 1;
+  }
+  .naowee-segment__pill {
+    box-sizing: border-box; position: absolute; top: 4px; bottom: 4px; left: 0; width: 0;
+    background: var(--surface);
+    border: 2px solid var(--accent);
+    border-radius: var(--radius-md);
+    box-shadow: 0 0 0 3px rgba(215, 64, 9, .08);
+    pointer-events: none; z-index: 0;
+    transform: translate3d(var(--seg-x, 0), 0, 0);
+    transition: transform 380ms var(--easing-smoothout), width 380ms var(--easing-smoothout);
+    will-change: transform, width;
+  }
+  .naowee-segment__pill--no-anim { transition: none; }
+  .naowee-segment__item {
+    position: relative; z-index: 1;
+    display: flex; align-items: center; justify-content: center; align-self: stretch;
+    padding: 0 14px; border: 2px solid transparent; background: transparent;
+    border-radius: var(--radius-md); cursor: pointer; white-space: nowrap; flex-shrink: 0;
+    font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--text-secondary);
+    transition: color 220ms var(--easing-smoothout);
+  }
+  .naowee-segment__item:hover { color: var(--text-primary); }
+  /* Activo = label en ACCENT/NARANJA (fidelidad al selected del DS:
+     pill con stroke accent + texto accent). Peso 700 para reforzar la
+     jerarquía del item seleccionado sobre los idle (600). */
+  .naowee-segment__item--active { color: var(--accent); font-weight: 700; }
+  .toolbar__count { margin-left: auto; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); }
+
+  /* ─── Grid de eventos ─── */
+  .events-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+  .event-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl);
+    padding: 20px 20px 18px; cursor: pointer; text-align: left; width: 100%; font-family: inherit;
+    display: flex; flex-direction: column; gap: 14px;
+    transition: transform var(--duration-normal) var(--easing-smoothout),
+                box-shadow var(--duration-normal) var(--easing-smoothout),
+                border-color var(--duration-normal) var(--easing-smoothout);
+    animation: fadeInUp .4s var(--easing-smoothout) both;
+  }
+  .event-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-card); border-color: var(--border-dark); }
+  .event-card:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(215, 64, 9, .15); }
+
+  .event-card__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .event-card__icon {
+    width: 42px; height: 42px; border-radius: var(--radius-lg); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 20px;
+    background: var(--bg-soft);
+  }
+  .event-card__name { font-size: 15px; font-weight: 700; color: var(--text-primary); line-height: 1.3; }
+  .event-card__sport { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: var(--radius-full);
+    font-size: 11px; font-weight: 700; letter-spacing: .2px; white-space: nowrap; flex-shrink: 0;
+  }
+  .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .badge.s-borrador { background: #f0f1f7; color: var(--text-secondary); }
+  .badge.s-activo { background: var(--blue-bg); color: var(--blue-info); }
+  .badge.s-finalizado { background: var(--green-bg); color: var(--green); }
+
+  .event-card__meta { display: flex; flex-direction: column; gap: 7px; }
+  .meta-row { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--text-secondary); }
+  .meta-row svg { width: 15px; height: 15px; color: var(--text-muted); flex-shrink: 0; }
+  .meta-row strong { color: var(--text-primary); font-weight: 600; }
+
+  /* ─── Indicadores de progreso ─── */
+  .progress { border-top: 1px solid var(--border); padding-top: 14px; display: flex; flex-direction: column; gap: 11px; }
+  .prog-item { display: grid; grid-template-columns: 92px 1fr auto; align-items: center; gap: 10px; }
+  .prog-item__lbl { font-size: 11px; font-weight: 600; color: var(--text-secondary); }
+  .prog-track { height: 6px; border-radius: var(--radius-full); background: var(--bg-soft); overflow: hidden; }
+  /* Progreso (cards + filas de tabla): llenado 0→valor con clip-path. */
+  .prog-fill {
+    height: 100%; border-radius: var(--radius-full);
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 620ms var(--easing-smoothout);
+  }
+  .prog-fill.is-filled { clip-path: inset(0 0 0 0); }
+  .prog-fill.f-insc { background: var(--blue-info); }
+  .prog-fill.f-res { background: var(--naranja); }
+  .prog-fill.f-med { background: var(--green); }
+  .prog-item__val { font-size: 11px; font-weight: 700; color: var(--text-primary); font-feature-settings: 'tnum'; min-width: 34px; text-align: right; }
+  .prog-item__val.is-empty { color: var(--text-muted); font-weight: 600; }
+
+  .event-card__foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px; }
+  .event-card__org { font-size: 11px; color: var(--text-muted); display: inline-flex; align-items: center; gap: 5px; min-width: 0; flex: 1; }
+  .event-card__org svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .event-card__org-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .event-card__link { font-size: 12.5px; font-weight: 700; color: var(--accent); display: inline-flex; align-items: center; gap: 5px; }
+  .event-card__link svg { width: 14px; height: 14px; transition: transform var(--duration-normal) var(--easing-smoothout); }
+  .event-card:hover .event-card__link svg { transform: translateX(3px); }
+
+  /* ─── Vista tabla — tabla canónica Naowee (.naowee-table-card del DS) ───
+     Card blanco con PADDING (los contenidos quedan inset, no de borde a borde).
+     El thead "flota": fondo gris claro (gray-100) con esquinas redondeadas en
+     la 1ª y última th — no de punta a punta del card. Sin box-shadow (plano). */
+  .naowee-table-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-xl); padding: 20px;
+    display: flex; flex-direction: column; gap: 16px;
+    animation: fadeInUp .4s var(--easing-smoothout) both;
+  }
+  /* ── Header interno del card (réplica del patrón convocatorias):
+     título + subtítulo → toolbar (search + segment + toggle) → thead gris →
+     filas. Todo vive DENTRO de un único card. ── */
+  .tc-head { display: flex; flex-direction: column; gap: 3px; }
+  .tc-head__title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0; }
+  .tc-head__sub { font-size: 12.5px; color: var(--text-secondary); margin: 0; }
+  /* Toolbar interna: search a la izq, segment al centro, toggle a la der. */
+  .tc-toolbar {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .tc-toolbar .naowee-searchbox { flex: 1 1 240px; }
+  .tc-toolbar .toolbar__count { margin-left: auto; }
+  /* El wrap ya NO hace scroll-x: `table-layout: fixed` + <colgroup> hacen que
+     las 5 columnas quepan en el viewport. `overflow-x: clip` evita la barra. */
+  .naowee-table-card__table-wrap {
+    overflow-x: clip; overflow-y: visible;
+  }
+  .naowee-table--in-card { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; }
+  .naowee-table--in-card thead th {
+    text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase;
+    color: var(--text-secondary); background: var(--th-bg);
+    padding: 12px 16px; border: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  /* Anchos de columna del dashboard (5 cols: Evento·Fechas·Lugar·Estado·Progreso).
+     ESTADO con holgura para el badge "Finalizado" (no se recorta). */
+  .col-evento { width: 35%; } .col-fechas { width: 17%; } .col-lugar { width: 18%; }
+  .col-estado { width: 15%; } .col-prog { width: 15%; }
+  .naowee-table--in-card thead th:first-child {
+    border-top-left-radius: var(--radius-lg); border-bottom-left-radius: var(--radius-lg);
+  }
+  .naowee-table--in-card thead th:last-child {
+    border-top-right-radius: var(--radius-lg); border-bottom-right-radius: var(--radius-lg);
+  }
+  .naowee-table--in-card tbody td { padding: 16px 16px; font-size: 13px; color: var(--text-primary); border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .naowee-table--in-card tbody td:first-child, .naowee-table--in-card thead th:first-child { padding-left: 18px; }
+  .naowee-table--in-card tbody td:last-child, .naowee-table--in-card thead th:last-child { padding-right: 18px; }
+  .naowee-table--in-card tbody tr:last-child td { border-bottom: 0; }
+  .naowee-table--in-card tbody tr { cursor: pointer; transition: background var(--duration-fast); }
+  .naowee-table--in-card tbody tr:hover { background: #fafbfd; }
+  .ev-row__name { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .ev-row__emoji { font-size: 17px; flex-shrink: 0; }
+  .ev-row__nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ev-row__sport { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Fechas y lugar envuelven en vez de forzar scroll-x. */
+  .ev-row__dates, .ev-row__place { font-size: 12.5px; color: var(--text-secondary); line-height: 1.4; overflow-wrap: break-word; word-break: normal; }
+  .ev-row__prog { display: flex; align-items: center; gap: 9px; min-width: 0; }
+  .ev-row__prog .prog-track { flex: 1; }
+  .ev-row__prog .ev-row__pct { font-size: 11.5px; font-weight: 700; color: var(--text-primary); font-feature-settings: 'tnum'; min-width: 34px; text-align: right; }
+  .ev-row__pct.is-empty { color: var(--text-muted); }
+
+  /* ─── Empty state (vive dentro del card → sin borde/fondo propios) ─── */
+  .empty {
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 44px 24px 36px; gap: 8px;
+  }
+  .empty.is-shown { display: flex; }
+  .empty__icon { width: 52px; height: 52px; border-radius: var(--radius-lg); background: var(--bg-soft); display: flex; align-items: center; justify-content: center; margin-bottom: 6px; }
+  .empty__icon svg { width: 26px; height: 26px; color: var(--text-muted); }
+  .empty h3 { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0; }
+  .empty p { font-size: 13.5px; color: var(--text-secondary); margin: 0; max-width: 380px; line-height: 1.5; }
+
+  /* ─── Animations ─── */
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ─── Responsive ─── */
+  @media (max-width: 1023px) {
+    /* Bento → 2 columnas; cada widget ocupa la fila o media fila */
+    .widgets { grid-template-columns: repeat(2, 1fr); }
+    .w-estado, .w-insc, .w-resultados, .w-medallero, .w-inscritos-evento, .w-proximos { grid-column: span 2; }
+    .w-estado, .w-insc, .w-cargues, .w-mes, .w-organismo { grid-column: span 1; }
+  }
+  @media (max-width: 600px) {
+    .widgets { grid-template-columns: 1fr; gap: 12px; }
+    .w-estado, .w-insc, .w-resultados, .w-medallero, .w-inscritos-evento, .w-proximos, .w-cargues, .w-mes, .w-organismo { grid-column: span 1; }
+    .events-grid { grid-template-columns: 1fr; }
+    .dash-head { gap: 12px; }
+    .dash-head__title h2 { font-size: 20px; }
+    .toolbar__count { margin-left: 0; width: 100%; }
+    .naowee-searchbox { max-width: none; }
+    .naowee-segment { width: 100%; }
+    .naowee-segment__item { flex: 1; }
+    .naowee-table-card { padding: 14px; }
+    .donut-wrap { flex-direction: column; align-items: flex-start; }
+    .hbar { grid-template-columns: 92px 1fr auto; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .widget, .event-card, .naowee-table-card, .tl-item,
+    .prog-fill, .donut__seg, .stack-seg, .hbar__fill, .hbar__track.is-stacked, .naowee-segment__pill,
+    .event-card__link svg { animation: none !important; transition: none !important; }
+    /* Sin animación → valores finales directos (barras reveladas por completo). */
+    .prog-fill, .stack-seg, .hbar__fill, .hbar__track.is-stacked { clip-path: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div id="sidebarRoot"></div>
+  <div class="main">
+    <header class="top-header" id="topHeader"></header>
+    <div class="page">
+      <div class="page-inner" id="dashboard"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import {
+    mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher,
+    getRoleFromQuery, getDemoMode, ROLES
+  } from './shared/sidebar.js';
+  import { allEvents } from './shared/events-data.js';
+
+  /* ─── Fuente ÚNICA de datos: events-data.js (6 base + borradores creados en la
+     demo vía addDraft/sessionStorage). Así un evento recién creado aparece también
+     en el dashboard (KPIs, donut, próximos), no solo en la lista/detalle. ─── */
+  const EVENTS = allEvents();
+
+  const STATUS_LABEL = { borrador: 'Borrador', activo: 'Activo', finalizado: 'Finalizado' };
+
+  /* ─── Datos agregados de reportería (los nutre Diego) ─── */
+  /* Medallero: top departamentos por medallas (oro / plata / bronce). */
+  const MEDALLERO = [
+    { dep: 'Antioquia',     oro: 42, plata: 31, bronce: 28 },
+    { dep: 'Bogotá D.C.',   oro: 38, plata: 35, bronce: 30 },
+    { dep: 'Valle del Cauca', oro: 33, plata: 26, bronce: 24 },
+    { dep: 'Atlántico',     oro: 19, plata: 22, bronce: 25 },
+    { dep: 'Santander',     oro: 14, plata: 18, bronce: 21 }
+  ];
+  /* Inscripciones por evento (event-level, no deporte-específico):
+     deriva de los inscritos confirmados de cada evento. Módulo LIGHT —
+     el dashboard agrega por EVENTO, no por deporte. */
+  function inscripcionesPorEvento() {
+    return EVENTS
+      .filter((e) => e.insc.done > 0)
+      .map((e) => ({ emoji: e.emoji, name: e.name, inscritos: e.insc.done }))
+      .sort((a, b) => b.inscritos - a.inscritos)
+      .slice(0, 5);
+  }
+
+  /* ─── Iconos de página ─── */
+  const I = {
+    cal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+    pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+    org: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg>',
+    arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>',
+    search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+    clear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    chart: '<svg viewBox="0 0 24 24" fill="none" stroke="var(--blue-info)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 4-5"/></svg>',
+    inbox: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',
+    gridV: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+    listV: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>'
+  };
+
+  function pct(done, total) { return total > 0 ? Math.round((done / total) * 100) : 0; }
+
+  /* Parseo de fecha "DD mmm YYYY" (es) → Date, para "días restantes". */
+  const MONTHS_ES = { ene: 0, feb: 1, mar: 2, abr: 3, may: 4, jun: 5, jul: 6, ago: 7, sep: 8, oct: 9, nov: 10, dic: 11 };
+  function parseFecha(str) {
+    const [d, m, y] = str.split(' ');
+    return new Date(Number(y), MONTHS_ES[m] ?? 0, Number(d));
+  }
+  const NOW = new Date(2026, 5, 2); // fecha de la demo: 2 jun 2026 (coherente con currentDate)
+  function daysTo(str) { return Math.round((parseFecha(str) - NOW) / 86400000); }
+  function progItem(lbl, fill, o) {
+    const p = pct(o.done, o.total);
+    const empty = o.total === 0;
+    const valTxt = empty ? '—' : `${p}%`;
+    return `
+      <div class="prog-item">
+        <span class="prog-item__lbl">${lbl}</span>
+        <div class="prog-track"><div class="prog-fill ${fill}" style="width:${p}%"></div></div>
+        <span class="prog-item__val ${empty ? 'is-empty' : ''}">${valTxt}</span>
+      </div>`;
+  }
+
+  /* ═══════════════ Helpers de gráficos (SVG/CSS vanilla) ═══════════════ */
+
+  /* Donut: segmentos = [{label, value, color}]. r=46, circ≈289. */
+  function donut(segments, centerNum, centerLbl) {
+    const total = segments.reduce((a, s) => a + s.value, 0) || 1;
+    const R = 46, C = 2 * Math.PI * R, GAP = 2; // pequeño gap entre segmentos
+    let offset = 0;
+    /* Cada segmento arranca colapsado (dasharray "0 C") y guarda su longitud
+       final en data-dash. El orquestador (animateChartsIn) la aplica para
+       animar el barrido del anillo 0→valor. stroke-dashoffset es estático
+       (posiciona el arco); solo se anima stroke-dasharray. */
+    const segHtml = segments.filter((s) => s.value > 0).map((s, i) => {
+      const frac = s.value / total;
+      const len = Math.max(frac * C - GAP, 0);
+      const finalDash = `${len} ${C - len}`;
+      const dashoffset = -offset;
+      offset += frac * C;
+      return `<circle class="donut__seg" cx="60" cy="60" r="${R}" stroke="${s.color}" stroke-width="13"
+        stroke-dasharray="0 ${C}" stroke-dashoffset="${dashoffset}"
+        data-dash="${finalDash}" style="transition-delay:${i * 90}ms"></circle>`;
+    }).join('');
+    const legend = segments.map((s) => `
+      <div class="legend__row">
+        <span class="legend__dot" style="background:${s.color}"></span>
+        <span class="legend__name">${s.label}</span>
+        <span class="legend__val">${s.value}</span>
+      </div>`).join('');
+    return `
+      <div class="donut-wrap">
+        <div class="donut-center">
+          <svg class="donut" viewBox="0 0 120 120" role="img" aria-label="${centerLbl}: ${centerNum}">
+            <circle class="donut__track" cx="60" cy="60" r="${R}" stroke-width="13"></circle>
+            ${segHtml}
+          </svg>
+          <div class="donut-center__big">
+            <span class="donut-center__num">${centerNum}</span>
+            <span class="donut-center__lbl">${centerLbl}</span>
+          </div>
+        </div>
+        <div class="legend">${legend}</div>
+      </div>`;
+  }
+
+  /* Barras horizontales simples: rows = [{lbl, value, color}] (max escala). */
+  function hbars(rows, fmt, maxOverride) {
+    const max = maxOverride || Math.max(...rows.map((r) => r.value), 1);
+    return `<div class="hbars">${rows.map((r, i) => `
+      <div class="hbar">
+        <span class="hbar__lbl">${r.lbl}</span>
+        <div class="hbar__track"><div class="hbar__fill" style="width:${(r.value / max) * 100}%;background:${r.color};transition-delay:${i * 70}ms"></div></div>
+        <span class="hbar__val">${fmt ? fmt(r.value) : r.value}</span>
+      </div>`).join('')}</div>`;
+  }
+
+  /* Barras verticales (eventos por mes). Estático: alturas finales directas. */
+  function vbars(rows) {
+    const max = Math.max(...rows.map((r) => r.value), 1);
+    return `<div class="vbars">${rows.map((r) => `
+      <div class="vbar" title="${r.lbl}: ${r.value}">
+        <span class="vbar__val">${r.value || ''}</span>
+        <div class="vbar__col"><div class="vbar__fill" style="height:${Math.round((r.value / max) * 100)}%"></div></div>
+        <span class="vbar__lbl">${r.short}</span>
+      </div>`).join('')}</div>`;
+  }
+  /* Eventos agrupados por mes de inicio (del set actual). */
+  function eventosPorMes() {
+    const MES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const counts = {};
+    EVENTS.forEach((e) => { const d = parseFecha(e.start); if (d) { const k = d.getMonth(); counts[k] = (counts[k] || 0) + 1; } });
+    return Object.keys(counts).map(Number).sort((a, b) => a - b).map((k) => ({ short: MES[k], lbl: MES[k], value: counts[k] }));
+  }
+  /* Eventos por tipo de organismo (categoriza el campo org). */
+  function eventosPorOrganismo() {
+    const cat = (org) => {
+      const o = (org || '').toLowerCase();
+      if (o.includes('ministerio')) return 'Ministerio';
+      if (o.includes('indeporte')) return 'Indeportes';
+      if (o.includes('federaci')) return 'Federaciones';
+      if (o.includes('liga')) return 'Ligas';
+      return 'Otros';
+    };
+    const palette = { Ministerio: 'var(--accent)', Indeportes: 'var(--blue-info)', Federaciones: 'var(--green)', Ligas: 'var(--purple)', Otros: 'var(--text-muted)' };
+    const counts = {};
+    EVENTS.forEach((e) => { const c = cat(e.org); counts[c] = (counts[c] || 0) + 1; });
+    return Object.entries(counts).map(([k, v]) => ({ lbl: k, value: v, color: palette[k] })).sort((a, b) => b.value - a.value);
+  }
+
+  /* Medallero apilado oro/plata/bronce por departamento. */
+  function medalleroBars(rows) {
+    const max = Math.max(...rows.map((r) => r.oro + r.plata + r.bronce), 1);
+    const tot = rows.reduce((a, r) => ({ oro: a.oro + r.oro, plata: a.plata + r.plata, bronce: a.bronce + r.bronce }), { oro: 0, plata: 0, bronce: 0 });
+    const head = `
+      <div class="medal-head">
+        <span class="medal-chip"><span class="medal-chip__dot" style="background:#e8b923"></span>Oro <strong>${tot.oro}</strong></span>
+        <span class="medal-chip"><span class="medal-chip__dot" style="background:#aab2c5"></span>Plata <strong>${tot.plata}</strong></span>
+        <span class="medal-chip"><span class="medal-chip__dot" style="background:#c8814b"></span>Bronce <strong>${tot.bronce}</strong></span>
+      </div>`;
+    const bars = rows.map((r, i) => {
+      const t = r.oro + r.plata + r.bronce;
+      const w = (t / max) * 100;
+      /* El track es la unidad que escala (is-stacked); los 3 segmentos
+         internos quedan estáticos y crecen con él. */
+      return `
+        <div class="hbar">
+          <span class="hbar__lbl">${r.dep}</span>
+          <div class="hbar__track is-stacked" style="width:${w}%;transition-delay:${i * 70}ms" title="${r.dep}: ${r.oro} oro · ${r.plata} plata · ${r.bronce} bronce">
+            <div class="hbar__fill medal-seg gold"   style="width:${(r.oro / t) * 100}%"></div>
+            <div class="hbar__fill medal-seg silver" style="width:${(r.plata / t) * 100}%"></div>
+            <div class="hbar__fill medal-seg bronze" style="width:${(r.bronce / t) * 100}%"></div>
+          </div>
+          <span class="hbar__val">${t}</span>
+        </div>`;
+    }).join('');
+    return head + `<div class="hbars">${bars}</div>`;
+  }
+
+  /* Cronograma vertical de próximos eventos (no finalizados, por fecha de inicio).
+     Línea conectora continua + calendar chips (día/mes) + pill "en X días".
+     Todo contenido dentro del card; sin íconos que se desborden. */
+  /* Escala de fuerza por cercanía (días restantes):
+       ≤15  → caution   (acento/naranja) — inminente
+       16–45 → informative (azul)         — próximo
+       >45  → neutral    (gris apagado)   — lejano
+     Aplica al chip de fecha Y al badge "en X días" (misma jerarquía). */
+  function tierFor(days) {
+    if (days <= 15) return 'caution';
+    if (days <= 45) return 'informative';
+    return 'neutral';
+  }
+  function timeline(rows) {
+    return `<div class="tl">${rows.map((ev) => {
+      const [d, m] = ev.start.split(' ');
+      const cls = ev.status === 'activo' ? 'is-activo' : 'is-prep';
+      /* En curso (día llegado) = inminente máximo → caution. */
+      const tier = ev.daysTo > 0 ? tierFor(ev.daysTo) : 'caution';
+      const label = ev.daysTo > 0 ? `en ${ev.daysTo} ${ev.daysTo === 1 ? 'día' : 'días'}` : 'En curso';
+      return `
+        <div class="tl-item ${cls}">
+          <div class="tl-rail">
+            <span class="tl-chip tier-${tier}"><span class="tl-chip__d">${d}</span><span class="tl-chip__m">${m}</span></span>
+          </div>
+          <div class="tl-body">
+            <div class="tl-main">
+              <div class="tl-name">${ev.emoji} ${ev.name}</div>
+              <div class="tl-meta">${ev.place} · ${ev.org}</div>
+            </div>
+            <span class="naowee-badge naowee-badge--${tier} naowee-badge--quiet"><span class="naowee-badge__dot"></span>${label}</span>
+          </div>
+        </div>`;
+    }).join('')}</div>`;
+  }
+
+  function emptyWidget(msg) {
+    return `<div class="w-empty">${I.inbox}<p>${msg}</p></div>`;
+  }
+
+  function eventCard(ev, idx) {
+    return `
+      <button class="event-card" data-id="${ev.id}" style="animation-delay:${.04 + idx * .05}s" aria-label="Ver detalle de ${ev.name}">
+        <div class="event-card__top">
+          <div style="display:flex;gap:13px;align-items:flex-start;min-width:0">
+            <span class="event-card__icon" aria-hidden="true">${ev.emoji}</span>
+            <div style="min-width:0">
+              <div class="event-card__name">${ev.name}</div>
+              <div class="event-card__sport">${ev.sport}</div>
+            </div>
+          </div>
+          <span class="badge s-${ev.status}">${STATUS_LABEL[ev.status]}</span>
+        </div>
+        <div class="event-card__meta">
+          <div class="meta-row">${I.cal}<span><strong>${ev.start}</strong> — ${ev.end}</span></div>
+          <div class="meta-row">${I.pin}<span>${ev.place}</span></div>
+        </div>
+        <div class="progress">
+          ${progItem('Inscripciones', 'f-insc', ev.insc)}
+          ${progItem('Resultados', 'f-res', ev.res)}
+          ${progItem('Medallería', 'f-med', ev.med)}
+        </div>
+        <div class="event-card__foot">
+          <span class="event-card__org" title="${ev.org}">${I.org}<span class="event-card__org-name">${ev.org}</span></span>
+          <span class="event-card__link">Ver detalle ${I.arrow}</span>
+        </div>
+      </button>`;
+  }
+
+  /* Fila compacta (vista tabla): nombre, fechas, lugar, estado, % progreso. */
+  function eventRow(ev) {
+    const p = pct(ev.insc.done, ev.insc.total);
+    const empty = ev.insc.total === 0;
+    return `
+      <tr data-id="${ev.id}" role="button" tabindex="0" aria-label="Ver detalle de ${ev.name}">
+        <td>
+          <div class="ev-row__name">
+            <span class="ev-row__emoji" aria-hidden="true">${ev.emoji}</span>
+            <div style="min-width:0">
+              <div class="ev-row__nm">${ev.name}</div>
+              <div class="ev-row__sport">${ev.sport}</div>
+            </div>
+          </div>
+        </td>
+        <td class="ev-row__dates">${ev.start} — ${ev.end}</td>
+        <td class="ev-row__place">${ev.place}</td>
+        <td><span class="badge s-${ev.status}">${STATUS_LABEL[ev.status]}</span></td>
+        <td>
+          <div class="ev-row__prog">
+            <div class="prog-track"><div class="prog-fill f-insc" style="width:${p}%"></div></div>
+            <span class="ev-row__pct ${empty ? 'is-empty' : ''}">${empty ? '—' : p + '%'}</span>
+          </div>
+        </td>
+      </tr>`;
+  }
+
+  /* ─── Estado (vista + filtros + modo demo) ─── */
+  const VIEW_KEY = 'naowee-eventos-events-view'; // 'cards' | 'table'
+  let currentView = localStorage.getItem(VIEW_KEY) === 'table' ? 'table' : 'cards';
+  let activeFilter = 'todos';
+  let query = '';
+
+  function filtered(data) {
+    return data.filter((ev) => {
+      const matchStatus = activeFilter === 'todos' || ev.status === activeFilter;
+      const q = query.trim().toLowerCase();
+      const matchQuery = !q || `${ev.name} ${ev.sport} ${ev.place} ${ev.org}`.toLowerCase().includes(q);
+      return matchStatus && matchQuery;
+    });
+  }
+
+  /* ── Bloque de widgets de reportería (analítica) ── */
+  function widgetsBlock(blank) {
+    if (blank) {
+      /* Modo guiado·vacío: reportería aún no ha cargado datos. */
+      return `
+        <div class="widgets">
+          <div class="widget w-proximos"><div class="widget__head"><div><div class="widget__title">Próximos eventos</div></div></div>${emptyWidget('No hay eventos programados.')}</div>
+          <div class="widget w-estado"><div class="widget__head"><div><div class="widget__title">Eventos por estado</div></div></div>${emptyWidget('Sin datos todavía. Aparecerán cuando reportería los cargue.')}</div>
+          <div class="widget w-inscritos-evento"><div class="widget__head"><div><div class="widget__title">Inscripciones por evento</div></div></div>${emptyWidget('Sin inscripciones por evento aún.')}</div>
+          <div class="widget w-resultados"><div class="widget__head"><div><div class="widget__title">Resultados registrados</div></div></div>${emptyWidget('Sin resultados registrados aún.')}</div>
+          <div class="widget w-insc"><div class="widget__head"><div><div class="widget__title">Inscripciones agregadas</div></div></div>${emptyWidget('Sin inscripciones agregadas aún.')}</div>
+        </div>`;
+    }
+
+    /* Agregados */
+    const byStatus = {
+      activo: EVENTS.filter((e) => e.status === 'activo').length,
+      borrador: EVENTS.filter((e) => e.status === 'borrador').length,
+      finalizado: EVENTS.filter((e) => e.status === 'finalizado').length
+    };
+    const inscDone = EVENTS.reduce((a, e) => a + e.insc.done, 0);
+    const inscTotal = EVENTS.reduce((a, e) => a + e.insc.total, 0);
+    const inscPend = inscTotal - inscDone;
+    const resDone = EVENTS.reduce((a, e) => a + e.res.done, 0);
+    const resTotal = EVENTS.reduce((a, e) => a + e.res.total, 0);
+    const resPend = resTotal - resDone;
+    const medDone = EVENTS.reduce((a, e) => a + e.med.done, 0);
+    const medTotal = EVENTS.reduce((a, e) => a + e.med.total, 0);
+    const proximos = EVENTS.filter((e) => e.status !== 'finalizado')
+      .map((e) => ({ ...e, daysTo: daysTo(e.start) }))
+      .sort((a, b) => a.daysTo - b.daysTo).slice(0, 4);
+    const fmtMiles = (n) => n.toLocaleString('es-CO');
+
+    /* Orden de widgets (feedback Juanma 25-jun): Próximos eventos como banner
+       superior + Eventos por estado al inicio de la fila de KPIs; Eventos por mes
+       se conserva; Inscripciones agregadas baja al final con su alcance aclarado. */
+    return `
+      <div class="widgets">
+        <!-- 1. Próximos eventos (cronograma) — banner superior -->
+        <div class="widget w-proximos">
+          <div class="widget__head"><div><div class="widget__title">Próximos eventos</div><div class="widget__hint">activos y en preparación, por fecha de inicio</div></div><span class="widget__tag">Cronograma</span></div>
+          ${proximos.length ? timeline(proximos) : emptyWidget('No hay eventos próximos programados.')}
+        </div>
+
+        <!-- 2. Eventos por estado (donut) -->
+        <div class="widget w-estado">
+          <div class="widget__head"><div><div class="widget__title">Eventos por estado</div><div class="widget__hint">${EVENTS.length} eventos en total</div></div></div>
+          ${donut([
+            { label: 'Activos', value: byStatus.activo, color: 'var(--blue-info)' },
+            { label: 'En preparación', value: byStatus.borrador, color: 'var(--text-muted)' },
+            { label: 'Finalizados', value: byStatus.finalizado, color: 'var(--green)' }
+          ], EVENTS.length, 'eventos')}
+        </div>
+
+        <!-- 3. Inscripciones por evento (event-level) -->
+        <div class="widget w-inscritos-evento">
+          <div class="widget__head"><div><div class="widget__title">Inscripciones por evento</div><div class="widget__hint">inscritos confirmados, top 5 eventos</div></div></div>
+          ${(() => { const rows = inscripcionesPorEvento(); return rows.length ? hbars(rows.map((e) => ({ lbl: `${e.emoji} ${e.name}`, value: e.inscritos, color: 'var(--blue-info)' })), fmtMiles) : emptyWidget('Sin inscripciones por evento aún.'); })()}
+        </div>
+
+        <!-- 4. Estado de cargues (insc/res/med · % global) -->
+        <div class="widget w-cargues">
+          <div class="widget__head"><div><div class="widget__title">Estado de cargues</div><div class="widget__hint">avance global por sección</div></div></div>
+          ${hbars([
+            { lbl: 'Inscripciones', value: pct(inscDone, inscTotal), color: 'var(--blue-info)' },
+            { lbl: 'Resultados', value: pct(resDone, resTotal), color: 'var(--naranja)' },
+            { lbl: 'Medallería', value: pct(medDone, medTotal), color: 'var(--green)' }
+          ], (v) => v + '%', 100)}
+        </div>
+
+        <!-- 5. Resultados registrados vs pendientes (donut) -->
+        <div class="widget w-resultados">
+          <div class="widget__head"><div><div class="widget__title">Resultados registrados</div><div class="widget__hint">vs. pendientes de digitar</div></div></div>
+          ${donut([
+            { label: 'Registrados', value: resDone, color: 'var(--naranja)' },
+            { label: 'Pendientes', value: resPend, color: 'var(--orange-border)' }
+          ], pct(resDone, resTotal) + '%', 'registrado')}
+        </div>
+
+        <!-- 6. Eventos por mes (barras verticales) -->
+        <div class="widget w-mes">
+          <div class="widget__head"><div><div class="widget__title">Eventos por mes</div><div class="widget__hint">calendario 2026 · por fecha de inicio</div></div></div>
+          ${(() => { const rows = eventosPorMes(); return rows.length ? vbars(rows) : emptyWidget('Sin eventos programados.'); })()}
+        </div>
+
+        <!-- 7. Inscripciones agregadas / progreso (stacked bar) — consolidado -->
+        <div class="widget w-insc">
+          <div class="widget__head"><div><div class="widget__title">Inscripciones agregadas</div><div class="widget__hint">consolidado · todos los eventos activos</div></div><span class="widget__tag">${pct(inscDone, inscTotal)}% cargado</span></div>
+          <div class="stat-big">${fmtMiles(inscDone)} <small>/ ${fmtMiles(inscTotal)}</small></div>
+          <div class="stat-cap">inscritos confirmados frente al cupo proyectado</div>
+          <div class="stack-bar">
+            <div class="stack-seg" style="width:${pct(inscDone, inscTotal)}%;background:var(--blue-info)"></div>
+            <div class="stack-seg" style="width:${pct(inscPend, inscTotal)}%;background:var(--bg-soft);transition-delay:90ms"></div>
+          </div>
+          <div class="stack-legend">
+            <span class="stack-legend__row"><span class="legend__dot" style="background:var(--blue-info)"></span>Confirmadas <span class="stack-legend__val">${fmtMiles(inscDone)}</span></span>
+            <span class="stack-legend__row"><span class="legend__dot" style="background:var(--border-dark)"></span>Pendientes <span class="stack-legend__val">${fmtMiles(inscPend)}</span></span>
+          </div>
+        </div>
+
+        <!-- (El medallero por organismo y los breakdowns por dimensión viven
+             ahora en la Reportería por evento — tablero Medallería. El dashboard
+             se mantiene como vista ejecutiva consolidada. Decisión Diego/Doug 2026-06.) -->
+      </div>`;
+  }
+
+  /* ═══════════════ Animación de carga de los charts ═══════════════
+     Donuts: barrido del anillo 0→valor vía stroke-dasharray (data-dash).
+     Barras: llenado 0→valor vía clip-path (inset 100%→0),
+             compositor-friendly (no se anima width — regla CLAUDE.md).
+     Disparo: IntersectionObserver (entra en viewport) con fallback a carga.
+     prefers-reduced-motion: reduce → valores finales directos, sin animar. */
+  const REDUCE_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function setChartFinal(el, animate) {
+    /* Aplica el estado final a un contenedor (donut segs + barras).
+       Donuts → dasharray final (barrido). Barras → clase is-filled
+       (clip-path se revela L→R). Idempotente.
+       Para animar desde el estado colapsado (que ya es el default de CSS y
+       quedó pintado en el primer render) forzamos un reflow síncrono antes
+       de aplicar el valor final → la transición dispara sin depender de rAF
+       (que puede estar pausado en pestañas en background). */
+    if (animate) void el.offsetWidth; // fuerza reflow: "commitea" el estado colapsado
+    el.querySelectorAll('.donut__seg[data-dash]').forEach((seg) => {
+      seg.setAttribute('stroke-dasharray', seg.getAttribute('data-dash'));
+    });
+    el.querySelectorAll('.prog-fill, .stack-seg, .hbar__fill, .hbar__track.is-stacked').forEach((b) => {
+      b.classList.add('is-filled');
+    });
+  }
+
+  /* Decide si un target está en/cerca del viewport (para animar ya) o por
+     encima (ya pasó → final directo) o muy por debajo (observar y animar
+     al hacer scroll). */
+  function viewportZone(el) {
+    const r = el.getBoundingClientRect();
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    if (r.bottom <= 0) return 'above';            // ya pasó por arriba
+    if (r.top < vh + vh * 0.25) return 'near';    // visible o a punto de entrar
+    return 'below';                               // bien abajo
+  }
+
+  let _chartObserver = null;
+  function animateChartsIn(scope) {
+    const root = scope || document.getElementById('dashboard');
+    if (!root) return;
+    /* Contenedores animables: cada widget + cada card/fila con progreso. */
+    const targets = [...root.querySelectorAll('.widget, .event-card, .ev-row__prog')];
+
+    if (REDUCE_MOTION) {
+      /* Sin animación → valores finales directos. */
+      targets.forEach(setChartFinal);
+      return;
+    }
+
+    /* Disparo al CARGAR (robusto, no depende de IntersectionObserver):
+       lo que está arriba se finaliza sin animar; lo cercano se anima con
+       doble rAF (deja pintar el estado colapsado y luego flipea al final). */
+    const deferred = [];
+    targets.forEach((el) => {
+      const zone = viewportZone(el);
+      if (zone === 'above') { setChartFinal(el, false); }   // ya pasó → sin animar
+      else if (zone === 'near') { setChartFinal(el, true); } // visible → anima (reflow)
+      else { deferred.push(el); }                            // abajo → al entrar en viewport
+    });
+
+    /* Progressive enhancement: los de abajo animan al entrar en viewport.
+       Doble red de seguridad: IntersectionObserver + fallback por scroll
+       (por si IO no dispara). El que ocurra primero gana; setChartFinal es
+       idempotente y cada target se anima una sola vez. */
+    if (!deferred.length) return;
+    const pending = new Set(deferred);
+    const finalize = (el) => { if (!pending.has(el)) return; pending.delete(el); setChartFinal(el, true); };
+
+    const scroller = document.querySelector('.page') || window;
+    let onScroll = null;
+    const cleanup = () => {
+      if (onScroll) scroller.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
+    onScroll = () => {
+      pending.forEach((el) => { if (viewportZone(el) === 'near' || viewportZone(el) === 'above') finalize(el); });
+      if (!pending.size) cleanup();
+    };
+    scroller.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+
+    if (typeof IntersectionObserver !== 'undefined') {
+      if (_chartObserver) _chartObserver.disconnect();
+      _chartObserver = new IntersectionObserver((entries, obs) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          finalize(entry.target);
+          obs.unobserve(entry.target);
+        });
+        if (!pending.size) cleanup();
+      }, { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
+      deferred.forEach((t) => _chartObserver.observe(t));
+    }
+
+    /* Red de seguridad final: si pasados unos segundos algún target sigue
+       pendiente (scroll/IO no dispararon — p.ej. pestaña en background o
+       entornos sin estos eventos), se finaliza igualmente para no dejar
+       nunca una barra colapsada. */
+    setTimeout(() => { pending.forEach((el) => finalize(el)); cleanup(); }, 2200);
+  }
+
+  function renderShell(role, mode) {
+    const blank = mode === 'blank';
+
+    document.getElementById('dashboard').innerHTML = `
+      <div class="dash-head">
+        <div class="dash-head__title">
+          <h2>Dashboard de analítica</h2>
+          <p>Reportería consolidada de los eventos del Ministerio, nutrida por el equipo de reportería. Hola, ${role.userName.split(' ')[0]}.</p>
+        </div>
+      </div>
+
+      <div class="section-eyebrow">Analítica</div>
+      ${widgetsBlock(blank)}
+
+      <!-- Sección secundaria: navegación de eventos (header + toolbar DENTRO del card,
+           réplica del patrón convocatorias). Título → toolbar → thead → filas. -->
+      <div class="naowee-table-card" id="evCard">
+        <div class="tc-head">
+          <h3 class="tc-head__title">Eventos</h3>
+          <p class="tc-head__sub">Vista rápida desde el dashboard. El listado completo vive en la sección Eventos.</p>
+        </div>
+        <div class="tc-toolbar">
+          <div class="naowee-searchbox" id="evSearchbox">
+            <div class="naowee-searchbox__input-wrap">
+              <div class="naowee-searchbox__icon">${I.search}</div>
+              <input type="text" class="naowee-searchbox__input" id="evSearch" placeholder="Buscar evento, deporte, lugar u organismo…" aria-label="Buscar eventos">
+              <button type="button" class="naowee-searchbox__clear" id="evSearchClear" aria-label="Limpiar búsqueda">${I.clear}</button>
+            </div>
+          </div>
+          <div class="naowee-segment" role="tablist" aria-label="Filtrar por estado" data-segmented>
+            <span class="naowee-segment__pill naowee-segment__pill--no-anim" data-pill></span>
+            <button class="naowee-segment__item naowee-segment__item--active" data-filter="todos" role="tab" aria-selected="true">Todos</button>
+            <button class="naowee-segment__item" data-filter="activo" role="tab" aria-selected="false">Activos</button>
+            <button class="naowee-segment__item" data-filter="borrador" role="tab" aria-selected="false">En preparación</button>
+            <button class="naowee-segment__item" data-filter="finalizado" role="tab" aria-selected="false">Finalizados</button>
+          </div>
+          <div class="view-toggle" role="group" aria-label="Cambiar vista">
+            <button type="button" class="view-toggle__btn ${currentView === 'cards' ? 'is-active' : ''}" data-view="cards" aria-pressed="${currentView === 'cards'}" aria-label="Vista de tarjetas">${I.gridV}</button>
+            <button type="button" class="view-toggle__btn ${currentView === 'table' ? 'is-active' : ''}" data-view="table" aria-pressed="${currentView === 'table'}" aria-label="Vista de tabla">${I.listV}</button>
+          </div>
+          <span class="toolbar__count" id="evCount"></span>
+        </div>
+
+        <div id="evSlot"></div>
+
+        <div class="empty" id="evEmpty">
+          <div class="empty__icon">${I.inbox}</div>
+          <h3>${blank ? 'Aún no hay eventos' : 'No hay eventos que coincidan'}</h3>
+          <p>${blank ? 'En modo guiado el dashboard arranca vacío. Cambia a "Libre · con datos" desde el pill inferior.' : 'Ajusta la búsqueda o el filtro de estado para ver más resultados.'}</p>
+        </div>
+      </div>
+    `;
+    bindToolbar();
+    renderList(blank);
+    /* Anima los widgets (donuts/barras) al entrar en viewport. Las
+       cards/filas se animan dentro de renderList (se re-renderizan). */
+    animateChartsIn(document.getElementById('dashboard'));
+  }
+
+  function renderList(blank) {
+    const slot = document.getElementById('evSlot');
+    const empty = document.getElementById('evEmpty');
+    const count = document.getElementById('evCount');
+    const source = blank ? [] : EVENTS;
+    const rows = filtered(source);
+    count.textContent = `${rows.length} de ${source.length} eventos`;
+    if (rows.length === 0) {
+      slot.innerHTML = '';
+      empty.classList.add('is-shown');
+      return;
+    }
+    empty.classList.remove('is-shown');
+
+    if (currentView === 'cards') {
+      slot.innerHTML = `<div class="events-grid">${rows.map((ev, i) => eventCard(ev, i)).join('')}</div>`;
+      slot.querySelectorAll('.event-card').forEach((card) => {
+        card.addEventListener('click', () => openDetail(card.dataset.id));
+      });
+    } else {
+      /* El card contenedor (#evCard) ya es .naowee-table-card; la tabla solo
+         aporta el wrap + thead gris flotante (sin anidar otro card). */
+      slot.innerHTML = `
+        <div class="naowee-table-card__table-wrap">
+          <table class="naowee-table--in-card">
+            <colgroup>
+              <col class="col-evento"><col class="col-fechas"><col class="col-lugar">
+              <col class="col-estado"><col class="col-prog">
+            </colgroup>
+            <thead><tr>
+              <th>Evento</th><th>Fechas</th><th>Lugar</th><th>Estado</th><th>Progreso inscr.</th>
+            </tr></thead>
+            <tbody>${rows.map((ev) => eventRow(ev)).join('')}</tbody>
+          </table>
+        </div>`;
+      slot.querySelectorAll('tbody tr').forEach((tr) => {
+        const open = () => openDetail(tr.dataset.id);
+        tr.addEventListener('click', open);
+        tr.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(); });
+      });
+    }
+    /* Anima las barras de progreso de las cards/filas recién renderizadas. */
+    animateChartsIn(slot);
+  }
+
+  /* Posiciona la pill deslizante del segmented control bajo el item activo
+     (patrón canónico .naowee-segment: solo transform/width, sin reflow). */
+  function positionSegmentPill(animate) {
+    const seg = document.querySelector('.naowee-segment[data-segmented]');
+    if (!seg) return;
+    const pill = seg.querySelector('[data-pill]');
+    const active = seg.querySelector('.naowee-segment__item--active');
+    if (!pill || !active) return;
+    if (!animate) pill.classList.add('naowee-segment__pill--no-anim');
+    pill.style.width = active.offsetWidth + 'px';
+    pill.style.setProperty('--seg-x', active.offsetLeft + 'px');
+    if (!animate) {
+      // forzar reflow para que la posición inicial no se anime, luego rehabilitar
+      requestAnimationFrame(() => requestAnimationFrame(() => pill.classList.remove('naowee-segment__pill--no-anim')));
+    }
+  }
+
+  let _blankState = false;
+  function bindToolbar() {
+    /* ── Searchbox canónico: input + toggle de --has-value + botón clear ── */
+    const sbox = document.getElementById('evSearchbox');
+    const search = document.getElementById('evSearch');
+    const sclear = document.getElementById('evSearchClear');
+    function syncHasValue() { sbox.classList.toggle('naowee-searchbox--has-value', search.value.length > 0); }
+    search.addEventListener('input', (e) => { query = e.target.value; syncHasValue(); renderList(_blankState); });
+    sclear.addEventListener('click', () => {
+      search.value = ''; query = '';
+      syncHasValue();
+      renderList(_blankState);
+      search.focus();
+    });
+    syncHasValue();
+    document.querySelectorAll('.naowee-segment__item').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.naowee-segment__item').forEach((b) => {
+          b.classList.remove('naowee-segment__item--active'); b.setAttribute('aria-selected', 'false');
+        });
+        btn.classList.add('naowee-segment__item--active'); btn.setAttribute('aria-selected', 'true');
+        activeFilter = btn.dataset.filter;
+        positionSegmentPill(true);
+        renderList(_blankState);
+      });
+    });
+    /* Pill inicial (sin animar) + recolocar al cambiar el ancho del viewport. */
+    positionSegmentPill(false);
+    window.addEventListener('resize', () => positionSegmentPill(false));
+
+    /* View toggle card/tabla (persistido en localStorage). */
+    document.querySelectorAll('.view-toggle__btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (btn.dataset.view === currentView) return;
+        currentView = btn.dataset.view;
+        localStorage.setItem(VIEW_KEY, currentView);
+        document.querySelectorAll('.view-toggle__btn').forEach((b) => {
+          const on = b.dataset.view === currentView;
+          b.classList.toggle('is-active', on); b.setAttribute('aria-pressed', String(on));
+        });
+        renderList(_blankState);
+      });
+    });
+  }
+
+  /* Detalle del evento (Fase 3) → navega a evento-detalle.html?id=… */
+  function openDetail(id) {
+    if (!id) return;
+    window.location.href = `evento-detalle.html?id=${encodeURIComponent(id)}&role=${getRoleFromQuery()}`;
+  }
+
+  /* Toast genérico (secciones aún no construidas en esta fase) — snackbar canónico. */
+  function flashDetail(ev, msg) {
+    window.naoweeToast(msg || `Detalle de "${ev.name}" — pantalla disponible en una próxima fase de la demo.`, 'info');
+  }
+
+  /* ─── Bootstrap ─── */
+  const roleCode = getRoleFromQuery();
+  /* RBAC: el Gestor (operativo) NO ve el Dashboard analítico (es consumo de
+     ADMIN/Usuario, lo nutre Diego). Si llega aquí por URL, lo enviamos a su home. */
+  if (roleCode === 'GESTOR') { window.location.replace('eventos.html?role=GESTOR'); }
+  const role = ROLES[roleCode];
+  const mode = getDemoMode();           // 'demo' (con datos) | 'blank' (guiado·vacío)
+  _blankState = mode === 'blank';
+
+  mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: 'dashboard' });
+  mountHeader({ headerEl: document.getElementById('topHeader'), role, title: 'Eventos', subtitle: 'Dashboard · Ministerio del Deporte' });
+  mountBackdrop();
+  mountDemoSwitcher({ roleCode });
+  renderShell(role, mode);
+
+  /* MODO DEMO cambia sin recargar: re-render del dashboard. */
+  window.addEventListener('eventos:demo-mode', (e) => {
+    _blankState = e.detail.mode === 'blank';
+    renderShell(role, e.detail.mode);
+  });
+
+  document.title = `Naowee Eventos — Dashboard (${role.label})`;
+</script>
+
+</body>
+</html>

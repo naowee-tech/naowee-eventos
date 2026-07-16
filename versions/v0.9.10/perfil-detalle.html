@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perfil del deportista — Propuesta</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="shared/tokens.css?v=0.9.1">
+<link rel="stylesheet" href="shared/shell.css?v=0.4.5">
+<link rel="stylesheet" href="shared/list-components.css?v=0.9.1">
+<link rel="stylesheet" href="shared/forms.css?v=0.9.3">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.9.1">
+<script src="shared/naowee-footer.js?v=0.9.10" defer></script>
+
+<style>
+  /* ════════════ PERFIL DEL DEPORTISTA · v2 (propuesta escalable) ════════════
+     Layout: hero (avatar+bandera+identidad+stats) · grid 3 col
+     [nav de secciones | panel con tabs | aside biometría]. Pensado para escalar
+     a múltiples nacionalidades (bandera derivada del país) y todo el ciclo de
+     vida del deportista: datos, ubicación, contacto, biometría, documentos,
+     eventos e historial (inscripciones · resultados · medallería). */
+
+  .page { background: var(--surface); }
+  .pf-wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+  /* CTA volver al directorio — botón link canónico del DS (.naowee-btn--link). */
+  .pf-back { align-self: flex-start; text-decoration: none; }
+
+  /* ── HERO (encabezado general del deportista) ── */
+  .pf-hero {
+    display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-xl); padding: 22px 28px;
+    animation: fadeInUp .44s var(--easing-smoothout) both;
+  }
+  .pf-ava-wrap { position: relative; flex-shrink: 0; padding-bottom: 12px; }
+  .pf-ava {
+    width: 84px; height: 84px; border-radius: var(--radius-full);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 28px; font-weight: 800; letter-spacing: .5px;
+    border: 3px solid var(--surface); text-shadow: 0 1px 2px rgba(0,0,0,.18);
+    box-shadow: 0 0 0 1px var(--border), 0 10px 24px -8px rgba(var(--ava-glow, 100,116,139), .5);
+  }
+  .pf-ava--olimpico    { background: linear-gradient(135deg,#f59e0b,#d97706); --ava-glow: 217,119,6; }
+  .pf-ava--profesional { background: linear-gradient(135deg,#3b82f6,#1d4ed8); --ava-glow: 29,78,216; }
+  .pf-ava--juvenil     { background: linear-gradient(135deg,#a855f7,#7c3aed); --ava-glow: 124,58,237; }
+  .pf-ava--amateur     { background: linear-gradient(135deg,#94a3b8,#64748b); --ava-glow: 100,116,139; }
+  /* Bandera de nacionalidad — esquina superior derecha (escalable a otros países) */
+  .pf-flag { position: absolute; right: -2px; top: -1px; width: 25px; height: 25px; border-radius: var(--radius-full); border: 2.5px solid var(--surface); overflow: hidden; }
+  .pf-flag--co { background: linear-gradient(#FCD116 0 50%, #003893 50% 75%, #CE1126 75% 100%); }
+  /* Tier ribbon en la base del avatar (categoría de reconocimiento) */
+  .pf-tier-ribbon {
+    position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
+    display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+    padding: 3px 9px; border-radius: var(--radius-full);
+    font-size: 9.5px; font-weight: 800; letter-spacing: .3px; text-transform: uppercase; line-height: 1;
+    box-shadow: 0 0 0 3px var(--surface);
+  }
+  .pf-tier-ribbon svg { width: 10px; height: 10px; }
+  .pf-tier--olimpico    { background: linear-gradient(135deg,#fff8d6,#ffe082); color: #8a5a00; }
+  .pf-tier--profesional { background: linear-gradient(135deg,#eef5ff,#c3dcff); color: #1d4ed8; }
+  .pf-tier--juvenil     { background: linear-gradient(135deg,#f6edff,#e0c9ff); color: #7c3aed; }
+  .pf-tier--amateur     { background: linear-gradient(135deg,#f8f9fc,#e3e6f1); color: #646587; }
+
+  .pf-id { flex: 1; min-width: 240px; }
+  .pf-name { font-size: 23px; font-weight: 800; letter-spacing: -.4px; color: var(--text-primary); margin: 0; }
+  .pf-doc { font-size: 13px; color: var(--text-secondary); margin: 4px 0 12px; }
+  .pf-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+  /* Badges neutrales (mismo fondo) con un dot de color para el tipo — sin sobrecarga cromática. */
+  .pf-badge { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: var(--radius-full); font-size: 11.5px; font-weight: 600; letter-spacing: .2px; line-height: 1; color: var(--text-secondary); background: #f3f4f8; }
+  .pf-badge__dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: #9aa0b0; }
+  .pf-badge--club .pf-badge__dot       { background: #1d4ed8; }
+  .pf-badge--liga .pf-badge__dot       { background: #1f8923; }
+  .pf-badge--federacion .pf-badge__dot { background: #d74009; }
+
+  /* Lado derecho: contadores + medal-strip */
+  .pf-side { display: flex; align-items: center; justify-content: center; margin-left: auto; flex-shrink: 0; }
+  .pf-counts { display: flex; gap: 10px; }
+  .pf-stat { text-align: center; min-width: 72px; padding: 9px 16px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+  .pf-stat__n { font-size: 20px; font-weight: 800; color: var(--text-primary); line-height: 1; }
+  .pf-stat__l { font-size: 10px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--text-muted); margin-top: 5px; }
+  .pf-medal-strip { display: inline-flex; align-items: center; gap: 9px; padding: 5px 13px 5px 7px; background: linear-gradient(180deg,#fff,#fafbfd); border: 1px solid var(--border); border-radius: var(--radius-full); }
+  .pf-medal-strip__items { display: flex; }
+  .pf-mchip { width: 26px; height: 26px; border-radius: var(--radius-full); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; border: 2px solid #fff; margin-left: -9px; }
+  .pf-mchip:first-child { margin-left: 0; }
+  .pf-mchip--oro    { background: linear-gradient(135deg,#fff8d6,#f5b400); }
+  .pf-mchip--plata  { background: linear-gradient(135deg,#f1f3f7,#9aa0b0); }
+  .pf-mchip--bronce { background: linear-gradient(135deg,#f6d4a8,#b06b2f); }
+  .pf-medal-strip__count { font-size: 11px; font-weight: 700; color: var(--text-secondary); letter-spacing: .3px; text-transform: uppercase; }
+  .pf-medal-strip__count strong { color: var(--text-primary); }
+  .pf-medal-strip__empty { font-size: 11.5px; color: var(--text-muted); font-style: italic; padding: 3px 6px; }
+
+  /* ── GRID 3 col ── */
+  .pf-grid { display: grid; grid-template-columns: 212px 1fr 264px; gap: 18px; align-items: start; }
+
+  /* Nav de secciones */
+  .pf-nav { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 8px; position: sticky; top: 18px; }
+  .pf-nav__group { font-size: 10.5px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--text-muted); padding: 13px 13px 6px; }
+  .pf-nav__group:first-child { padding-top: 6px; }
+  .pf-nav__item {
+    display: flex; align-items: center; gap: 11px; width: 100%;
+    padding: 11px 13px; border: none; background: transparent; border-radius: var(--radius-md);
+    font-family: inherit; font-size: 14px; font-weight: 600; color: var(--text-secondary);
+    cursor: pointer; text-align: left; transition: background var(--duration-fast), color var(--duration-fast);
+  }
+  .pf-nav__item svg { width: 18px; height: 18px; flex-shrink: 0; color: var(--text-muted); transition: color var(--duration-fast); }
+  .pf-nav__item:hover { background: var(--bg-soft); color: var(--text-primary); }
+  .pf-nav__item.is-active { background: var(--accent-bg); color: var(--accent); font-weight: 700; }
+  .pf-nav__item.is-active svg { color: var(--accent); }
+  .pf-nav__item .pf-nav__sp { margin-left: auto; }
+  .pf-nav__badge { margin-left: auto; padding: 2px 8px; border-radius: var(--radius-full); font-size: 10px; font-weight: 700; }
+  .pf-nav__badge--new { background: var(--green-bg); color: var(--green); }     /* "Nuevos" — verde bajo contraste */
+  .pf-nav__badge--count { background: var(--orange-bg); color: #b45309; }       /* "N" pendientes — ámbar */
+  .pf-nav__alert { margin-left: auto; width: 18px; height: 18px; border-radius: var(--radius-full); background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; }
+
+  /* Panel central */
+  .pf-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); overflow: hidden; min-height: 320px; }
+  .pf-panel__head { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 20px 24px 0; }
+  .pf-panel__title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0; }
+  .pf-edit { display: inline-flex; align-items: center; gap: 6px; border: none; background: none; color: var(--accent); font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .pf-edit svg { width: 14px; height: 14px; }
+  .pf-edit:hover { text-decoration: underline; }
+  /* Divider de borde a borde del container: el borde vive en el wrap (full-width
+     del panel); a las .naowee-tabs se les quita su borde y quedan alineadas con
+     el contenido (24px). Las tabs llevan icono + label compactos. */
+  .pf-tabs-wrap { padding: 14px 0 0; border-bottom: 1px solid var(--border-dark); }
+  .pf-tabs-wrap .naowee-tabs { border-bottom: none; }
+  /* flex:1 → las tabs ocupan todo el ancho del container, repartidas por igual. */
+  .pf-tabs-wrap .naowee-tab { flex: 1; padding: 0 6px; font-size: 13px; height: 44px; gap: 6px; }
+  .pf-tabs-wrap .naowee-tab svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .pf-body { padding: 22px 24px 26px; animation: fadeIn .25s ease both; }
+
+  /* Field grid */
+  .pf-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 28px; }
+  .pf-field__l { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; }
+  .pf-field__v { font-size: 14.5px; font-weight: 500; color: var(--text-primary); display: flex; align-items: center; gap: 7px; }
+  .pf-field--full { grid-column: span 2; }
+  .pf-flag-chip { width: 18px; height: 13px; border-radius: 3px; overflow: hidden; flex-shrink: 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+  .pf-flag-chip.pf-flag--co { background: linear-gradient(#FCD116 0 50%, #003893 50% 75%, #CE1126 75% 100%); }
+
+  /* Aside biometría + completitud */
+  .pf-aside { display: flex; flex-direction: column; gap: 18px; position: sticky; top: 18px; }
+  .pf-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 20px 22px; }
+  .pf-card__title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0 0 16px; }
+  .pf-bio-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .pf-bio-tile { padding: 13px; border-radius: var(--radius-lg); background: #f9fafc; display: flex; flex-direction: column; }
+  .pf-bio-tile__ico { width: 30px; height: 30px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; margin-bottom: 9px; }
+  .pf-bio-tile__ico svg { width: 16px; height: 16px; }
+  .pf-bio-tile__v { font-size: 18px; font-weight: 800; color: var(--text-primary); line-height: 1; }
+  .pf-bio-tile__l { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 4px; }
+  .pf-bio-tile--accent .pf-bio-tile__ico { background: var(--accent-bg); color: var(--accent); }
+  .pf-bio-tile--blue .pf-bio-tile__ico { background: var(--blue-bg); color: var(--blue-info); }
+  .pf-bio-tile--red .pf-bio-tile__ico { background: var(--red-bg); color: #c0392b; }
+  .pf-bio-tile--green .pf-bio-tile__ico { background: var(--green-bg); color: var(--green); }
+  /* Resultados — disco de posición tipo podio */
+  .pf-res { display: flex; align-items: center; gap: 13px; padding: 12px 0; border-top: 1px solid var(--border); }
+  .pf-res:first-of-type { border-top: none; padding-top: 2px; }
+  .pf-res__pos { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; flex-shrink: 0; border: 2.5px solid var(--surface); }
+  .pf-res__pos--1 { background: radial-gradient(circle at 35% 28%, #fff7d6, #f5b400 72%, #d99400); color: #7a4e00; box-shadow: 0 0 0 1px #e3ab00; }
+  .pf-res__pos--2 { background: radial-gradient(circle at 35% 28%, #ffffff, #b6bdca 72%, #99a0b0); color: #39414f; box-shadow: 0 0 0 1px #aeb6c4; }
+  .pf-res__pos--3 { background: radial-gradient(circle at 35% 28%, #f7dcc0, #b87333 72%, #9a5d28); color: #5b3517; box-shadow: 0 0 0 1px #b0703a; }
+  .pf-res__pos--n { background: var(--bg-soft); color: var(--text-secondary); box-shadow: 0 0 0 1px var(--border); }
+  .pf-res__body { flex: 1; min-width: 0; }
+  .pf-res__nm { display: block; font-size: 13.5px; font-weight: 700; color: var(--text-primary); }
+  .pf-res__sub { display: block; font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+  .pf-res__tag { margin-left: auto; padding: 3px 10px; border-radius: var(--radius-full); font-size: 10.5px; font-weight: 700; flex-shrink: 0; background: var(--green-bg); color: var(--green); }
+  /* Pares etiqueta/valor apilados (biometría, docs, eventos, historial, ajustes). */
+  .pf-bio-row__l, .pf-bio-row__v, .pf-doc__nm, .pf-doc__sub, .pf-ev__nm, .pf-ev__sub, .pf-tr__nm, .pf-tr__sub, .pf-set__nm, .pf-set__d { display: block; }
+
+  /* Completitud ring */
+  .pf-ring-card { display: flex; align-items: center; gap: 16px; }
+  .pf-ring { width: 64px; height: 64px; border-radius: var(--radius-full); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .pf-ring__inner { width: 50px; height: 50px; border-radius: var(--radius-full); background: var(--surface); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: var(--text-primary); }
+  .pf-ring-card__txt strong { font-size: 13.5px; color: var(--text-primary); display: block; }
+  .pf-ring-card__txt span { font-size: 12px; color: var(--text-secondary); }
+
+  /* Documentos */
+  .pf-doc-item { padding: 13px 0; }
+  .pf-doc-item + .pf-doc-item { border-top: 1px solid var(--border); }
+  .pf-doc-item:first-child { padding-top: 0; }
+  .pf-doc { display: flex; align-items: center; gap: 13px; }
+  .pf-doc__txt { flex: 1; min-width: 0; }
+  .pf-doc__ico.is-required { background: var(--red-bg); color: #c0392b; }
+  .pf-doc-up { margin-top: 12px; padding-left: 51px; }
+  .pf-doc-up .naowee-file-uploader__drop-icon svg { width: 24px; height: 24px; }
+  .pf-doc__ico { width: 38px; height: 38px; border-radius: var(--radius-md); background: var(--accent-bg); color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .pf-doc__ico svg { width: 19px; height: 19px; }
+  .pf-doc__nm { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .pf-doc__sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .pf-doc__st { margin-left: auto; padding: 3px 10px; border-radius: var(--radius-full); font-size: 11px; font-weight: 700; }
+  .st-verificado, .st-vigente { background: var(--green-bg); color: var(--green); }
+  .st-pendiente { background: var(--orange-bg); color: #b45309; }
+  .st-requerido { background: var(--red-bg); color: #c0392b; }
+  .st-revision { background: var(--blue-bg); color: var(--blue-info); }
+
+  /* Trayectoria (timeline) — recorrido deportivo · nodos tipo medalla metálica */
+  .pf-tl { display: flex; flex-direction: column; }
+  .pf-tl__item { display: flex; gap: 15px; position: relative; padding-bottom: 20px; }
+  .pf-tl__item:last-child { padding-bottom: 0; }
+  .pf-tl__item:not(:last-child)::before { content: ''; position: absolute; left: 19px; top: 44px; bottom: -2px; width: 2px; background: var(--border); border-radius: 2px; }
+  .pf-tl__node { position: relative; z-index: 1; flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 19px; border: 2.5px solid var(--surface); }
+  .pf-tl__node svg { width: 17px; height: 17px; }
+  .pf-tl__node--oro    { background: radial-gradient(circle at 35% 28%, #fff7d6, #f5b400 72%, #d99400); box-shadow: 0 0 0 1px #e3ab00; }
+  .pf-tl__node--plata  { background: radial-gradient(circle at 35% 28%, #ffffff, #b6bdca 72%, #99a0b0); box-shadow: 0 0 0 1px #aeb6c4; }
+  .pf-tl__node--bronce { background: radial-gradient(circle at 35% 28%, #f7dcc0, #b87333 72%, #9a5d28); box-shadow: 0 0 0 1px #b0703a; }
+  .pf-tl__node--proximo { background: var(--accent-bg); color: var(--accent); box-shadow: 0 0 0 1px var(--orange-border); }
+  .pf-tl__c { flex: 1; min-width: 0; padding-top: 2px; }
+  .pf-tl__top { display: flex; align-items: center; gap: 9px; }
+  .pf-tl__year { font-size: 12px; font-weight: 800; color: var(--text-secondary); letter-spacing: .2px; }
+  .pf-tl__pill { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: var(--radius-full); font-size: 10.5px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase; }
+  .pf-tl__pill--oro    { background: #fdf0c4; color: #8a5a00; }
+  .pf-tl__pill--plata  { background: #eceff4; color: #566071; }
+  .pf-tl__pill--bronce { background: #f4e1ce; color: #7a4a23; }
+  .pf-tl__pill--proximo { background: var(--accent-bg); color: var(--accent); }
+  .pf-tl__ev { font-size: 14px; font-weight: 700; color: var(--text-primary); margin-top: 5px; line-height: 1.3; }
+  .pf-tl__meta { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Eventos / inscripciones */
+  .pf-ev { display: flex; align-items: center; gap: 13px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); transition: border-color var(--duration-fast); }
+  .pf-ev + .pf-ev { margin-top: 9px; }
+  .pf-ev:hover { border-color: var(--border-dark); }
+  .pf-ev-group + .pf-ev-group { margin-top: 22px; }
+  .pf-ev-group__h { display: flex; align-items: center; gap: 8px; margin-bottom: 11px; font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--text-muted); }
+  .pf-ev-group__h span { padding: 1px 8px; border-radius: var(--radius-full); background: var(--bg-soft); color: var(--text-secondary); font-size: 10.5px; }
+  .pf-ev-group__h.is-active { color: var(--green); }
+  .pf-ev-group__h.is-active span { background: var(--green-bg); color: var(--green); }
+  .pf-ev__tile { width: 42px; height: 42px; border-radius: var(--radius-md); background: var(--bg-soft); display: flex; align-items: center; justify-content: center; font-size: 21px; flex-shrink: 0; }
+  .pf-ev__tile.is-active { background: var(--green-bg); }
+  .pf-ev__body { flex: 1; min-width: 0; }
+  .pf-ev__nm { font-size: 13.5px; font-weight: 700; color: var(--text-primary); line-height: 1.3; }
+  .pf-ev__sub { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--text-muted); margin-top: 3px; }
+  .pf-ev__dot { width: 3px; height: 3px; border-radius: 50%; background: var(--border-dark); flex-shrink: 0; }
+  .pf-ev__st { margin-left: auto; padding: 4px 11px; border-radius: var(--radius-full); font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .pf-ev__st.s-activo { background: var(--green-bg); color: var(--green); }
+  .pf-ev__st.s-finalizado { background: #eef0f7; color: var(--text-secondary); }
+
+  /* Medallería / resultados rows */
+  .pf-tr { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 12px; padding: 13px 0; border-top: 1px solid var(--border); }
+  .pf-tr:first-of-type { border-top: none; padding-top: 4px; }
+  .pf-tr__medal { width: 28px; height: 28px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .m-oro { background: #fdf3d3; } .m-plata { background: #eceef4; } .m-bronce { background: #f3e2d4; }
+  .pf-tr__nm { font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
+  .pf-tr__sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+  .pf-tr__rk { font-size: 12.5px; font-weight: 700; padding: 3px 10px; border-radius: var(--radius-full); background: var(--bg-soft); color: var(--text-secondary); }
+  .pf-tr__rk.is-podio { background: var(--accent-bg); color: var(--accent); }
+
+  .pf-empty { text-align: center; padding: 36px 16px; color: var(--text-muted); font-size: 13.5px; }
+
+  /* Settings toggle (stub) */
+  .pf-set { display: flex; align-items: center; gap: 14px; padding: 15px 0; border-top: 1px solid var(--border); }
+  .pf-set:first-of-type { border-top: none; padding-top: 2px; }
+  .pf-set__txt { flex: 1; }
+  .pf-set__nm { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .pf-set__d { font-size: 12.5px; color: var(--text-secondary); margin-top: 2px; }
+  .pf-sw { width: 42px; height: 24px; border-radius: var(--radius-full); background: var(--border-dark); position: relative; cursor: pointer; border: none; flex-shrink: 0; transition: background var(--duration-fast); }
+  .pf-sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: var(--radius-full); background: #fff; box-shadow: var(--shadow-sm); transition: transform var(--duration-normal) var(--easing-smoothout); }
+  .pf-sw.is-on { background: var(--accent); } .pf-sw.is-on::after { transform: translateX(18px); }
+
+  .pf-proposal-tag { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 80; background: var(--azul); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .3px; padding: 7px 14px; border-radius: var(--radius-full); box-shadow: var(--shadow-md); }
+
+  /* Modal editar datos */
+  .pf-modal-ov { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(20,22,40,.5); opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+  .pf-modal-ov.is-open { opacity: 1; pointer-events: auto; }
+  .pf-modal { width: 100%; max-width: 680px; max-height: 90vh; display: flex; flex-direction: column; background: var(--surface); border-radius: var(--radius-xl); overflow: hidden; transform: translateY(8px); transition: transform .2s ease; }
+  .pf-modal-ov.is-open .pf-modal { transform: none; }
+  .pf-modal__head { display: flex; align-items: center; justify-content: space-between; padding: 19px 24px; border-bottom: 1px solid var(--border); }
+  .pf-modal__head h2 { font-size: 17px; font-weight: 800; color: var(--text-primary); margin: 0; }
+  .pf-modal__close { width: 32px; height: 32px; border: none; background: none; border-radius: var(--radius-md); cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; }
+  .pf-modal__close:hover { background: var(--bg-soft); }
+  .pf-modal__close svg { width: 20px; height: 20px; }
+  .pf-mtabs { padding: 6px 24px 0; border-bottom: 1px solid var(--border); }
+  .pf-mtabs .naowee-tabs { border-bottom: none; }
+  .pf-mtabs .naowee-tab { flex: 1; padding: 0 6px; font-size: 13px; height: 44px; gap: 6px; }
+  .pf-mtabs .naowee-tab svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .pf-modal__body { padding: 22px 24px; overflow-y: auto; }
+  .pf-modal__note { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 18px; padding: 11px 13px; border-radius: var(--radius-md); background: var(--bg-soft); font-size: 12px; line-height: 1.45; color: var(--text-secondary); }
+  .pf-modal__note svg { width: 15px; height: 15px; flex-shrink: 0; color: var(--text-muted); margin-top: 1px; }
+  .pf-mgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 18px; }
+  .pf-mgrid .col-2 { grid-column: span 2; }
+  .pf-ro__l { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+  .pf-ro__v { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 44px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-soft); color: var(--text-secondary); font-size: 14px; font-weight: 500; }
+  .pf-ro__v span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pf-ro__v svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--text-muted); }
+  .pf-modal__foot { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 24px; border-top: 1px solid var(--border); }
+
+  @media (max-width: 1080px) { .pf-grid { grid-template-columns: 200px 1fr; } .pf-aside { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; position: static; } .pf-aside .pf-card { flex: 1; min-width: 240px; } }
+  @media (max-width: 760px) {
+    .pf-grid { grid-template-columns: 1fr; }
+    .pf-nav { position: static; display: flex; overflow-x: auto; gap: 4px; }
+    .pf-nav__item { width: auto; white-space: nowrap; }
+    .pf-fields { grid-template-columns: 1fr; gap: 16px; }
+    .pf-hero { padding: 20px; }
+    .pf-side { margin-left: 0; align-items: flex-start; }
+  }
+  @media (prefers-reduced-motion: reduce) { .pf-hero, .pf-banner, .pf-body, .pf-sw::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div id="sidebarRoot"></div>
+  <div class="main">
+    <header class="top-header" id="topHeader"></header>
+    <div class="page">
+      <div class="page-inner pf-wrap" id="pfRoot"></div>
+    </div>
+  </div>
+</div>
+
+<div class="pf-modal-ov" id="editOv" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+  <div class="pf-modal">
+    <header class="pf-modal__head">
+      <h2 id="editTitle">Editar datos</h2>
+      <button class="pf-modal__close" id="editClose" type="button" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </header>
+    <div class="pf-mtabs"><div class="naowee-tabs" id="editTabs" role="tablist"></div></div>
+    <div class="pf-modal__body" id="editBody"></div>
+    <footer class="pf-modal__foot">
+      <button type="button" class="naowee-btn naowee-btn--ghost" id="editCancel">Cancelar</button>
+      <button type="button" class="naowee-btn naowee-btn--loud" id="editSave" disabled>Guardar cambios</button>
+    </footer>
+  </div>
+</div>
+
+<script type="module">
+import { mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher, getRoleFromQuery } from './shared/sidebar.js?v=0.4.5';
+import { getDeportista, buildAtletaDetalle } from './shared/deportistas.js?v=0.4.6';
+
+/* ── Iconos (stroke currentColor) ── */
+const I = {
+  id:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M5 16c.8-1.5 2.3-2.5 4-2.5s3.2 1 4 2.5"/><line x1="15" y1="10" x2="18" y2="10"/><line x1="15" y1="13" x2="18" y2="13"/></svg>',
+  cake:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16v-7a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3z"/><path d="M4 14c1.5 1.2 2.5 1.2 4 0s2.5-1.2 4 0 2.5 1.2 4 0 2.5-1.2 4 0"/><line x1="12" y1="4" x2="12" y2="7"/></svg>',
+  user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+  pin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+  phone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L8.1 9.5a16 16 0 0 0 6 6l1.1-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"/></svg>',
+  ruler:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l13 13 5-5L8 3z"/><path d="M7 7l2 2M11 5l1.5 1.5M11 11l2 2M15 9l1.5 1.5"/></svg>',
+  weight:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 7h11l2 13H4.5z"/><circle cx="12" cy="5" r="2.2"/></svg>',
+  blood:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>',
+  doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+  cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+  clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>',
+  gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V15z"/></svg>',
+  award:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.5 13.5 17 22l-5-3-5 3 1.5-8.5"/></svg>',
+  bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>',
+  shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+  medal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="15" r="6"/><path d="M8.2 10 5 3M15.8 10 19 3M9 3h6"/></svg>',
+  pencil:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+  olimpico:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="6" cy="9" r="3.4"/><circle cx="12" cy="9" r="3.4"/><circle cx="18" cy="9" r="3.4"/><circle cx="9" cy="15" r="3.4"/><circle cx="15" cy="15" r="3.4"/></svg>'
+};
+
+/* ── Datos del deportista (ejemplo rico para la propuesta) ── */
+/* Atleta seleccionado desde el directorio (?id). Si no hay id, cae al primero. */
+const params = new URLSearchParams(location.search);
+const ATLETA = buildAtletaDetalle(getDeportista(params.get('id')));
+
+const TIER = { olimpico:{label:'Olímpico',ico:I.olimpico}, profesional:{label:'Profesional',ico:I.medal}, juvenil:{label:'Juvenil',ico:I.user}, amateur:{label:'Amateur',ico:I.shield} };
+const MEDAL_EMOJI = { Oro:'🥇', Plata:'🥈', Bronce:'🥉' };
+const nombreCompleto = [ATLETA.nombre, ATLETA.segundoNombre, ATLETA.apellido, ATLETA.segundoApellido].filter(Boolean).join(' ');
+const cuenta = (k) => ATLETA.medalleria.filter(m => m.medalla === k).length;
+function medalStripHTML() {
+  const meds = ATLETA.medalleria;
+  if (!meds.length) return `<div class="pf-medal-strip"><span class="pf-medal-strip__empty">Sin medallas aún</span></div>`;
+  // Orden de prestigio: oro → plata → bronce; chips superpuestos (máx 5 visibles).
+  const orden = { Oro:0, Plata:1, Bronce:2 };
+  const sorted = [...meds].sort((a,b) => orden[a.medalla] - orden[b.medalla]);
+  const chips = sorted.slice(0,5).map(m => `<span class="pf-mchip pf-mchip--${m.medalla.toLowerCase()}" title="${m.medalla} · ${m.evento}">${MEDAL_EMOJI[m.medalla]}</span>`).join('');
+  return `<div class="pf-medal-strip"><div class="pf-medal-strip__items">${chips}</div><span class="pf-medal-strip__count"><strong>${meds.length}</strong> ${meds.length === 1 ? 'medalla' : 'medallas'}</span></div>`;
+}
+
+const NAV_GROUPS = [
+  { label: 'Perfil', items: [
+    { id:'resumen', label:'Resumen', icon:I.id },
+    { id:'documentos', label:'Documentos', icon:I.doc, badge:'1' }
+  ]},
+  { label: 'Deportivo', items: [
+    { id:'eventos', label:'Eventos', icon:I.cal, badge:'Nuevos' },
+    { id:'historial', label:'Historial', icon:I.award }
+  ]},
+  { label: 'Cuenta', items: [
+    { id:'config', label:'Configuraciones', icon:I.gear },
+    { id:'notif', label:'Notificaciones', icon:I.bell },
+    { id:'seguridad', label:'Seguridad', icon:I.shield, alert:true }
+  ]}
+];
+
+let activeSec = 'resumen';
+let activeTab = 'datos';
+let activeHist = 'trayectoria';
+
+/* ── Render principal ── */
+function render() {
+  const t = TIER[ATLETA.tier];
+  document.getElementById('pfRoot').innerHTML = `
+    <a class="naowee-btn naowee-btn--link naowee-btn--sm pf-back" href="perfil.html?role=${roleCode}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;margin-right:4px"><polyline points="15 18 9 12 15 6"/></svg>Volver al directorio</a>
+    <section class="pf-hero">
+      <div class="pf-ava-wrap">
+        <div class="pf-ava pf-ava--${ATLETA.tier}">${ATLETA.avatar}</div>
+        <span class="pf-flag pf-flag--${ATLETA.nacionalidad.iso}" title="${ATLETA.nacionalidad.pais}"></span>
+        <span class="pf-tier-ribbon pf-tier--${ATLETA.tier}">${t.ico} ${t.label}</span>
+      </div>
+      <div class="pf-id">
+        <h1 class="pf-name">${ATLETA.nombre} ${ATLETA.apellido} ${ATLETA.segundoApellido}</h1>
+        <p class="pf-doc">CC ${ATLETA.doc.numero}</p>
+        <div class="pf-badges">
+          <span class="pf-badge pf-badge--deporte"><span class="pf-badge__dot"></span>${ATLETA.deporte}</span>
+          <span class="pf-badge pf-badge--club"><span class="pf-badge__dot"></span>${ATLETA.club}</span>
+          <span class="pf-badge pf-badge--liga"><span class="pf-badge__dot"></span>${ATLETA.liga}</span>
+          <span class="pf-badge pf-badge--federacion"><span class="pf-badge__dot"></span>${ATLETA.federacion}</span>
+        </div>
+      </div>
+      <div class="pf-side">
+        ${medalStripHTML()}
+      </div>
+    </section>
+
+    <div class="pf-grid">
+      <nav class="pf-nav" id="pfNav">${NAV_GROUPS.map(g => `<div class="pf-nav__group">${g.label}</div>${g.items.map(navItem).join('')}`).join('')}</nav>
+      <div class="pf-panel" id="pfPanel"></div>
+      <aside class="pf-aside">${asideHTML()}</aside>
+    </div>
+  `;
+  document.getElementById('pfNav').addEventListener('click', (e) => {
+    const b = e.target.closest('.pf-nav__item'); if (!b) return;
+    activeSec = b.dataset.sec; syncNav(); renderPanel();
+  });
+  renderPanel();
+}
+
+function navItem(s) {
+  const end = s.badge ? `<span class="pf-nav__badge pf-nav__badge--${/^\d+$/.test(s.badge) ? 'count' : 'new'}">${s.badge}</span>` : s.alert ? `<span class="pf-nav__alert">!</span>` : '';
+  return `<button type="button" class="pf-nav__item ${s.id===activeSec?'is-active':''}" data-sec="${s.id}">${s.icon}<span>${s.label}</span>${end}</button>`;
+}
+function syncNav() { document.querySelectorAll('.pf-nav__item').forEach(b => b.classList.toggle('is-active', b.dataset.sec===activeSec)); }
+
+function asideHTML() {
+  const b = ATLETA.biometria;
+  const deg = Math.round(ATLETA.completitud * 3.6);
+  return `
+    <div class="pf-card">
+      <h3 class="pf-card__title">Biometría</h3>
+      <div class="pf-bio-grid">
+        ${bioTile(I.ruler,'Altura',b.altura,'accent')}
+        ${bioTile(I.weight,'Peso',b.peso,'blue')}
+        ${bioTile(I.blood,'Tipo de sangre',b.sangre,'red')}
+        ${bioTile(I.medal,'IMC',b.imc,'green')}
+      </div>
+    </div>
+    <div class="pf-card pf-ring-card">
+      <div class="pf-ring" style="background:conic-gradient(var(--accent) ${deg}deg, var(--border) ${deg}deg)"><div class="pf-ring__inner">${ATLETA.completitud}%</div></div>
+      <div class="pf-ring-card__txt"><strong>Completitud del perfil</strong><span>2 datos pendientes por completar</span></div>
+    </div>`;
+}
+function bioTile(ico,l,v,c){ return `<div class="pf-bio-tile pf-bio-tile--${c}"><span class="pf-bio-tile__ico">${ico}</span><span class="pf-bio-tile__v">${v}</span><span class="pf-bio-tile__l">${l}</span></div>`; }
+
+/* ── Panel central por sección ── */
+function renderPanel() {
+  const p = document.getElementById('pfPanel');
+  const dispatch = { resumen: resumenHTML, documentos: documentosHTML, eventos: eventosHTML, historial: historialHTML, config: configHTML, notif: notifHTML, seguridad: seguridadHTML };
+  p.innerHTML = (dispatch[activeSec] || resumenHTML)();
+  bindPanel();
+}
+function bindPanel() {
+  const tabs = document.getElementById('pfTabs');
+  if (tabs) tabs.addEventListener('click', (e) => { const t=e.target.closest('.naowee-tab'); if(!t)return; activeTab=t.dataset.tab; renderPanel(); });
+  const ht = document.getElementById('pfHistTabs');
+  if (ht) ht.addEventListener('click', (e) => { const t=e.target.closest('.naowee-tab'); if(!t)return; activeHist=t.dataset.tab; renderPanel(); });
+  document.querySelectorAll('.pf-sw').forEach(sw => sw.addEventListener('click', () => sw.classList.toggle('is-on')));
+  // File uploader (mock): al subir un archivo, el documento pasa a "En revisión".
+  document.querySelectorAll('#pfPanel .naowee-file-uploader').forEach(up => {
+    const inp = up.querySelector('input[type=file]');
+    const dz = up.querySelector('.naowee-file-uploader__drop-zone');
+    const handle = (file) => {
+      if (!file) return;
+      const doc = ATLETA.documentos.find(d => d.nombre === up.dataset.doc);
+      if (doc) { doc.subido = true; doc.estado = 'revision'; doc.sub = `Cargado: ${file.name} · en revisión`; }
+      renderPanel();
+    };
+    if (inp) inp.addEventListener('change', () => handle(inp.files[0]));
+    if (dz) {
+      ['dragover','dragenter'].forEach(ev => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add('is-drag-over'); }));
+      ['dragleave','dragend'].forEach(ev => dz.addEventListener(ev, () => dz.classList.remove('is-drag-over')));
+      dz.addEventListener('drop', (e) => { e.preventDefault(); dz.classList.remove('is-drag-over'); handle(e.dataTransfer.files[0]); });
+    }
+  });
+  // "Editar datos" (solo en Resumen) abre el modal de edición.
+  if (activeSec === 'resumen') document.querySelector('#pfPanel .pf-edit')?.addEventListener('click', openEditModal);
+}
+
+/* ══════════ Modal: Editar datos (Datos · Ubicación · Adicionales · Contacto) ══════════ */
+const LOCK_ICO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+let modalTab = 'datos', editState = {}, editBaseline = '';
+function editTabFields(tab) {
+  const s = editState;
+  const RO = (l, v) => ({ ro: true, l, v });
+  const ED = (k, l, v, full) => ({ k, l, v, full });
+  return ({
+    datos: [
+      RO('Nombre', ATLETA.nombre), RO('Segundo nombre', ATLETA.segundoNombre),
+      RO('Apellido', ATLETA.apellido), RO('Segundo apellido', ATLETA.segundoApellido),
+      RO('Tipo de documento', ATLETA.doc.tipo), RO('Número de documento', ATLETA.doc.numero),
+      RO('Sexo', ATLETA.sexo), RO('Fecha de nacimiento', ATLETA.nacimiento),
+      RO('Nacionalidad', ATLETA.nacionalidad.pais), RO('Edad', ATLETA.edad + ' años'),
+      ED('genero', 'Identidad de género', s.genero), ED('sangre', 'Tipo de sangre', s.sangre)
+    ],
+    ubicacion: [
+      ED('depto', 'Departamento', s.depto), ED('municipio', 'Municipio', s.municipio),
+      ED('zona', 'Zona', s.zona), ED('barrio', 'Barrio', s.barrio),
+      ED('direccion', 'Dirección', s.direccion, true)
+    ],
+    adicionales: [
+      RO('Deporte principal', ATLETA.deporteEmoji + ' ' + ATLETA.deporte), RO('Categoría', TIER[ATLETA.tier].label),
+      RO('Club', ATLETA.club), RO('Liga', ATLETA.liga),
+      RO('Federación', ATLETA.federacion), RO('Estado deportivo', 'Activo'),
+      ED('manoHabil', 'Mano hábil', s.manoHabil), ED('aniosPractica', 'Años de práctica', s.aniosPractica)
+    ],
+    contacto: [
+      ED('correo', 'Correo electrónico', s.correo, true), ED('telefono', 'Teléfono', s.telefono, true),
+      ED('emergenciaNombre', 'Contacto de emergencia', s.emergenciaNombre), ED('emergenciaTel', 'Tel. de emergencia', s.emergenciaTel)
+    ]
+  })[tab];
+}
+function renderEditTabs() {
+  const T = [['datos','Datos',I.id],['ubicacion','Ubicación',I.pin],['adicionales','Adicionales',I.medal],['contacto','Contacto',I.phone]];
+  document.getElementById('editTabs').innerHTML = T.map(([id,l,ic]) => `<button class="naowee-tab ${id===modalTab?'naowee-tab--selected':''}" data-mtab="${id}" type="button">${ic}${l}</button>`).join('');
+}
+function renderEditBody() {
+  const esc = (v) => ('' + v).replace(/"/g, '&quot;');
+  const html = editTabFields(modalTab).map(f => f.ro
+    ? `<div class="pf-ro ${f.full?'col-2':''}"><span class="pf-ro__l">${f.l}</span><div class="pf-ro__v"><span>${f.v || '—'}</span>${LOCK_ICO}</div></div>`
+    : `<div class="naowee-textfield ${f.full?'col-2':''}"><label class="naowee-textfield__label">${f.l}</label><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" data-key="${f.k}" value="${esc(f.v)}" autocomplete="off"></div></div>`
+  ).join('');
+  const note = `<div class="pf-modal__note">${LOCK_ICO}<span>Los datos con candado los gestiona el administrador de Naowee. Para modificarlos, contáctalo.</span></div>`;
+  document.getElementById('editBody').innerHTML = note + `<div class="pf-mgrid">${html}</div>`;
+}
+function syncEditDirty() { const b = document.getElementById('editSave'); if (b) b.disabled = JSON.stringify(editState) === editBaseline; }
+function openEditModal() {
+  modalTab = 'datos';
+  const u = ATLETA.ubicacion, c = ATLETA.contacto;
+  editState = { genero: ATLETA.genero, sangre: ATLETA.sangre, depto: u.depto, municipio: u.municipio, zona: u.zona, barrio: u.barrio, direccion: u.direccion, manoHabil: ATLETA.manoHabil, aniosPractica: '' + ATLETA.aniosPractica, correo: c.correo, telefono: c.telefono, emergenciaNombre: c.emergenciaNombre, emergenciaTel: c.emergenciaTel };
+  editBaseline = JSON.stringify(editState);
+  renderEditTabs(); renderEditBody(); syncEditDirty();
+  document.getElementById('editOv').classList.add('is-open');
+  document.body.style.overflow = 'hidden';
+}
+function closeEditModal() { document.getElementById('editOv').classList.remove('is-open'); document.body.style.overflow = ''; }
+function saveEdit() {
+  const s = editState;
+  ATLETA.genero = s.genero; ATLETA.sangre = s.sangre; ATLETA.manoHabil = s.manoHabil; ATLETA.aniosPractica = s.aniosPractica;
+  Object.assign(ATLETA.ubicacion, { depto: s.depto, municipio: s.municipio, zona: s.zona, barrio: s.barrio, direccion: s.direccion });
+  Object.assign(ATLETA.contacto, { correo: s.correo, telefono: s.telefono, emergenciaNombre: s.emergenciaNombre, emergenciaTel: s.emergenciaTel });
+  closeEditModal(); renderPanel();
+}
+function setupEditModal() {
+  document.getElementById('editTabs').addEventListener('click', (e) => { const t = e.target.closest('.naowee-tab'); if (!t) return; modalTab = t.dataset.mtab; renderEditTabs(); renderEditBody(); });
+  document.getElementById('editBody').addEventListener('input', (e) => { const inp = e.target.closest('[data-key]'); if (!inp) return; editState[inp.dataset.key] = inp.value; syncEditDirty(); });
+  document.getElementById('editClose').addEventListener('click', closeEditModal);
+  document.getElementById('editCancel').addEventListener('click', closeEditModal);
+  document.getElementById('editSave').addEventListener('click', saveEdit);
+  document.getElementById('editOv').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeEditModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.getElementById('editOv').classList.contains('is-open')) closeEditModal(); });
+}
+
+const fld = (l,v,full) => `<div class="pf-field ${full?'pf-field--full':''}"><div class="pf-field__l">${l}</div><div class="pf-field__v">${v || '—'}</div></div>`;
+const head = (title, edit=true) => `<div class="pf-panel__head"><h2 class="pf-panel__title">${title}</h2>${edit?`<button class="pf-edit">${I.pencil} Editar datos</button>`:''}</div>`;
+
+function resumenHTML() {
+  const TABS = [['datos','Datos',I.id],['ubicacion','Ubicación',I.pin],['adicionales','Adicionales',I.medal],['contacto','Contacto',I.phone]];
+  const tabsBar = `<div class="pf-tabs-wrap"><div class="naowee-tabs" id="pfTabs" role="tablist">${TABS.map(([id,l,ic])=>`<button class="naowee-tab ${id===activeTab?'naowee-tab--selected':''}" data-tab="${id}" role="tab">${ic}${l}</button>`).join('')}</div></div>`;
+  let body = '';
+  if (activeTab === 'datos') body = `
+    ${fld('Nombre', ATLETA.nombre)} ${fld('Segundo nombre', ATLETA.segundoNombre)}
+    ${fld('Apellido', ATLETA.apellido)} ${fld('Segundo apellido', ATLETA.segundoApellido)}
+    ${fld('Tipo de documento', ATLETA.doc.tipo)} ${fld('Número de documento', ATLETA.doc.numero)}
+    ${fld('Sexo', ATLETA.sexo)} ${fld('Fecha de nacimiento', ATLETA.nacimiento)}
+    ${fld('Edad', ATLETA.edad + ' años')} ${fld('Identidad de género', ATLETA.genero)}
+    ${fld('Tipo de sangre', ATLETA.sangre)} ${fld('Nacionalidad', `<span class="pf-flag-chip pf-flag--${ATLETA.nacionalidad.iso}"></span>${ATLETA.nacionalidad.pais}`)}`;
+  else if (activeTab === 'ubicacion') body = `
+    ${fld('Departamento', ATLETA.ubicacion.depto)} ${fld('Municipio', ATLETA.ubicacion.municipio)}
+    ${fld('Zona', ATLETA.ubicacion.zona)} ${fld('Barrio', ATLETA.ubicacion.barrio)}
+    ${fld('Dirección', ATLETA.ubicacion.direccion, true)}`;
+  else if (activeTab === 'adicionales') body = `
+    ${fld('Deporte principal', ATLETA.deporteEmoji + ' ' + ATLETA.deporte)} ${fld('Categoría', TIER[ATLETA.tier].label)}
+    ${fld('Club', ATLETA.club)} ${fld('Liga', ATLETA.liga)}
+    ${fld('Federación', ATLETA.federacion)} ${fld('Mano hábil', ATLETA.manoHabil)}
+    ${fld('Años de práctica', ATLETA.aniosPractica + ' años')} ${fld('Estado deportivo', 'Activo')}`;
+  else body = `
+    ${fld('Correo electrónico', ATLETA.contacto.correo)} ${fld('Teléfono', ATLETA.contacto.telefono)}
+    ${fld('Contacto de emergencia', ATLETA.contacto.emergenciaNombre)} ${fld('Tel. de emergencia', ATLETA.contacto.emergenciaTel)}`;
+  return `${head('Datos personales')}${tabsBar}<div class="pf-body"><div class="pf-fields">${body}</div></div>`;
+}
+
+const DOC_STATUS = { verificado:'Verificado', vigente:'Vigente', pendiente:'Pendiente', requerido:'Requerido', revision:'En revisión' };
+const UPLOAD_ICO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
+function documentosHTML() {
+  const rows = ATLETA.documentos.map(d => {
+    const up = d.subido ? '' : `
+      <div class="pf-doc-up">
+        <div class="naowee-file-uploader" data-doc="${d.nombre}">
+          <label class="naowee-file-uploader__drop-zone">
+            <span class="naowee-file-uploader__drop-icon">${UPLOAD_ICO}</span>
+            <span class="naowee-file-uploader__drop-title">Arrastra el archivo o haz clic para subir</span>
+            <span class="naowee-file-uploader__drop-hint">PDF, JPG o PNG · máximo 5 MB</span>
+            <span class="naowee-file-uploader__drop-filename"></span>
+            <input type="file" accept=".pdf,.jpg,.jpeg,.png">
+          </label>
+        </div>
+      </div>`;
+    return `<div class="pf-doc-item ${d.subido?'':'is-required'}">
+      <div class="pf-doc">
+        <span class="pf-doc__ico ${d.subido?'':'is-required'}">${I.doc}</span>
+        <span class="pf-doc__txt"><span class="pf-doc__nm">${d.nombre}</span><span class="pf-doc__sub">${d.sub}</span></span>
+        <span class="pf-doc__st st-${d.estado}">${DOC_STATUS[d.estado] || d.estado}</span>
+      </div>${up}
+    </div>`;
+  }).join('');
+  return `${head('Documentos', false)}<div class="pf-body">${rows}</div>`;
+}
+
+function eventosHTML() {
+  const activos = ATLETA.inscripciones.filter(e => e.estado === 'activo');
+  const finalizados = ATLETA.inscripciones.filter(e => e.estado === 'finalizado');
+  const row = (e) => { const act = e.estado === 'activo'; const prueba = e.prueba.split(' · ').pop(); return `<div class="pf-ev"><span class="pf-ev__tile ${act?'is-active':''}">${ATLETA.deporteEmoji}</span><span class="pf-ev__body"><span class="pf-ev__nm">${e.evento}</span><span class="pf-ev__sub">${prueba}<span class="pf-ev__dot"></span>${e.fecha}</span></span><span class="pf-ev__st s-${e.estado}">${act?'Activo':'Finalizado'}</span></div>`; };
+  const group = (label, list, active) => list.length ? `<div class="pf-ev-group"><div class="pf-ev-group__h ${active?'is-active':''}">${label} <span>${list.length}</span></div>${list.map(row).join('')}</div>` : '';
+  return `${head('Eventos e inscripciones', false)}<div class="pf-body">${group('Activos · próximos', activos, true)}${group('Finalizados', finalizados, false)}</div>`;
+}
+
+function trayectoriaHTML() {
+  const CAL_ICO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+  const prox = ATLETA.inscripciones.filter(e => e.estado === 'activo')
+    .map(e => ({ anio: (e.fecha.match(/\d{4}/) || ['2026'])[0], evento: e.evento, meta: `${e.prueba.split(' · ').pop()} · inscrito`, cls: 'proximo', node: CAL_ICO, pill: 'Próximo' }));
+  const meds = [...ATLETA.medalleria].sort((a, b) => ('' + b.fecha).localeCompare('' + a.fecha))
+    .map(m => ({ anio: '' + m.fecha, evento: m.evento, meta: m.prueba, cls: m.medalla.toLowerCase(), node: MEDAL_EMOJI[m.medalla], pill: m.medalla }));
+  const items = [...prox, ...meds];
+  return `<div class="pf-tl">${items.map(it => `
+    <div class="pf-tl__item">
+      <div class="pf-tl__node pf-tl__node--${it.cls}">${it.node}</div>
+      <div class="pf-tl__c">
+        <div class="pf-tl__top"><span class="pf-tl__year">${it.anio}</span><span class="pf-tl__pill pf-tl__pill--${it.cls}">${it.pill}</span></div>
+        <div class="pf-tl__ev">${it.evento}</div>
+        <div class="pf-tl__meta">${it.meta}</div>
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+function historialHTML() {
+  const RANK_ICO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>';
+  const TABS = [['trayectoria','Trayectoria',I.clock],['medalleria','Medallería',I.medal],['resultados','Resultados',RANK_ICO]];
+  const tabsBar = `<div class="pf-tabs-wrap"><div class="naowee-tabs" id="pfHistTabs" role="tablist">${TABS.map(([id,l,ic])=>`<button class="naowee-tab ${id===activeHist?'naowee-tab--selected':''}" data-tab="${id}" role="tab">${ic}${l}</button>`).join('')}</div></div>`;
+  let body;
+  if (activeHist === 'trayectoria') {
+    body = trayectoriaHTML();
+  } else if (activeHist === 'medalleria') {
+    body = ATLETA.medalleria.length ? ATLETA.medalleria.map(m => `<div class="pf-tr"><span class="pf-tr__medal m-${m.medalla.toLowerCase()}">${MEDAL_EMOJI[m.medalla]}</span><span><span class="pf-tr__nm">${m.evento}</span><span class="pf-tr__sub">${m.prueba} · ${m.fecha}</span></span><span class="pf-tr__rk is-podio">${m.medalla}</span></div>`).join('') : `<div class="pf-empty">Sin medallas registradas.</div>`;
+  } else {
+    body = ATLETA.resultados.length ? ATLETA.resultados.map(r => { const cls = r.ranking <= 3 ? r.ranking : 'n'; const tag = r.ranking <= 3 ? '<span class="pf-res__tag">Podio</span>' : ''; return `<div class="pf-res"><span class="pf-res__pos pf-res__pos--${cls}">${r.ranking}°</span><span class="pf-res__body"><span class="pf-res__nm">${r.evento}</span><span class="pf-res__sub">${r.prueba} · ${r.fecha}</span></span>${tag}</div>`; }).join('') : `<div class="pf-empty">Sin resultados registrados.</div>`;
+  }
+  return `${head('Historial deportivo', false)}${tabsBar}<div class="pf-body">${body}</div>`;
+}
+
+const setRow = (nm,d,on) => `<div class="pf-set"><span class="pf-set__txt"><span class="pf-set__nm">${nm}</span><span class="pf-set__d">${d}</span></span><button class="pf-sw ${on?'is-on':''}" aria-pressed="${!!on}"></button></div>`;
+function configHTML() {
+  return `${head('Configuraciones', false)}<div class="pf-body">
+    ${setRow('Idioma de la plataforma','Español (Colombia)',false)}
+    ${setRow('Unidades métricas','Centímetros · kilogramos',true)}
+    ${setRow('Perfil visible para organismos','Permite que ligas y federaciones vean tu trazabilidad',true)}
+    ${setRow('Compartir datos para recomendaciones','Mejora las sugerencias de eventos',false)}</div>`;
+}
+function notifHTML() {
+  return `${head('Notificaciones', false)}<div class="pf-body">
+    ${setRow('Nuevos eventos de mi deporte','Avísame cuando se abran inscripciones',true)}
+    ${setRow('Resultados y medallería','Cuando se publique un resultado mío',true)}
+    ${setRow('Recordatorios de documentos','Antes de que venza un documento',true)}
+    ${setRow('Boletín mensual','Resumen de actividad por correo',false)}</div>`;
+}
+function seguridadHTML() {
+  return `${head('Seguridad', false)}<div class="pf-body">
+    ${setRow('Verificación en dos pasos','Recomendado — protege tu cuenta',false)}
+    ${setRow('Inicio de sesión biométrico','Huella o rostro en el dispositivo',true)}
+    ${setRow('Alertas de inicio de sesión','Avísame de accesos nuevos',true)}
+    <div class="pf-set"><span class="pf-set__txt"><span class="pf-set__nm">Contraseña</span><span class="pf-set__d">Última actualización hace 3 meses</span></span><button class="pf-edit" style="white-space:nowrap">${I.pencil} Cambiar</button></div></div>`;
+}
+
+/* ── Shell ── */
+const roleCode = getRoleFromQuery();
+const { role } = mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: 'perfil' });
+mountHeader({ headerEl: document.getElementById('topHeader'), role });
+mountBackdrop();
+mountDemoSwitcher({ roleCode });
+document.title = `Perfil del deportista — ${nombreCompleto}`;
+render();
+setupEditModal();
+</script>
+
+</body>
+</html>

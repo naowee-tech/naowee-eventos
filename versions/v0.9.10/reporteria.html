@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Naowee Eventos — Reportería</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="shared/tokens.css?v=0.9.1">
+<link rel="stylesheet" href="shared/shell.css?v=0.4.5">
+<link rel="stylesheet" href="shared/list-components.css?v=0.9.1">
+<link rel="stylesheet" href="shared/event-detail.css?v=0.9.1">
+<link rel="stylesheet" href="shared/forms.css?v=0.9.3">
+<link rel="stylesheet" href="shared/reporteria.css?v=0.9.9">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.9.1">
+<script src="shared/naowee-footer.js?v=0.9.10" defer></script>
+
+<style>
+  /* Topbar: back (ghost canónico) a la izquierda, CTA a la derecha. */
+  .rep-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+</style>
+</head>
+
+<body>
+<div class="shell" id="shellRoot">
+  <div id="sidebarRoot"></div>
+  <div class="main">
+    <div class="top-header" id="topHeader"></div>
+    <div class="page" id="pageRep">
+      <div class="page-inner" id="repApp"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher, getRoleFromQuery, getIcon, ROLES, homeForRole } from './shared/sidebar.js';
+  import { allEvents, STATUS_LABEL } from './shared/events-data.js';
+  import { buildReporteria } from './shared/reporteria-data.js';
+  import { dailyChart, hbars, donut, progress, podio, stackedBars, animateBars } from './shared/reporteria-charts.js';
+
+  const params = new URLSearchParams(location.search);
+  const roleCode = getRoleFromQuery();
+  const role = ROLES[roleCode] || ROLES.USER;
+  const CAN_VIEW = roleCode === 'ADMIN' || roleCode === 'USER';
+
+  /* ─── Iconos ─── */
+  const I = {
+    chart: getIcon('chart'), ticket: getIcon('ticket'), ranking: getIcon('ranking'),
+    medal: getIcon('medal'), athlete: getIcon('athlete'),
+    /* Chevron IZQUIERDO para "volver" (getIcon('chevron') apunta hacia abajo). */
+    chevL: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>'
+  };
+  const cal = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+  const pin = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+  const bld = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+  const globe = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
+
+  const PALETTE = ['#1f78d1', '#d74009', '#7c3aed', '#1f8923', '#0891b2', '#9333ea', '#c2410c', '#065f46'];
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  /* ════════════ Dropdown canónico del DS (.naowee-dropdown) ════════════
+     Engine copiado VERBATIM de evento-crear.html (mismo CSS en forms.css que
+     ya cargamos). Reusar, no reinventar. ddMarkup() emite el HTML; setupDropdown()
+     pinta opciones, maneja apertura/cierre/auto-flip y bottom-sheet en móvil. */
+  const ddChevron = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+  const ICON_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+  const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+
+  let _sheetBackdrop = null;
+  function ensureBackdrop() {
+    if (_sheetBackdrop) return _sheetBackdrop;
+    _sheetBackdrop = document.createElement('div');
+    _sheetBackdrop.className = 'naowee-sheet-backdrop';
+    document.body.appendChild(_sheetBackdrop);
+    _sheetBackdrop.addEventListener('click', closeAllPopovers);
+    return _sheetBackdrop;
+  }
+  function isMobile() { return window.matchMedia('(max-width: 760px)').matches; }
+  function closeAllPopovers() {
+    document.querySelectorAll('.naowee-dropdown.is-open').forEach((el) => el.classList.remove('is-open'));
+    if (_sheetBackdrop) _sheetBackdrop.classList.remove('is-open');
+  }
+  function setupDropdown(name, opts, onSelect, getSelected) {
+    const dd = document.querySelector(`[data-dd="${name}"]`);
+    if (!dd) return { setLabel() {}, setDisabled() {}, close() {} };
+    const menu = dd.querySelector('.naowee-dropdown__menu');
+    const valEl = dd.querySelector('[data-dd-val]');
+    const trigger = dd.querySelector('.naowee-dropdown__trigger');
+    const sheetTitle = dd.getAttribute('data-sheet-title') || 'Selecciona';
+    function paint() {
+      const sel = getSelected ? getSelected() : null;
+      const sheetHead = `<div class="naowee-dropdown__sheet-head"><span class="naowee-dropdown__sheet-title">${sheetTitle}</span><button type="button" class="naowee-dropdown__sheet-close" data-close aria-label="Cerrar">${ICON_X}</button></div>`;
+      const body = opts.length
+        ? opts.map((o) => `
+            <button type="button" class="naowee-dropdown__opt ${o.value === sel ? 'is-selected' : ''}" data-val="${esc(o.value)}">
+              ${o.emoji ? `<span class="naowee-dropdown__opt-emoji">${o.emoji}</span>` : ''}
+              ${o.html || `<span>${esc(o.label)}</span>`}
+              <span class="naowee-dropdown__opt-check">${ICON_CHECK}</span>
+            </button>`).join('')
+        : `<div class="naowee-dropdown__empty">Sin opciones disponibles</div>`;
+      menu.innerHTML = sheetHead + body;
+      menu.querySelectorAll('.naowee-dropdown__opt').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const chosen = opts.find((o) => String(o.value) === btn.dataset.val);
+          onSelect(chosen); close();
+        });
+      });
+      menu.querySelector('[data-close]')?.addEventListener('click', (e) => { e.stopPropagation(); close(); });
+    }
+    function open() {
+      if (dd.classList.contains('naowee-dropdown--disabled')) return;
+      closeAllPopovers();
+      paint();
+      dd.classList.remove('is-up');
+      if (!isMobile()) {
+        const r = trigger.getBoundingClientRect();
+        const espacioAbajo = window.innerHeight - r.bottom;
+        if (espacioAbajo < 300 && r.top > espacioAbajo) dd.classList.add('is-up');
+      }
+      dd.classList.add('is-open');
+      trigger.setAttribute('aria-expanded', 'true');
+      if (isMobile()) ensureBackdrop().classList.add('is-open');
+    }
+    function close() {
+      dd.classList.remove('is-open');
+      trigger.setAttribute('aria-expanded', 'false');
+      if (_sheetBackdrop && !document.querySelector('.is-open')) _sheetBackdrop.classList.remove('is-open');
+    }
+    trigger.addEventListener('click', (e) => { e.stopPropagation(); dd.classList.contains('is-open') ? close() : open(); });
+    return {
+      setLabel(label, isPlaceholder) { valEl.textContent = label; valEl.classList.toggle('is-placeholder', !!isPlaceholder); },
+      setDisabled(d) { dd.classList.toggle('naowee-dropdown--disabled', d); },
+      setOpts(next) { opts = next; },
+      close
+    };
+  }
+  function ddMarkup(name, sheetTitle, label, isPlaceholder, disabled) {
+    return `<div class="naowee-dropdown naowee-dropdown--medium${disabled ? ' naowee-dropdown--disabled' : ''}" data-dd="${name}" data-sheet-title="${esc(sheetTitle)}">
+      <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-expanded="false">
+        <span class="naowee-dropdown__value${isPlaceholder ? ' is-placeholder' : ''}" data-dd-val>${esc(label)}</span>
+        <span class="naowee-dropdown__chevron">${ddChevron}</span>
+      </button>
+      <div class="naowee-dropdown__menu" role="listbox"></div>
+    </div>`;
+  }
+
+  /* ─── Estado ─── */
+  let events = [];
+  let ev = null;
+  let activeTab = 'inscripciones';
+  let chartMode = 'd';
+  let scope = 'nacional';   // 'nacional' | 'internacional' — ámbito del reporte (segment)
+  let filterState = { org: '', dep: '', pru: '' };
+
+  const defaultScope = (e) => (e && e.alcance === 'internacional') ? 'internacional' : 'nacional';
+  const isIntlEvent = (e) => !!(e && e.alcance === 'internacional');
+  /* El dropdown "Evento" depende del ámbito: solo lista eventos del tipo elegido. */
+  const eventsForScope = (sc) => events.filter((e) => isIntlEvent(e) === (sc === 'internacional'));
+  const firstEventForScope = (sc) => { const l = eventsForScope(sc); return l.find((e) => e.status === 'activo') || l[0] || null; };
+
+  const TABS = [
+    { id: 'inscripciones', label: 'Inscripciones', icon: I.ticket },
+    { id: 'resultados',    label: 'Resultados',    icon: I.ranking },
+    { id: 'medalleria',    label: 'Medallería',    icon: I.medal }
+  ];
+
+  function boot() {
+    mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: 'reporteria' });
+    mountHeader({ headerEl: document.getElementById('topHeader'), role });
+    mountBackdrop();
+    mountDemoSwitcher({ roleCode });
+
+    /* Click fuera de un dropdown → cierra (desktop); ESC también. */
+    document.addEventListener('click', (e) => { if (!e.target.closest('.naowee-dropdown')) closeAllPopovers(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllPopovers(); });
+
+    events = allEvents();
+    const wanted = params.get('id');
+    const wantEv = events.find((e) => e.id === wanted);
+    activeTab = ['inscripciones', 'resultados', 'medalleria'].includes(params.get('tab')) ? params.get('tab') : 'inscripciones';
+    const urlScope = params.get('scope');
+    /* El ámbito (tipo de evento) manda: si viene en la URL se respeta; si no, se
+       deriva del evento pedido; el evento resultante SIEMPRE coincide con el ámbito. */
+    scope = (urlScope === 'nacional' || urlScope === 'internacional') ? urlScope
+      : (wantEv ? defaultScope(wantEv) : 'nacional');
+    ev = (wantEv && defaultScope(wantEv) === scope) ? wantEv : firstEventForScope(scope);
+    if (!ev) { scope = defaultScope(wantEv) || 'nacional'; ev = wantEv || events.find((e) => e.status === 'activo') || events[0]; }
+    render();
+  }
+
+  /* ─── Shell de la página (contexto + filtros + tabs + panel) ─── */
+  function render() {
+    filterState = { org: '', dep: '', pru: '' };
+    const scopeEvents = eventsForScope(scope);
+    const backHref = `dashboard.html?role=${roleCode}`;
+    const cargueCta = roleCode === 'ADMIN'
+      ? `<a class="naowee-btn naowee-btn--ghost naowee-btn--sm" href="cargue.html?tipo=inscripciones&id=${ev.id}&role=${roleCode}">${I.ticket} Ver cargues</a>`
+      : '';
+
+    document.getElementById('repApp').innerHTML = `
+      <div class="rep-topbar">
+        <a class="naowee-btn naowee-btn--ghost naowee-btn--sm" href="${backHref}">${I.chevL} Volver al dashboard</a>
+        ${cargueCta}
+      </div>
+
+      <!-- Setup del reporte (funnel): (1) tipo de evento → (2) evento filtrado + su contexto -->
+      <div class="rep-ctx">
+        <!-- Paso 1 · Tipo de evento (segment = tope de la jerarquía; el evento depende de él) -->
+        <div class="rep-ctx__scope">
+          <div class="rep-ctx__scope-text">
+            <span class="rep-ctx__step">Paso 1 · Tipo de evento</span>
+            <span class="rep-scope__badge${scope === 'internacional' ? ' rep-scope__badge--intl' : ''}">
+              ${scope === 'internacional'
+                ? `${globe}<span>Equipos por <b>país</b> · seguimiento a <b>Colombia</b> 🇨🇴</span>`
+                : `${bld}<span>Equipos por <b>liga u organismo</b> del país</span>`}
+            </span>
+          </div>
+          <div class="naowee-segment" id="repScopeSeg" role="tablist" aria-label="Tipo de evento">
+            <div class="naowee-segment__pill"></div>
+            <button class="naowee-segment__item" type="button" role="tab" data-val="nacional">Nacional</button>
+            <button class="naowee-segment__item" type="button" role="tab" data-val="internacional">Internacional</button>
+          </div>
+        </div>
+
+        <div class="rep-ctx__divider"></div>
+
+        <!-- Paso 2 · Evento (solo los del tipo elegido) + contexto del seleccionado -->
+        <div class="rep-ctx__event">
+          <div class="rep-ev-switch">
+            <label>Paso 2 · Evento <span class="rep-ev-switch__count">${scopeEvents.length} ${scopeEvents.length === 1 ? 'disponible' : 'disponibles'}</span></label>
+            ${ddMarkup('evSwitch', 'Evento', `${ev.emoji} ${esc(ev.name)}`, false, false)}
+          </div>
+          <div class="rep-ctx__meta">
+            <span class="badge s-${ev.status}">${STATUS_LABEL[ev.status]}</span>
+            <span class="rep-chip">${cal} ${esc(ev.start)} — ${esc(ev.end)}</span>
+            <span class="rep-chip">${pin} ${esc(ev.place)}</span>
+            <span class="rep-chip">${bld} ${esc(ev.org)}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gran container canónico (patrón .carg-tabs-card): tabs + filtros + panel -->
+      <section class="rep-tabs-card" aria-label="Tableros de reportería">
+        <div class="naowee-tabs naowee-tabs--proportional" id="repTabs" role="tablist" aria-label="Tableros de reportería">
+          ${TABS.map((t) => `
+            <button class="naowee-tab${t.id === activeTab ? ' naowee-tab--selected' : ''}" data-tab="${t.id}" type="button" role="tab" aria-selected="${t.id === activeTab}">
+              ${t.icon}<span>${t.label}</span>
+            </button>`).join('')}
+        </div>
+        <div class="rep-tabs-card__body">
+          ${filterBar()}
+          <div id="repPanel"></div>
+        </div>
+      </section>
+    `;
+
+    document.querySelectorAll('#repTabs .naowee-tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        if (tab.dataset.tab === activeTab) return;
+        activeTab = tab.dataset.tab;
+        chartMode = 'd';
+        document.querySelectorAll('#repTabs .naowee-tab').forEach((t) => {
+          const on = t.dataset.tab === activeTab;
+          t.classList.toggle('naowee-tab--selected', on);
+          t.setAttribute('aria-selected', on);
+        });
+        syncUrl();
+        renderPanel();
+      });
+    });
+    bindSegment(document.getElementById('repScopeSeg'), () => scope, (val) => {
+      if (val === scope) return;
+      scope = val;
+      ev = firstEventForScope(scope) || ev;   // el evento seleccionado debe pertenecer al nuevo ámbito
+      syncUrl();
+      render();
+    });
+    bindFilters();
+    renderPanel();
+    document.title = ev ? `Naowee Eventos — Reportería · ${ev.name}` : 'Naowee Eventos — Reportería';
+  }
+
+  /* Segment canónico .naowee-segment: pill deslizante posicionado por getBoundingClientRect.
+     Portado verbatim de cargue.html (bindSegment) — reusar, no reinventar. */
+  function bindSegment(segEl, getActive, onSelect) {
+    if (!segEl) return;
+    const pill = segEl.querySelector('.naowee-segment__pill');
+    const items = Array.from(segEl.querySelectorAll('.naowee-segment__item'));
+    function place(idx, instant) {
+      items.forEach((it, i) => {
+        it.classList.toggle('naowee-segment__item--active', i === idx);
+        it.setAttribute('aria-selected', String(i === idx));
+      });
+      const rect = items[idx].getBoundingClientRect();
+      const segRect = segEl.getBoundingClientRect();
+      const bl = parseFloat(getComputedStyle(segEl).borderLeftWidth) || 0;
+      const x = rect.left - segRect.left - bl;
+      if (instant) {
+        pill.classList.add('naowee-segment__pill--no-anim');
+        pill.style.setProperty('--seg-x', `${x}px`);
+        pill.style.width = `${rect.width}px`;
+        void pill.offsetWidth;
+        pill.classList.remove('naowee-segment__pill--no-anim');
+      } else {
+        pill.style.setProperty('--seg-x', `${x}px`);
+        pill.style.width = `${rect.width}px`;
+      }
+    }
+    const init = items.findIndex((it) => it.dataset.val === getActive());
+    place(init >= 0 ? init : 0, true);
+    items.forEach((it, i) => it.addEventListener('click', () => { place(i, false); onSelect(it.dataset.val); }));
+    requestAnimationFrame(() => { const k = items.findIndex((x) => x.dataset.val === getActive()); if (k >= 0) place(k, true); });
+  }
+
+  function syncUrl() {
+    const u = new URLSearchParams(location.search);
+    u.set('id', ev.id); u.set('tab', activeTab); u.set('role', roleCode); u.set('scope', scope);
+    history.replaceState(null, '', `?${u.toString()}`);
+  }
+
+  /* ─── Barra de filtros (dropdowns CANÓNICOS .naowee-dropdown + botones DS) ─── */
+  function filterBar() {
+    const isI = scope === 'internacional';
+    const orgAll = isI ? 'Todos los países' : 'Todos los organismos';
+    const orgSheet = isI ? 'País' : 'Organismo';
+    return `
+      <div class="rep-filter">
+        <span class="rep-filter__label">Filtrar por</span>
+        ${ddMarkup('fOrg', orgSheet, orgAll, true, false)}
+        ${ddMarkup('fDep', 'Deporte', 'Todos los deportes', true, false)}
+        ${ddMarkup('fPru', 'Prueba', 'Todas las pruebas', true, true)}
+        <div class="rep-filter__actions">
+          <button class="naowee-btn naowee-btn--ghost naowee-btn--sm" id="fClear" type="button" disabled>Limpiar</button>
+          <button class="naowee-btn naowee-btn--loud naowee-btn--sm" id="fApply" type="button">Aplicar filtros</button>
+        </div>
+      </div>`;
+  }
+  /* Cablea los 4 dropdowns canónicos. Switcher de evento → re-render; filtros =
+     cosméticos en la demo (igual que el mock de Diego), pero con UX real:
+     cascada deporte→prueba, Limpiar resetea, Aplicar da feedback. */
+  function bindFilters() {
+    const D = buildReporteria(ev, scope);
+    const orgAll = D.dim.entityAll;
+    /* "Limpiar" (--ghost) arranca disabled; se habilita en cuanto hay algún
+       filtro seleccionado, y vuelve a disabled al limpiar. */
+    const fClearBtn = document.getElementById('fClear');
+    const updateClearBtn = () => { fClearBtn.disabled = !(filterState.org || filterState.dep || filterState.pru); };
+
+    setupDropdown('evSwitch',
+      eventsForScope(scope).map((e) => ({ value: e.id, label: `${e.emoji} ${e.name} · ${STATUS_LABEL[e.status]}` })),
+      (chosen) => { ev = events.find((x) => x.id === chosen.value) || ev; syncUrl(); render(); },
+      () => ev.id
+    );
+
+    /* fuente del filtro fOrg: ligas (nacional) o países (internacional) → D.filterEntities */
+    const orgOpts = [{ value: '', label: orgAll }, ...D.filterEntities];
+    const ddOrg = setupDropdown('fOrg', orgOpts,
+      (c) => { filterState.org = c.value; ddOrg.setLabel(c.value || orgAll, !c.value); updateClearBtn(); },
+      () => filterState.org);
+
+    let ddPru;
+    const depOpts = [{ value: '', label: 'Todos los deportes' }, ...D.insc.porDeporte.map((d) => ({ value: d.lbl, label: d.lbl }))];
+    const ddDep = setupDropdown('fDep', depOpts,
+      (c) => {
+        filterState.dep = c.value; ddDep.setLabel(c.value || 'Todos los deportes', !c.value);
+        filterState.pru = ''; ddPru.setLabel('Todas las pruebas', true); ddPru.setDisabled(!c.value);
+        updateClearBtn();
+      },
+      () => filterState.dep);
+
+    ddPru = setupDropdown('fPru', [{ value: '', label: 'Todas las pruebas' }],
+      (c) => { filterState.pru = c.value; ddPru.setLabel(c.value || 'Todas las pruebas', !c.value); updateClearBtn(); },
+      () => filterState.pru);
+    ddPru.setDisabled(!filterState.dep);
+
+    document.getElementById('fClear').addEventListener('click', () => {
+      filterState = { org: '', dep: '', pru: '' };
+      ddOrg.setLabel(orgAll, true);
+      ddDep.setLabel('Todos los deportes', true);
+      ddPru.setLabel('Todas las pruebas', true); ddPru.setDisabled(true);
+      updateClearBtn();
+    });
+    document.getElementById('fApply').addEventListener('click', (e) => {
+      const b = e.currentTarget; const t = b.textContent;
+      b.textContent = '✓ Filtros aplicados'; setTimeout(() => { b.textContent = t; }, 1400);
+    });
+  }
+
+  /* ─── Panel por tab ─── */
+  function renderPanel() {
+    const D = buildReporteria(ev, scope);
+    const el = document.getElementById('repPanel');
+    if (activeTab === 'inscripciones') el.innerHTML = D.isIntl ? panelInscIntl(D) : panelInsc(D);
+    else if (activeTab === 'resultados') el.innerHTML = D.isIntl ? panelResIntl(D) : panelRes(D);
+    else el.innerHTML = D.isIntl ? panelMedIntl(D) : panelMed(D);
+    animateBars(el);
+    bindChartToggle(D);
+  }
+
+  function emptyState(msg) {
+    return `<div class="rep-panel"><div class="rep-empty">
+      <div class="rep-empty__icon">${I.chart}</div>
+      <div class="rep-empty__title">Aún no hay datos para este tablero</div>
+      <div class="rep-empty__text">${msg}</div>
+    </div></div>`;
+  }
+
+  function kpi(icon, cls, tag, tagUp, num, lbl) {
+    return `<div class="rep-kpi">
+      <div class="rep-kpi__top"><div class="rep-kpi__icon ${cls}">${icon}</div><span class="rep-kpi__tag${tagUp ? ' up' : ''}">${tag}</span></div>
+      <div class="rep-kpi__num">${num}</div><div class="rep-kpi__lbl">${lbl}</div>
+    </div>`;
+  }
+
+  /* ── INSCRIPCIONES ── */
+  function panelInsc(D) {
+    const d = D.insc;
+    if (!d.hasData) return emptyState(`<strong>${esc(ev.name)}</strong> está en preparación. Las inscripciones aparecerán aquí en cuanto el gestor cargue el primer registro.`);
+    return `<div class="rep-panel">
+      <div class="rep-kpis">
+        ${kpi(I.athlete, 'blue', `${d.pctCupo}% del cupo`, false, D.num(d.inscritos), 'Deportistas inscritos')}
+        ${kpi(bld, 'green', 'participando', false, d.organismosCount, 'Organismos')}
+        ${kpi(I.ranking, 'orange', 'en disputa', false, d.deportesCount, d.deportesCount === 1 ? 'Deporte' : 'Deportes')}
+        ${kpi(I.ticket, 'purple', `${d.pruebasConInscritos} con inscritos`, false, d.pruebasCount, 'Pruebas')}
+      </div>
+      <div class="rep-widgets">
+        <div class="rep-w rep-w--4">
+          <div class="rep-w__hd"><div><div class="rep-w__title">Inscripciones registradas</div><div class="rep-w__sub">Registros diarios · línea de promedio</div></div>
+            <div class="rep-toggle"><button class="rep-tgl on" data-mode="d" type="button">Diario</button><button class="rep-tgl" data-mode="a" type="button">Acumulado</button></div>
+          </div>
+          <div class="rep-chart" id="dailyChart">${dailyChart(d.daily, chartMode)}</div>
+        </div>
+        <div class="rep-w rep-w--2" style="display:flex;flex-direction:column">
+          <div class="rep-w__title">Tipo de deporte</div><div class="rep-w__sub">Distribución por categoría</div>
+          <div style="flex:1;display:flex;align-items:center;justify-content:center">${donut(d.tipo)}</div>
+        </div>
+        <div class="rep-w rep-w--3"><div class="rep-w__title">Por organismo</div><div class="rep-w__sub">Inscritos por liga · top ${d.porOrganismo.length}</div>
+          <div class="rep-hbars">${hbars(d.porOrganismo.map((o) => ({ lbl: o.name, v: o.v, c: 'var(--blue-info)' })))}</div></div>
+        <div class="rep-w rep-w--3"><div class="rep-w__title">${d.porDeporteLabel}</div><div class="rep-w__sub">Inscritos por disciplina</div>
+          <div class="rep-hbars">${hbars(d.porDeporte.map((x) => ({ lbl: x.lbl, v: x.v, c: 'var(--accent)' })))}</div></div>
+        <div class="rep-w rep-w--6"><div class="rep-w__title">Progreso de inscripción</div><div class="rep-w__sub">Avance frente al cupo y cobertura de pruebas</div>
+          <div class="rep-prog">${progress([
+            { title: 'Inscripción vs cupo', done: d.inscritos, total: d.cupo, c: 'var(--blue-info)' },
+            { title: 'Pruebas con inscritos', done: d.pruebasConInscritos, total: d.pruebasCount, c: 'var(--accent)' }
+          ])}</div></div>
+      </div>
+    </div>`;
+  }
+  function bindChartToggle(D) {
+    document.querySelectorAll('.rep-tgl').forEach((b) => b.addEventListener('click', () => {
+      chartMode = b.dataset.mode;
+      document.querySelectorAll('.rep-tgl').forEach((x) => x.classList.toggle('on', x.dataset.mode === chartMode));
+      const box = document.getElementById('dailyChart');
+      if (box) box.innerHTML = dailyChart(D.insc.daily, chartMode);
+    }));
+  }
+
+  /* Card-table CANÓNICA del DS: .naowee-table-card + .naowee-table--in-card
+     (table-layout:fixed + colgroup, thead pill gris, td 16px). Reusada por las
+     3 tablas de reportería. Las clases de medalla (pos-chip, col-*, rep-org)
+     son de dominio y viven DENTRO de la tabla canónica. */
+  function tableCard({ title, sub, count, cols, head, body }) {
+    return `<div class="naowee-table-card">
+      <div class="rep-card-head">
+        <div class="tc-head"><h3 class="tc-head__title">${esc(title)}</h3>${sub ? `<p class="tc-head__sub">${esc(sub)}</p>` : ''}</div>
+        ${count != null ? `<span class="toolbar__count">${esc(count)}</span>` : ''}
+      </div>
+      <div class="naowee-table-card__table-wrap">
+        <table class="naowee-table--in-card">
+          ${cols ? `<colgroup>${cols.map((w) => `<col style="width:${w}">`).join('')}</colgroup>` : ''}
+          <thead><tr>${head}</tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+
+  /* ── RESULTADOS ── */
+  function panelRes(D) {
+    const r = D.res;
+    if (!r.hasData) return emptyState(`Todavía no hay resultados cargados para <strong>${esc(ev.name)}</strong>. El gestor los sube por inscripción o de forma masiva.`);
+    return `<div class="rep-panel">
+      <div class="rep-kpis rep-kpis--3">
+        ${kpi(I.ranking, 'blue', `${r.cargados} de ${D.num(r.total)} pruebas`, false, D.num(r.cargados), 'Resultados cargados')}
+        ${kpi(I.athlete, 'green', `↑ ${r.pctCargado}%`, true, D.num(r.deportistasConRes), 'Deportistas con resultado')}
+        ${kpi(I.medal, 'orange', `${esc(r.deporteCtx)} · ${esc(r.pruebaLbl)}`, false, `<span style="font-size:22px">${esc(r.mejorMarca)}</span>`, 'Mejor marca registrada')}
+      </div>
+      <div class="naowee-table-card">
+        <div class="tc-head"><h3 class="tc-head__title">Podio — ${esc(r.deporteCtx)} · ${esc(r.pruebaLbl)}</h3><p class="tc-head__sub">Top 3 posiciones registradas en esta prueba</p></div>
+        <div class="rep-podio">${podio(r.podio, PALETTE)}</div>
+      </div>
+      ${tableCard({
+        title: 'Tabla de resultados',
+        sub: `${r.deporteCtx} · ${r.pruebaLbl}`,
+        count: `${r.tabla.length} resultados`,
+        cols: ['8%', '30%', '24%', '23%', '15%'],
+        head: `<th class="num">#</th><th>Deportista</th><th>Organismo</th><th>Prueba</th><th style="text-align:right">Marca</th>`,
+        body: r.tabla.map((row, i) => `<tr>
+            <td class="num"><span class="rep-pos-chip ${i < 3 ? 'pc-' + (i + 1) : 'pc-n'}">${row.pos}</span></td>
+            <td><div class="rep-org"><div class="rep-org__av" style="background:${PALETTE[i % PALETTE.length]}">${row.av}</div><span class="rep-org__name">${esc(row.dep)}</span></div></td>
+            <td style="color:var(--text-secondary)">${esc(row.org)}</td>
+            <td><span class="rep-chip-prueba">${esc(r.deporteCtx)} · ${esc(r.pruebaLbl)}</span></td>
+            <td style="text-align:right;font-weight:700">${esc(row.marca)}</td>
+          </tr>`).join('')
+      })}
+    </div>`;
+  }
+
+  /* ── MEDALLERÍA ── */
+  function panelMed(D) {
+    const m = D.med;
+    if (!m.hasData) return emptyState(`El medallero de <strong>${esc(ev.name)}</strong> se llena a medida que se cierran las pruebas. Aún no hay medallas otorgadas.`);
+    const rowsTop = m.porOrganismo.slice(0, 5);
+    return `<div class="rep-panel">
+      <div class="rep-med-summary">
+        <div class="rep-med-kpi oro"><span class="rep-med-kpi__emoji">🥇</span><div class="rep-med-kpi__num">${m.oro}</div><div class="rep-med-kpi__lbl">Medallas de oro</div><div class="rep-med-kpi__sub">en ${m.pruebas} pruebas</div></div>
+        <div class="rep-med-kpi plata"><span class="rep-med-kpi__emoji">🥈</span><div class="rep-med-kpi__num">${m.plata}</div><div class="rep-med-kpi__lbl">Medallas de plata</div><div class="rep-med-kpi__sub">en ${m.pruebas} pruebas</div></div>
+        <div class="rep-med-kpi bronce"><span class="rep-med-kpi__emoji">🥉</span><div class="rep-med-kpi__num">${m.bronce}</div><div class="rep-med-kpi__lbl">Medallas de bronce</div><div class="rep-med-kpi__sub">en ${m.pruebas} pruebas</div></div>
+        <div class="rep-med-kpi total"><span class="rep-med-kpi__emoji">🏅</span><div class="rep-med-kpi__num">${m.total}</div><div class="rep-med-kpi__lbl">Total de medallas</div><div class="rep-med-kpi__sub">${m.porOrganismo.length} organismos en el medallero</div></div>
+      </div>
+      <div class="rep-two">
+        <div class="naowee-table-card">
+          <div class="tc-head"><h3 class="tc-head__title">Medallero por organismo</h3><p class="tc-head__sub">Distribución apilada · top ${m.porOrganismo.length}</p></div>
+          <div>
+            <div class="rep-leyenda">
+              <div class="rep-leg-item"><div class="rep-leg-item__dot" style="background:var(--rep-gold-fill)"></div>Oro</div>
+              <div class="rep-leg-item"><div class="rep-leg-item__dot" style="background:var(--rep-silver-fill)"></div>Plata</div>
+              <div class="rep-leg-item"><div class="rep-leg-item__dot" style="background:var(--rep-bronze-fill)"></div>Bronce</div>
+            </div>
+            <div class="rep-shbars">${stackedBars(m.porOrganismo)}</div>
+          </div>
+        </div>
+        ${tableCard({
+          title: 'Top organismos', sub: 'Por medallas de oro',
+          cols: ['16%', '40%', '15%', '15%', '14%'],
+          head: `<th class="num">#</th><th>Organismo</th><th class="num">🥇</th><th class="num">🥈</th><th class="num">🥉</th>`,
+          body: rowsTop.map((d, i) => `<tr>
+              <td class="num"><span class="rep-pos-chip ${i < 3 ? 'pc-' + (i + 1) : 'pc-n'}">${i + 1}</span></td>
+              <td><div class="rep-org"><div class="rep-org__av" style="background:${d.c}">${d.av}</div><span class="rep-org__name">${esc(d.name.replace('Liga ', ''))}</span></div></td>
+              <td class="num col-oro">${d.oro}</td><td class="num col-plata">${d.plata}</td><td class="num col-bronce">${d.bronce}</td>
+            </tr>`).join('')
+        })}
+      </div>
+      ${tableCard({
+        title: 'Medallero completo', sub: 'Ordenado por medallas de oro · todos los deportes',
+        count: `${m.porOrganismo.length} organismos`,
+        cols: ['8%', '36%', '13%', '13%', '14%', '16%'],
+        head: `<th class="num">#</th><th>Organismo</th><th class="num">🥇 Oro</th><th class="num">🥈 Plata</th><th class="num">🥉 Bronce</th><th class="num">Total</th>`,
+        body: m.porOrganismo.map((d, i) => `<tr>
+            <td class="num"><span class="rep-pos-chip ${i < 3 ? 'pc-' + (i + 1) : 'pc-n'}">${i + 1}</span></td>
+            <td><div class="rep-org"><div class="rep-org__av" style="background:${d.c}">${d.av}</div><span class="rep-org__name">${esc(d.name)}</span></div></td>
+            <td class="num col-oro">${d.oro}</td><td class="num col-plata">${d.plata}</td><td class="num col-bronce">${d.bronce}</td>
+            <td class="num col-total">${d.oro + d.plata + d.bronce}</td>
+          </tr>`).join('')
+      })}
+    </div>`;
+  }
+
+  /* ════════════ TABLEROS INTERNACIONALES (equipos = países) ════════════
+     Modelo canónico (cargue.html): en un evento internacional solo se sigue a
+     Colombia; los rivales del podio/medallero son sintéticos por país. Colombia
+     se destaca por IDENTIDAD (clase .is-co: borde + tinte acento), nunca por rank
+     ni forzándola a #1. La bandera emoji reemplaza el disco de iniciales. */
+
+  /* ── INSCRIPCIONES · internacional (delegación de Colombia) ── */
+  function panelInscIntl(D) {
+    const d = D.insc;
+    if (!d.hasData) return emptyState(`La delegación de Colombia para <strong>${esc(ev.name)}</strong> aún no tiene inscritos cargados.`);
+    const depLbl = /multideporte/i.test(ev.sport || '') ? 'Colombia por deporte' : 'Colombia por prueba';
+    return `<div class="rep-panel">
+      <div class="rep-kpis">
+        ${kpi(I.athlete, 'blue', `${d.pctCupo}% del cupo`, false, D.num(d.inscritos), 'Deportistas de la delegación 🇨🇴')}
+        ${kpi(bld, 'green', `${d.regionesCount} ${d.regionesCount === 1 ? 'región' : 'regiones'}`, false, d.paisesCount, 'Países en competencia')}
+        ${kpi(I.ranking, 'orange', 'en disputa', false, d.deportesCount, d.deportesCount === 1 ? 'Deporte' : 'Deportes')}
+        ${kpi(I.ticket, 'purple', `${d.pruebasConInscritos} con inscritos`, false, d.pruebasCount, 'Pruebas')}
+      </div>
+      <div class="rep-widgets">
+        <div class="rep-w rep-w--4">
+          <div class="rep-w__hd"><div><div class="rep-w__title">Confirmación de la delegación</div><div class="rep-w__sub">Registro diario de la delegación de Colombia · línea de promedio</div></div>
+            <div class="rep-toggle"><button class="rep-tgl on" data-mode="d" type="button">Diario</button><button class="rep-tgl" data-mode="a" type="button">Acumulado</button></div>
+          </div>
+          <div class="rep-chart" id="dailyChart">${dailyChart(d.daily, chartMode)}</div>
+        </div>
+        <div class="rep-w rep-w--2" style="display:flex;flex-direction:column">
+          <div class="rep-w__title">Composición de la delegación</div><div class="rep-w__sub">Distribución por categoría</div>
+          <div style="flex:1;display:flex;align-items:center;justify-content:center">${donut(d.tipo)}</div>
+        </div>
+        <div class="rep-w rep-w--3"><div class="rep-w__title">Participación por región</div><div class="rep-w__sub">Países participantes por región · amplitud de la justa</div>
+          <div class="rep-hbars">${hbars(d.porRegion.map((r) => ({ lbl: r.lbl, v: r.v, c: 'var(--blue-info)' })))}</div></div>
+        <div class="rep-w rep-w--3"><div class="rep-w__title">${depLbl}</div><div class="rep-w__sub">Deportistas de la delegación por disciplina</div>
+          <div class="rep-hbars">${hbars(d.porDeporte.map((x) => ({ lbl: x.lbl, v: x.v, c: 'var(--accent)' })))}</div></div>
+        <div class="rep-w rep-w--6"><div class="rep-w__title">Cobertura de la delegación</div><div class="rep-w__sub">Avance de inscripción y pruebas con representación de Colombia</div>
+          <div class="rep-prog">${progress([
+            { title: 'Delegación inscrita vs cupo', done: d.inscritos, total: d.cupo, c: 'var(--blue-info)' },
+            { title: 'Pruebas con representación de Colombia', done: d.pruebasConInscritos, total: d.pruebasCount, c: 'var(--accent)' }
+          ])}</div></div>
+      </div>
+    </div>`;
+  }
+
+  /* ── RESULTADOS · internacional (rendimiento de Colombia vs rivales) ── */
+  function panelResIntl(D) {
+    const r = D.res;
+    if (!r.hasData) return emptyState(`Todavía no hay resultados cargados para <strong>${esc(ev.name)}</strong>. En un evento internacional se registra la posición de cada deportista de Colombia y el podio de la prueba.`);
+    return `<div class="rep-panel">
+      <div class="rep-kpis rep-kpis--3">
+        ${kpi(I.ranking, 'blue', `${r.cargados} de ${D.num(r.total)} pruebas`, false, D.num(r.cargados), 'Resultados de Colombia')}
+        ${kpi(I.medal, 'green', esc(r.deporteCtx), true, `<span style="font-size:22px">${r.colBestPos ? r.colBestPos + '.º' : '—'}</span>`, 'Mejor puesto de Colombia')}
+        ${kpi(I.medal, 'orange', esc(r.pruebaLbl), false, `<span style="font-size:22px">${esc(r.colBestMarca || r.mejorMarca)}</span>`, 'Mejor marca de Colombia')}
+      </div>
+      <div class="naowee-table-card">
+        <div class="tc-head"><h3 class="tc-head__title">Podio — ${esc(r.deporteCtx)} · ${esc(r.pruebaLbl)}</h3><p class="tc-head__sub">Top 3 por país · Colombia 🇨🇴 destacada</p></div>
+        <div class="rep-podio">${podio(r.podio, PALETTE)}</div>
+      </div>
+      ${tableCard({
+        title: 'Resultados por país',
+        sub: `${r.deporteCtx} · ${r.pruebaLbl}`,
+        count: `${r.tabla.length} resultados`,
+        cols: ['8%', '32%', '26%', '19%', '15%'],
+        head: `<th class="num">#</th><th>Deportista</th><th>País</th><th>Prueba</th><th style="text-align:right">Marca</th>`,
+        body: r.tabla.map((row, i) => `<tr class="${row.isCol ? 'is-co' : ''}">
+            <td class="num"><span class="rep-pos-chip ${i < 3 ? 'pc-' + (i + 1) : 'pc-n'}">${row.pos}</span></td>
+            <td><div class="rep-org">${row.flag ? `<span class="rep-flag">${row.flag}</span>` : `<div class="rep-org__av" style="background:${PALETTE[i % PALETTE.length]}">${row.av}</div>`}<span class="rep-org__name">${esc(row.dep)}</span></div></td>
+            <td style="color:var(--text-secondary)">${esc(row.org)}</td>
+            <td><span class="rep-chip-prueba">${esc(r.deporteCtx)} · ${esc(r.pruebaLbl)}</span></td>
+            <td style="text-align:right;font-weight:700">${esc(row.marca)}</td>
+          </tr>`).join('')
+      })}
+    </div>`;
+  }
+
+  /* ── MEDALLERÍA · internacional (medallero por país + posición de Colombia) ── */
+  function panelMedIntl(D) {
+    const m = D.med;
+    if (!m.hasData) return emptyState(`El medallero de <strong>${esc(ev.name)}</strong> se llena a medida que se cierran las pruebas. Aún no hay medallas otorgadas.`);
+    const c = m.colMedals;
+    const colIdx = m.porOrganismo.findIndex((o) => o.isCol);
+    const topRows = (colIdx >= 5) ? [...m.porOrganismo.slice(0, 5), m.porOrganismo[colIdx]] : m.porOrganismo.slice(0, 5);
+    const paisRow = (d, i) => `<tr class="${d.isCol ? 'is-co' : ''}">
+        <td class="num"><span class="rep-pos-chip ${i < 3 ? 'pc-' + (i + 1) : 'pc-n'}">${i + 1}</span></td>
+        <td><div class="rep-org"><span class="rep-flag">${d.flag}</span><span class="rep-org__name">${esc(d.name)}${d.isCol ? ' <span class="rep-you">tu delegación</span>' : ''}</span></div></td>`;
+    return `<div class="rep-panel">
+      <div class="rep-med-summary">
+        <div class="rep-med-kpi oro"><span class="rep-med-kpi__emoji">🥇</span><div class="rep-med-kpi__num">${c.oro}</div><div class="rep-med-kpi__lbl">Oro de Colombia</div><div class="rep-med-kpi__sub">${m.colRank === 1 ? 'lidera el medallero' : (m.brechaOroLider > 0 ? `a ${m.brechaOroLider} ${m.brechaOroLider === 1 ? 'oro' : 'oros'} del líder` : 'empatada en oro con el líder')}</div></div>
+        <div class="rep-med-kpi plata"><span class="rep-med-kpi__emoji">🥈</span><div class="rep-med-kpi__num">${c.plata}</div><div class="rep-med-kpi__lbl">Plata de Colombia</div><div class="rep-med-kpi__sub">en ${m.pruebas} pruebas</div></div>
+        <div class="rep-med-kpi bronce"><span class="rep-med-kpi__emoji">🥉</span><div class="rep-med-kpi__num">${c.bronce}</div><div class="rep-med-kpi__lbl">Bronce de Colombia</div><div class="rep-med-kpi__sub">en ${m.pruebas} pruebas</div></div>
+        <div class="rep-med-kpi total"><span class="rep-med-kpi__emoji">🇨🇴</span><div class="rep-med-kpi__num">${m.colRank ? m.colRank + '.º' : '—'}</div><div class="rep-med-kpi__lbl">Posición de Colombia</div><div class="rep-med-kpi__sub">de ${m.paisesCount} países · ${c.total} ${c.total === 1 ? 'medalla' : 'medallas'}</div></div>
+      </div>
+      <div class="rep-two">
+        <div class="naowee-table-card">
+          <div class="tc-head"><h3 class="tc-head__title">Medallero por país</h3><p class="tc-head__sub">Distribución apilada · ${m.paisesCount} países</p></div>
+          <div>
+            <div class="rep-leyenda">
+              <div class="rep-leg-item"><div class="rep-leg-item__dot" style="background:var(--rep-gold-fill)"></div>Oro</div>
+              <div class="rep-leg-item"><div class="rep-leg-item__dot" style="background:var(--rep-silver-fill)"></div>Plata</div>
+              <div class="rep-leg-item"><div class="rep-leg-item__dot" style="background:var(--rep-bronze-fill)"></div>Bronce</div>
+            </div>
+            <div class="rep-shbars">${stackedBars(m.porOrganismo)}</div>
+          </div>
+        </div>
+        ${tableCard({
+          title: 'Top países', sub: 'Por medallas de oro · Colombia fijada',
+          cols: ['16%', '40%', '15%', '15%', '14%'],
+          head: `<th class="num">#</th><th>País</th><th class="num">🥇</th><th class="num">🥈</th><th class="num">🥉</th>`,
+          body: topRows.map((d) => { const i = m.porOrganismo.indexOf(d); return `${paisRow(d, i)}
+              <td class="num col-oro">${d.oro}</td><td class="num col-plata">${d.plata}</td><td class="num col-bronce">${d.bronce}</td>
+            </tr>`; }).join('')
+        })}
+      </div>
+      ${tableCard({
+        title: 'Medallero completo por país', sub: 'Ordenado por medallas de oro',
+        count: `${m.porOrganismo.length} países`,
+        cols: ['8%', '36%', '13%', '13%', '14%', '16%'],
+        head: `<th class="num">#</th><th>País</th><th class="num">🥇 Oro</th><th class="num">🥈 Plata</th><th class="num">🥉 Bronce</th><th class="num">Total</th>`,
+        body: m.porOrganismo.map((d, i) => `${paisRow(d, i)}
+            <td class="num col-oro">${d.oro}</td><td class="num col-plata">${d.plata}</td><td class="num col-bronce">${d.bronce}</td>
+            <td class="num col-total">${d.oro + d.plata + d.bronce}</td>
+          </tr>`).join('')
+      })}
+    </div>`;
+  }
+
+  /* ─── Arranque (al final: evita TDZ con const/let de arriba) ───
+       Guard RBAC: la Reportería es consumo de lectura → ADMIN y Usuario.
+       Gestor (operativo) y Organismo (calendario) no la ven. */
+  if (!CAN_VIEW) {
+    window.location.replace(`${homeForRole(roleCode)}?role=${roleCode}`);
+  } else {
+    boot();
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,105 @@
+/* ═══════════════════════════════════════════════════════════════
+   NAOWEE EVENTOS — Patrón canónico "Detalle del evento"
+   Container superior consolidado (.det-card):
+     (1) header — chevron "‹" de retroceso (accent) → NOMBRE → BADGE de
+         estado inline; a la derecha, acciones ghost/loud;
+     (2) franja de metadata "stat strip" de 4 columnas (Inicio · Fin ·
+         Lugar · Organismo) con divisores finos;
+     (3) bloque inferior 2-col: GESTOR asignado (avatar + nombre + rol) +
+         DESCRIPCIÓN.
+   Debajo del container: secciones (.det-section) — p.ej. "Seguimiento"
+   (barras .prog-*) y empty-state canónico (.empty-state).
+
+   Reutilizado por: evento-detalle.html (Admin) · cargue.html (Gestor).
+   Depende de: tokens.css + list-components.css (.badge.s-*, .prog-*,
+   @keyframes fadeInUp). NO duplicar estas reglas en los HTML.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Container superior consolidado (card PLANO: sin sombra, borde 1px) ── */
+.det-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); margin-bottom: 22px; overflow: hidden; animation: fadeInUp .4s var(--easing-smoothout) both; }
+
+/* (1) Header del evento (chevron de retroceso + nombre + badge inline, acciones a la derecha) */
+.det-head { display: flex; align-items: center; justify-content: space-between; gap: 16px 18px; padding: 20px 24px 18px; flex-wrap: wrap; }
+.det-head__id { display: flex; gap: 12px; align-items: center; min-width: 0; flex: 1 1 auto; }
+/* Botón "volver" = mute canónico (transparente + accent, hover accent-bg).
+   Icono FINO (stroke 1.6) y 20px para que lea como icon-button, no un glifo grueso. */
+.det-back { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; flex-shrink: 0; border-radius: var(--radius-md); color: var(--accent); background: transparent; border: none; cursor: pointer; transition: background var(--duration-normal), color var(--duration-fast); -webkit-tap-highlight-color: transparent; }
+.det-back svg { width: 20px; height: 20px; stroke-width: 1.6; }
+.det-back:hover { background: var(--accent-bg); }
+.det-back:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); }
+.det-head__name { font-size: 23px; font-weight: 800; letter-spacing: -.4px; color: var(--text-primary); margin: 0; line-height: 1.2; min-width: 0; }
+.det-head__actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+/* (2) Franja de metadata (stat strip): 4 columnas con divisores finos, entre hairlines. */
+.meta-strip { display: grid; grid-template-columns: repeat(4, 1fr); padding: 16px 24px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.meta-strip__col { display: flex; flex-direction: column; gap: 5px; padding: 0 20px; min-width: 0; border-left: 1px solid var(--border); }
+.meta-strip__col:first-child { border-left: none; padding-left: 0; }
+.meta-strip__lbl { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--text-muted); }
+.meta-strip__lbl svg { width: 13px; height: 13px; flex-shrink: 0; }
+.meta-strip__val { font-size: 14px; font-weight: 700; color: var(--text-primary); line-height: 1.4; word-break: break-word; }
+
+/* (3) Bloque inferior: gestor asignado (columna angosta) + descripción (columna ancha). */
+/* La 1ª columna del foot = exactamente UNA columna de la meta-strip, para que el
+   divisor vertical del foot caiga sobre la 1ª línea de grid de la meta (ritmo
+   vertical alineado). Meta por defecto = 4 col → foot 1fr 3fr; evento-detalle
+   (5 col en desktop) lo sobre-escribe a 1fr 4fr. Sin margin-left → el borde queda
+   exacto en la línea de grid, no corrido. */
+.det-foot { display: grid; grid-template-columns: 1fr 3fr; gap: 0; padding: 20px 24px 22px; }
+.det-foot__block { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.det-foot__block + .det-foot__block { border-left: 1px solid var(--border); padding-left: 28px; }
+.det-foot__lbl { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--text-muted); }
+.det-foot__lbl svg { width: 13px; height: 13px; flex-shrink: 0; }
+.det-foot__desc { font-size: 13.5px; color: var(--text-secondary); font-weight: 400; line-height: 1.65; margin: 0; max-width: 62ch; }
+/* Sin descripción: placeholder honesto (no un texto genérico inventado). */
+.det-foot__desc--empty { color: var(--text-muted); font-style: italic; }
+
+/* Gestor asignado: campo limpio (avatar pequeño + nombre + rol). */
+.gestor-field { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.gestor-field__av { width: 34px; height: 34px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12.5px; font-weight: 700; flex-shrink: 0; box-shadow: 0 0 0 2px var(--surface), 0 1px 3px rgba(40,40,52,.16); }
+.gestor-field__meta { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.gestor-field__nm { font-size: 14px; font-weight: 700; color: var(--text-primary); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gestor-field__role { font-size: 12px; color: var(--text-secondary); font-weight: 500; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── Sección genérica (Seguimiento, etc.) ── */
+.det-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 22px 24px; margin-bottom: 18px; animation: fadeInUp .4s var(--easing-smoothout) both; }
+.det-section__head { display: flex; align-items: center; gap: 9px; margin-bottom: 18px; }
+.det-section__head svg { width: 18px; height: 18px; color: var(--text-secondary); flex-shrink: 0; }
+.det-section__head h3 { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0; }
+.det-section__head .hint { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-left: auto; }
+
+/* ── Seguimiento (progreso, reusa .prog-*) ── */
+.track-grid { display: flex; flex-direction: column; gap: 16px; }
+.track-grid .prog-item { grid-template-columns: 120px 1fr auto; }
+.track-grid .prog-item__lbl { font-size: 12px; }
+.track-empty { font-size: 12.5px; color: var(--text-muted); margin: 2px 0 0; }
+
+/* ── Empty-state canónico (reutilizable) ── */
+.empty-state { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 28px 16px 20px; text-align: center; }
+.empty-state__icon { width: 48px; height: 48px; border-radius: 50%; background: var(--bg-soft); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.empty-state__icon svg { width: 22px; height: 22px; color: var(--text-muted); }
+.empty-state__title { font-size: 14px; font-weight: 700; color: var(--text-primary); margin: 0; }
+.empty-state__desc { font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; margin: 0; max-width: 46ch; }
+
+/* ── Responsive: secciones apiladas ── */
+@media (max-width: 720px) {
+  .det-head { padding: 16px 16px 14px; }
+  .det-head__name { font-size: 19px; }
+  .meta-strip { grid-template-columns: repeat(2, 1fr); gap: 14px 0; padding: 16px; }
+  .meta-strip__col { padding: 0 16px; }
+  .meta-strip__col:nth-child(odd) { border-left: none; padding-left: 0; }
+  .meta-strip__col:nth-child(n+3) { padding-top: 14px; border-top: 1px solid var(--border); }
+  .det-foot { grid-template-columns: 1fr; gap: 18px; padding: 18px 16px 18px; }
+  .det-foot__block + .det-foot__block { border-left: none; padding-left: 0; margin-left: 0; padding-top: 18px; border-top: 1px solid var(--border); }
+  .track-grid .prog-item { grid-template-columns: 110px 1fr auto; }
+}
+
+/* Muy angosto: la franja a una sola columna apilada. */
+@media (max-width: 460px) {
+  .meta-strip { grid-template-columns: 1fr; gap: 0; }
+  .meta-strip__col { border-left: none; padding: 0; }
+  .meta-strip__col:nth-child(n+2) { padding-top: 14px; border-top: 1px solid var(--border); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .det-card, .det-section { animation: none !important; transition: none !important; }
+}

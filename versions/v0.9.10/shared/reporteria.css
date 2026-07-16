@@ -1,0 +1,266 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   REPORTERÍA — estilos del tablero por evento (3 tabs)
+   Reskin de los mockups de Diego a TOKENS CANÓNICOS (tokens.css). Sin hex
+   sueltos salvo la paleta de medallas (oro/plata/bronce), que no vive en
+   el DS. Anima solo transform/opacity. Reusa .naowee-tabs del kit.
+   ═══════════════════════════════════════════════════════════════════════ */
+:root {
+  --rep-gold: #b8860b;   --rep-gold-bg: #fffbeb;   --rep-gold-bd: #fde68a;   --rep-gold-fill: #f5b700;
+  --rep-silver: #6b7280; --rep-silver-bg: #f9fafb; --rep-silver-bd: #d1d5db; --rep-silver-fill: #9ca3af;
+  --rep-bronze: #92400e; --rep-bronze-bg: #fff7ed; --rep-bronze-bd: #fed7aa; --rep-bronze-fill: #cd7f32;
+}
+
+/* ── Card de setup del reporte (funnel vertical): Paso 1 tipo de evento (segment)
+   → divisor → Paso 2 evento filtrado + su contexto. El tipo manda la jerarquía. ── */
+/* overflow: visible → el menú del dropdown "Evento" ESCAPA la card (no recortar);
+   position + z-index → la card se eleva por encima de la card de tabs siguiente
+   para que el menú flotante quede por delante (gotcha canónico del DS). El divisor
+   full-width no toca las esquinas redondeadas (va en el medio) → no necesita clip. */
+.rep-ctx { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); margin-bottom: 18px; position: relative; z-index: 20; }
+/* Paso 1 · Tipo de evento */
+.rep-ctx__scope { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 24px; flex-wrap: wrap; }
+.rep-ctx__scope-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.rep-ctx__step { font-size: 10.5px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .06em; }
+/* Caption del ámbito = badge con ícono + palabra clave destacada (no texto suelto).
+   Neutro en nacional; tinte de Colombia (naranja suave) en internacional. */
+.rep-scope__badge { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; padding: 6px 12px; border-radius: var(--radius-md); background: var(--bg); border: 1px solid var(--border); font-size: 12.5px; line-height: 1.35; color: var(--text-secondary); }
+.rep-scope__badge svg { width: 15px; height: 15px; flex-shrink: 0; color: var(--text-secondary); }
+.rep-scope__badge b { font-weight: 700; color: var(--text-primary); }
+.rep-scope__badge--intl { background: var(--orange-bg); border-color: var(--orange-border); color: var(--accent); }
+.rep-scope__badge--intl svg, .rep-scope__badge--intl b { color: var(--accent); }
+.rep-ctx__scope .naowee-segment { flex: 0 0 auto; }
+/* Divisor full-width entre pasos */
+.rep-ctx__divider { height: 1px; background: var(--border); }
+/* Paso 2 · Evento (dropdown filtrado por tipo) + contexto del seleccionado */
+.rep-ctx__event { display: flex; flex-direction: column; gap: 14px; padding: 16px 24px; }
+.rep-ev-switch { display: flex; flex-direction: column; gap: 6px; }
+.rep-ev-switch label { display: flex; align-items: center; gap: 8px; font-size: 10.5px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .06em; }
+.rep-ev-switch__count { text-transform: none; letter-spacing: 0; font-size: 10.5px; font-weight: 700; color: var(--text-secondary); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-full); padding: 1px 8px; }
+.rep-ctx__meta { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.rep-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--text-secondary); }
+.rep-chip svg { width: 14px; height: 14px; opacity: .5; }
+
+/* ── Gran container: tabs + filtros + paneles (patrón canónico .carg-tabs-card) ──
+   Container plano (border + radius, SIN sombra). Tabs flush arriba (divider
+   border-bottom del .naowee-tabs); cuerpo sobre canvas gris-soft para que las
+   cards internas blancas resalten sin necesidad de sombra. */
+/* overflow: visible → los popovers/dropdowns flotantes ESCAPAN el container (canon).
+   Container 100% blanco (sin canvas gris): las cards internas se definen por su
+   borde. El .naowee-tabs ya tiene overflow-x:auto → su hover no desborda esquinas. */
+.rep-tabs-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); margin-bottom: 22px; }
+/* Tabs con padding horizontal (no pegados a los bordes/esquinas del container).
+   El divisor pasa al border-top full-width del body para no quedar inset. */
+.rep-tabs-card > .naowee-tabs { border-top-left-radius: var(--radius-xl); border-top-right-radius: var(--radius-xl); padding: 10px 12px 0; border-bottom: none; }
+.rep-tabs-card__body { padding: 22px 24px 24px; border-top: 1px solid var(--border-dark); }
+
+/* ── Barra de filtros (dentro del container; dropdowns + botones CANÓNICOS del DS) ── */
+.rep-filter { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+.rep-filter__label { font-size: 11.5px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .06em; margin-right: 2px; }
+.rep-filter .naowee-dropdown { width: 188px; flex: 0 0 auto; }
+.rep-filter__actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.rep-ev-switch .naowee-dropdown { width: 100%; max-width: 460px; }
+
+/* ── KPI grid ─────────────────────────────────────────────────────────── */
+.rep-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.rep-kpis--3 { grid-template-columns: repeat(3, 1fr); }
+.rep-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 20px; }
+.rep-kpi__top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+.rep-kpi__icon { width: 42px; height: 42px; border-radius: 11px; display: flex; align-items: center; justify-content: center; }
+.rep-kpi__icon svg { width: 22px; height: 22px; }
+.rep-kpi__icon.blue { background: var(--blue-bg); color: var(--blue-info); }
+.rep-kpi__icon.green { background: var(--green-bg); color: var(--green); }
+.rep-kpi__icon.orange { background: var(--orange-bg); color: var(--accent); }
+.rep-kpi__icon.purple { background: #f3eeff; color: var(--purple); }
+.rep-kpi__tag { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: var(--radius-full); background: var(--bg); color: var(--text-secondary); }
+.rep-kpi__tag.up { background: var(--green-bg); color: var(--green); }
+.rep-kpi__num { font-size: 28px; font-weight: 800; line-height: 1; color: var(--text-primary); }
+.rep-kpi__lbl { font-size: 12.5px; color: var(--text-secondary); margin-top: 4px; }
+
+/* ── Widgets (grid 6-col) ─────────────────────────────────────────────── */
+.rep-widgets { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
+.rep-w { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 22px 24px; }
+.rep-w--2 { grid-column: span 2; } .rep-w--3 { grid-column: span 3; } .rep-w--4 { grid-column: span 4; } .rep-w--6 { grid-column: span 6; }
+.rep-w__hd { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 2px; }
+.rep-w__title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.rep-w__sub { font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; }
+.rep-toggle { display: flex; gap: 3px; }
+.rep-tgl { height: 28px; padding: 0 12px; border-radius: var(--radius-full); font-size: 11.5px; font-weight: 600; border: 1px solid var(--border); background: var(--bg); color: var(--text-secondary); cursor: pointer; font-family: inherit; transition: background .14s, color .14s; }
+.rep-tgl.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* charts */
+.rep-chart { margin-top: 6px; overflow: hidden; }
+.rep-chart svg { width: 100%; display: block; }
+
+/* hbars */
+.rep-hbars { display: flex; flex-direction: column; gap: 9px; }
+.rep-hb { display: flex; align-items: center; gap: 8px; }
+.rep-hb__lbl { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 140px; flex-shrink: 0; }
+.rep-hb__track { flex: 1; height: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-full); overflow: hidden; position: relative; }
+.rep-hb__fill { position: absolute; inset: 0 auto 0 0; border-radius: var(--radius-full); clip-path: inset(0 100% 0 0 round 99px); transition: clip-path .7s cubic-bezier(.32,.72,0,1); }
+.rep-hb__fill.go { clip-path: inset(0 0% 0 0 round 99px); }
+.rep-hb__val { font-size: 11.5px; font-weight: 700; color: var(--text-secondary); min-width: 42px; text-align: right; }
+
+/* progress */
+.rep-prog { display: flex; flex-direction: column; gap: 22px; }
+.rep-prog__hd { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.rep-prog__title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.rep-prog__pct { font-size: 16px; font-weight: 800; }
+.rep-prog__track { height: 9px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-full); overflow: hidden; margin-bottom: 4px; }
+.rep-prog__fill { height: 100%; border-radius: var(--radius-full); clip-path: inset(0 100% 0 0 round 99px); transition: clip-path .85s cubic-bezier(.32,.72,0,1); }
+.rep-prog__fill.go { clip-path: inset(0 0% 0 0 round 99px); }
+.rep-prog__sub { font-size: 11.5px; color: var(--text-secondary); }
+
+/* donut */
+.rep-donut { display: flex; flex-direction: column; gap: 14px; align-items: center; }
+.rep-donut__ring { position: relative; width: 110px; height: 110px; }
+.rep-donut__ctr { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.rep-donut__num { font-size: 18px; font-weight: 800; color: var(--text-primary); }
+.rep-donut__lbl { font-size: 10px; color: var(--text-secondary); }
+.rep-leg { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.rep-leg__row { display: flex; align-items: center; gap: 6px; }
+.rep-leg__dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+.rep-leg__name { font-size: 11.5px; color: var(--text-secondary); flex: 1; }
+.rep-leg__pct { font-size: 11.5px; font-weight: 700; color: var(--text-primary); }
+
+/* ── Card-table canónica: header (título + pill de conteo) en una fila + .num ── */
+.rep-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.naowee-table--in-card th.num, .naowee-table--in-card td.num { text-align: center; }
+
+/* ── Podio (jerarquía 1º·2º·3º) — corona para el campeón, avatar con anillo del
+   metal, medalla metálica (disco con número y borde blanco), pedestal con
+   gradiente metálico + brillo superior. ───────────────────────────────────── */
+.rep-podio { display: flex; align-items: flex-end; justify-content: center; gap: 22px; padding-top: 16px; }
+.rep-podio__item { display: flex; flex-direction: column; align-items: center; flex: 1; max-width: 210px; }
+.rep-podio__item.p1 { order: 2; } .rep-podio__item.p2 { order: 1; } .rep-podio__item.p3 { order: 3; }
+.rep-podio__crown { font-size: 20px; line-height: 1; margin-bottom: 3px; }
+.rep-podio__avatar { width: 54px; height: 54px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 8px; position: relative; border: 3px solid var(--rep-silver-fill); }
+.rep-podio__item.p1 .rep-podio__avatar { width: 66px; height: 66px; font-size: 22px; border-color: var(--rep-gold-fill); }
+.rep-podio__item.p3 .rep-podio__avatar { border-color: var(--rep-bronze-fill); }
+.rep-podio__name { font-size: 13px; font-weight: 700; text-align: center; color: var(--text-primary); }
+.rep-podio__item.p1 .rep-podio__name { font-size: 14px; }
+.rep-podio__org { font-size: 11.5px; color: var(--text-secondary); text-align: center; margin-bottom: 6px; }
+.rep-podio__marca { font-size: 15px; font-weight: 800; text-align: center; color: var(--text-primary); }
+.rep-podio__item.p1 .rep-podio__marca { font-size: 18px; color: #b8860b; }
+/* Pedestal 3D: cara frontal (gradiente metálico) + cara superior (::before, más
+   clara, inclinada con perspective → look 3D visto desde arriba, estilo Dribbble).
+   Números PLANOS, sin sombra (feedback Doug). */
+/* Pedestal 3D estilo Dribbble: isométrico con 3 caras en GRADIENTE (glossy),
+   esquinas redondeadas, profundidad 16px y sombra de CONTACTO suave que aterriza
+   el bloque. La sombra va en el bloque (front), NO en el número (es hijo → no se
+   ve afectado por box-shadow del padre). Superior = ::before (skewX, más clara),
+   lateral derecha = ::after (skewY, más oscura). */
+.rep-podio__block { position: relative; width: 100%; display: flex; align-items: center; justify-content: center; padding: 16px 8px; margin-top: 32px; box-shadow: 0 16px 22px -10px rgba(38, 40, 68, .26); }
+.rep-podio__block::before { content: ''; position: absolute; left: 0; bottom: 100%; width: 100%; height: 16px; transform: skewX(-45deg); transform-origin: bottom left; }
+.rep-podio__block::after { content: ''; position: absolute; top: 0; left: 100%; width: 16px; height: 100%; transform: skewY(-45deg); transform-origin: top left; }
+.rep-podio__pos { position: relative; z-index: 1; font-size: 23px; font-weight: 800; color: #fff; letter-spacing: .5px; }
+.rep-podio__item.p1 .rep-podio__pos { font-size: 28px; }
+/* Oro */
+.p1 .rep-podio__block { background: linear-gradient(180deg, #ffc62e, #e0980a); min-height: 118px; }
+.p1 .rep-podio__block::before { background: linear-gradient(125deg, #ffe79a, #ffce4d); }
+.p1 .rep-podio__block::after { background: linear-gradient(180deg, #cf9408, #a3720a); }
+/* Plata */
+.p2 .rep-podio__block { background: linear-gradient(180deg, #cfd8e2, #9dacbd); min-height: 86px; }
+.p2 .rep-podio__block::before { background: linear-gradient(125deg, #f3f7fb, #dee5ed); }
+.p2 .rep-podio__block::after { background: linear-gradient(180deg, #95a5b6, #7c8c9d); }
+/* Bronce */
+.p3 .rep-podio__block { background: linear-gradient(180deg, #d08a46, #a4621f); min-height: 60px; }
+.p3 .rep-podio__block::before { background: linear-gradient(125deg, #edb888, #dd9c66); }
+.p3 .rep-podio__block::after { background: linear-gradient(180deg, #a4641f, #834e16); }
+
+/* ── Tablas: usan la card-table CANÓNICA del DS (.naowee-table-card +
+   .naowee-table--in-card, en list-components.css). Aquí solo viven las clases
+   de DOMINIO que van DENTRO de las celdas (chip de posición, organismo con
+   avatar, columnas de medallas). ──────────────────────────────────────────── */
+.rep-pos-chip { width: 28px; height: 28px; border-radius: var(--radius-full); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; }
+.pc-1 { background: var(--rep-gold-bg); color: var(--rep-gold); border: 1.5px solid var(--rep-gold-bd); }
+.pc-2 { background: var(--rep-silver-bg); color: var(--rep-silver); border: 1.5px solid var(--rep-silver-bd); }
+.pc-3 { background: var(--rep-bronze-bg); color: var(--rep-bronze); border: 1.5px solid var(--rep-bronze-bd); }
+.pc-n { background: var(--bg); color: var(--text-secondary); border: 1px solid var(--border); }
+.rep-org { display: flex; align-items: center; gap: 10px; }
+.rep-org__av { width: 32px; height: 32px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.rep-org__name { font-weight: 600; }
+.col-oro { color: var(--rep-gold); font-weight: 800; font-size: 15px; }
+.col-plata { color: var(--rep-silver); font-weight: 800; font-size: 15px; }
+.col-bronce { color: var(--rep-bronze); font-weight: 800; font-size: 15px; }
+.col-total { font-weight: 800; font-size: 15px; color: var(--text-primary); }
+.rep-chip-prueba { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: var(--radius-full); background: var(--blue-bg); color: var(--blue-info); }
+
+/* ── Identidad de país: bandera emoji como avatar (reemplaza el disco de iniciales).
+   Regla dura: banderas = emoji; nunca la bandera dentro de un cuadro de color. ── */
+.rep-flag { width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--bg); border: 1px solid var(--border); display: inline-flex; align-items: center; justify-content: center; font-size: 19px; line-height: 1; flex-shrink: 0; }
+
+/* ── Highlight de Colombia (país seguido): por IDENTIDAD, nunca por rank ni color
+   patrio inventado. Solo acento + tinte del DS sobre elementos existentes. ── */
+.naowee-table--in-card tbody tr.is-co { background: var(--orange-bg); }
+.naowee-table--in-card tbody tr.is-co td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.naowee-table--in-card tbody tr.is-co .rep-org__name { font-weight: 700; color: var(--text-primary); }
+.rep-you { display: inline-block; margin-left: 6px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--accent); background: var(--surface); border: 1px solid var(--orange-border); border-radius: var(--radius-full); padding: 1px 7px; vertical-align: middle; }
+.rep-hb.is-co .rep-hb__lbl, .rep-shb.is-co .rep-shb__lbl { font-weight: 700; color: var(--text-primary); }
+.rep-podio__item.is-co .rep-podio__org { color: var(--accent); font-weight: 700; }
+
+/* ── Medallería: resumen + stacked + two-col ──────────────────────────── */
+.rep-med-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.rep-med-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 20px 22px; display: flex; flex-direction: column; gap: 5px; }
+.rep-med-kpi__emoji { font-size: 26px; line-height: 1; }
+.rep-med-kpi__num { font-size: 32px; font-weight: 800; line-height: 1; }
+.rep-med-kpi.oro .rep-med-kpi__num { color: var(--rep-gold); }
+.rep-med-kpi.plata .rep-med-kpi__num { color: var(--rep-silver); }
+.rep-med-kpi.bronce .rep-med-kpi__num { color: var(--rep-bronze); }
+.rep-med-kpi.total .rep-med-kpi__num { color: var(--text-primary); }
+.rep-med-kpi__lbl { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+.rep-med-kpi__sub { font-size: 11.5px; color: var(--text-secondary); }
+.rep-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.rep-card { padding: 22px 24px; }
+.rep-leyenda { display: flex; gap: 16px; margin-bottom: 14px; }
+.rep-leg-item { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.rep-leg-item__dot { width: 10px; height: 10px; border-radius: 3px; }
+.rep-shbars { display: flex; flex-direction: column; gap: 10px; }
+.rep-shb { display: flex; align-items: center; gap: 10px; }
+.rep-shb__lbl { font-size: 12px; color: var(--text-secondary); width: 120px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rep-shb__track { flex: 1; height: 12px; border-radius: var(--radius-full); background: var(--bg); border: 1px solid var(--border); overflow: hidden; display: flex; }
+.rep-shb__seg { height: 100%; clip-path: inset(0 100% 0 0); transition: clip-path .8s cubic-bezier(.32,.72,0,1); }
+.rep-shb__seg.go { clip-path: inset(0 0% 0 0); }
+.rep-shb__seg:first-child { border-radius: var(--radius-full) 0 0 var(--radius-full); }
+.rep-shb__seg:last-child { border-radius: 0 var(--radius-full) var(--radius-full) 0; }
+.rep-shb__total { font-size: 12px; font-weight: 700; color: var(--text-secondary); min-width: 30px; text-align: right; }
+
+/* ── Empty state (eventos en borrador / sin datos) ────────────────────── */
+.rep-empty { background: var(--surface); border: 1px dashed var(--border-dark); border-radius: var(--radius-xl); padding: 52px 24px; text-align: center; }
+.rep-empty__icon { width: 52px; height: 52px; margin: 0 auto 14px; border-radius: var(--radius-full); background: var(--bg); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); }
+.rep-empty__icon svg { width: 26px; height: 26px; }
+.rep-empty__title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+.rep-empty__text { font-size: 13px; color: var(--text-secondary); max-width: 380px; margin: 0 auto; }
+
+/* ── Tab panels ───────────────────────────────────────────────────────── */
+.rep-panel { display: flex; flex-direction: column; gap: 18px; animation: repFade .32s cubic-bezier(.32,.72,0,1); }
+@keyframes repFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .rep-panel, .rep-hb__fill, .rep-prog__fill, .rep-shb__seg { animation: none !important; transition: none !important; } }
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .rep-widgets { grid-template-columns: repeat(4, 1fr); }
+  .rep-w--4 { grid-column: span 4; } .rep-w--3 { grid-column: span 2; } .rep-w--2 { grid-column: span 2; }
+}
+@media (max-width: 900px) {
+  .rep-two { grid-template-columns: 1fr; }
+  .rep-kpis, .rep-med-summary { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 760px) {
+  .rep-widgets { grid-template-columns: 1fr; }
+  .rep-w--2, .rep-w--3, .rep-w--4, .rep-w--6 { grid-column: span 1; }
+  .rep-kpis, .rep-kpis--3, .rep-med-summary { grid-template-columns: 1fr; }
+  .rep-tabs-card__body { padding: 16px; }
+  .rep-filter { gap: 8px; }
+  .rep-filter .naowee-dropdown, .rep-ev-switch .naowee-dropdown { width: 100%; }
+  .rep-filter__actions { width: 100%; }
+  .rep-filter__actions .naowee-btn { flex: 1; }
+  /* El nombre largo del evento no debe desbordar el ancho del móvil: el switcher
+     ocupa toda la fila y el valor trunca con ellipsis (scoped a móvil → sin efecto
+     en desktop). Requiere min-width:0 en toda la cadena flex para poder encoger. */
+  .rep-ev-switch { flex: 1 1 100%; min-width: 0; }
+  .rep-ev-switch .naowee-dropdown { min-width: 0; }
+  .rep-ev-switch .naowee-dropdown__trigger { width: 100%; min-width: 0; }
+  .rep-ev-switch .naowee-dropdown__value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rep-ctx__scope { align-items: stretch; }
+  .rep-ctx__scope .naowee-segment { width: 100%; }
+}

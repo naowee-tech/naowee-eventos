@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perfil del deportista — Propuesta v3 (carrera)</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="shared/tokens.css?v=0.9.1">
+<link rel="stylesheet" href="shared/shell.css?v=0.4.5">
+<link rel="stylesheet" href="shared/list-components.css?v=0.9.1">
+<link rel="stylesheet" href="shared/forms.css?v=0.9.3">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=0.9.1">
+<script src="shared/naowee-footer.js?v=0.9.10" defer></script>
+
+<style>
+  /* ════════════ PERFIL v3 · "Dashboard de carrera del deportista" ════════════
+     Hero premium (navy) + bento grid con medallero, podios, tendencia de
+     ranking, trayectoria, biometría y próximos eventos. Misma data, layout wow. */
+  .page { background: var(--surface); }
+  .v3-wrap { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+
+  /* ── HERO premium (navy con glow) ── */
+  .v3-hero {
+    position: relative; overflow: hidden; border-radius: var(--radius-xl);
+    padding: 30px 34px; color: #fff;
+    background:
+      radial-gradient(680px 320px at 88% -30%, rgba(255,117,0,.35), transparent 60%),
+      radial-gradient(520px 360px at 8% 130%, rgba(31,120,209,.30), transparent 55%),
+      linear-gradient(135deg, #03346e 0%, #002B5B 60%, #001b3a 100%);
+    display: flex; align-items: center; gap: 26px; flex-wrap: wrap;
+    animation: fadeInUp .5s var(--easing-smoothout) both;
+  }
+  .v3-hero__rings { position: absolute; right: -30px; top: -40px; width: 280px; height: 280px; opacity: .07; color: #fff; pointer-events: none; }
+  .v3-hero__rings svg { width: 100%; height: 100%; }
+
+  .v3-ava-wrap { position: relative; flex-shrink: 0; padding-bottom: 13px; }
+  .v3-ava {
+    width: 96px; height: 96px; border-radius: var(--radius-full);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 32px; font-weight: 800; letter-spacing: .5px;
+    border: 3px solid rgba(255,255,255,.85); text-shadow: 0 1px 3px rgba(0,0,0,.3);
+    box-shadow: 0 12px 30px -8px rgba(var(--ava-glow,217,119,6), .7);
+  }
+  .v3-ava--olimpico    { background: linear-gradient(135deg,#fbbf24,#d97706); --ava-glow: 217,119,6; }
+  .v3-ava--profesional { background: linear-gradient(135deg,#3b82f6,#1d4ed8); --ava-glow: 29,78,216; }
+  .v3-ava--juvenil     { background: linear-gradient(135deg,#a855f7,#7c3aed); --ava-glow: 124,58,237; }
+  .v3-ava--amateur     { background: linear-gradient(135deg,#94a3b8,#64748b); --ava-glow: 100,116,139; }
+  .v3-flag { position: absolute; right: -2px; top: -2px; width: 27px; height: 27px; border-radius: var(--radius-full); border: 3px solid #03346e; overflow: hidden; }
+  .v3-flag--co { background: linear-gradient(#FCD116 0 50%, #003893 50% 75%, #CE1126 75% 100%); }
+  .v3-tier-ribbon {
+    position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
+    display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+    padding: 3px 10px; border-radius: var(--radius-full);
+    font-size: 9.5px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; line-height: 1;
+    box-shadow: 0 0 0 3px #03346e;
+  }
+  .v3-tier-ribbon svg { width: 10px; height: 10px; }
+  .tier--olimpico    { background: linear-gradient(135deg,#fff8d6,#ffe082); color: #8a5a00; }
+  .tier--profesional { background: linear-gradient(135deg,#eef5ff,#c3dcff); color: #1d4ed8; }
+  .tier--juvenil     { background: linear-gradient(135deg,#f6edff,#e0c9ff); color: #7c3aed; }
+  .tier--amateur     { background: linear-gradient(135deg,#f8f9fc,#e3e6f1); color: #646587; }
+
+  .v3-hero__id { flex: 1; min-width: 250px; }
+  .v3-hero__name { font-size: 28px; font-weight: 800; letter-spacing: -.6px; margin: 0; line-height: 1.1; }
+  .v3-hero__sub { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; font-size: 13.5px; color: rgba(255,255,255,.72); font-weight: 500; }
+  .v3-hero__sub .dot { width: 3px; height: 3px; border-radius: 50%; background: rgba(255,255,255,.4); }
+  .v3-hero__chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .v3-hchip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--radius-full); background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.16); font-size: 12px; font-weight: 600; color: #fff; }
+
+  .v3-hero__medals { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; margin-left: auto; flex-shrink: 0; }
+  .v3-mset { display: flex; gap: 9px; }
+  .v3-mpill { display: inline-flex; align-items: center; gap: 7px; padding: 8px 13px; border-radius: var(--radius-lg); background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); }
+  .v3-mpill__em { font-size: 17px; }
+  .v3-mpill__n { font-size: 18px; font-weight: 800; color: #fff; }
+  .v3-mpill__l { font-size: 10px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase; color: rgba(255,255,255,.6); }
+  .v3-best { font-size: 12.5px; color: rgba(255,255,255,.8); font-weight: 600; }
+  .v3-best strong { color: #ffd479; }
+
+  /* ── BENTO ── */
+  .v3-bento { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; grid-auto-rows: minmax(118px, auto); }
+  .bento { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 20px 22px; display: flex; flex-direction: column; animation: fadeInUp .5s var(--easing-smoothout) both; }
+  .bento--w2 { grid-column: span 2; }
+  .bento--h2 { grid-row: span 2; }
+  .bento__head { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
+  .bento__head svg { width: 17px; height: 17px; color: var(--accent); }
+  .bento__title { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+  .bento__title span { color: var(--text-muted); font-weight: 600; }
+
+  /* KPI tile */
+  .kpi { justify-content: center; }
+  .kpi__n { font-size: 34px; font-weight: 800; color: var(--text-primary); line-height: 1; letter-spacing: -1px; }
+  .kpi__n small { font-size: 16px; font-weight: 700; color: var(--text-secondary); }
+  .kpi__l { font-size: 12px; color: var(--text-secondary); font-weight: 600; margin-top: 7px; }
+  .kpi--accent { background: linear-gradient(150deg, #fff6ef, #fff); border-color: var(--orange-border); }
+  .kpi--accent .kpi__n { color: var(--accent); }
+
+  /* Medallero: total + breakdown + bar chart */
+  .med-top { display: flex; align-items: flex-end; gap: 18px; margin-bottom: 16px; }
+  .med-total { font-size: 40px; font-weight: 800; line-height: 1; letter-spacing: -1.5px; color: var(--text-primary); }
+  .med-total small { font-size: 13px; font-weight: 600; color: var(--text-muted); display: block; letter-spacing: 0; text-transform: uppercase; margin-top: 4px; }
+  .med-break { display: flex; gap: 14px; padding-bottom: 4px; }
+  .med-break div { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: var(--text-primary); }
+  .med-break .em { font-size: 16px; }
+  .mc-chart { display: flex; align-items: flex-end; gap: 12px; flex: 1; min-height: 96px; margin-top: 14px; }
+  .mc-col { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; min-width: 0; }
+  .mc-barwrap { width: 100%; display: flex; }
+  .mc-stack { display: flex; flex-direction: column; flex: 1; gap: 2px; }
+  .mc-bar { border-radius: 3px; min-height: 6px; }
+  .mc-bar--oro { background: linear-gradient(180deg,#ffd84d,#f5b400); }
+  .mc-bar--plata { background: linear-gradient(180deg,#cfd5e1,#9aa0b0); }
+  .mc-bar--bronce { background: linear-gradient(180deg,#e0a36a,#b06b2f); }
+  .mc-year { font-size: 10.5px; font-weight: 600; color: var(--text-muted); text-align: center; margin-top: 5px; }
+
+  /* Podios: ring + sparkline */
+  .pod-ring { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+  .pod-ring__c { width: 62px; height: 62px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .pod-ring__in { width: 48px; height: 48px; border-radius: var(--radius-full); background: var(--surface); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: var(--text-primary); }
+  .pod-ring__t strong { display: block; font-size: 13px; color: var(--text-primary); }
+  .pod-ring__t span { font-size: 12px; color: var(--text-secondary); }
+  .spark { width: 100%; height: 46px; margin-top: auto; }
+  .spark__cap { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 6px; }
+
+  /* Trayectoria (timeline) */
+  .tl { position: relative; padding-left: 22px; }
+  .tl::before { content: ''; position: absolute; left: 6px; top: 4px; bottom: 4px; width: 2px; background: var(--border-dark); }
+  .tl-item { position: relative; padding: 0 0 16px; }
+  .tl-item:last-child { padding-bottom: 0; }
+  .tl-item::before { content: ''; position: absolute; left: -22px; top: 3px; width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--surface); background: var(--accent); box-shadow: 0 0 0 1px var(--border-dark); }
+  .tl-item--oro::before { background: #f5b400; } .tl-item--plata::before { background: #9aa0b0; } .tl-item--bronce::before { background: #b06b2f; }
+  .tl-year { font-size: 11px; font-weight: 800; color: var(--accent); letter-spacing: .3px; }
+  .tl-ev { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 2px; line-height: 1.3; }
+  .tl-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .tl-meta .em { font-size: 13px; }
+
+  /* Biometría tile */
+  .bio-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 2px; }
+  .bio-cell__l { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+  .bio-cell__v { font-size: 17px; font-weight: 800; color: var(--text-primary); margin-top: 2px; }
+
+  /* Próximos eventos */
+  .ev-row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid var(--border); }
+  .ev-row:first-of-type { border-top: none; padding-top: 2px; }
+  .ev-row__em { font-size: 20px; }
+  .ev-row__nm { font-size: 13px; font-weight: 700; color: var(--text-primary); display: block; }
+  .ev-row__sub { font-size: 12px; color: var(--text-muted); display: block; margin-top: 1px; }
+  .ev-row__st { margin-left: auto; padding: 3px 10px; border-radius: var(--radius-full); font-size: 10.5px; font-weight: 700; background: var(--green-bg); color: var(--green); flex-shrink: 0; }
+
+  /* Reconocimiento */
+  .rec-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; }
+  .rec-row__ico { width: 30px; height: 30px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+  .rec--club { background: #eef5ff; } .rec--liga { background: #e6f4e7; } .rec--fed { background: #fff3e6; }
+  .rec-row__l { font-size: 10.5px; color: var(--text-muted); font-weight: 600; }
+  .rec-row__v { font-size: 12.5px; font-weight: 700; color: var(--text-primary); margin-top: 1px; }
+
+  .v3-tag { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 80; background: var(--azul); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .3px; padding: 7px 14px; border-radius: var(--radius-full); }
+
+  @media (max-width: 980px) { .v3-bento { grid-template-columns: repeat(2, 1fr); } .bento--w2 { grid-column: span 2; } .bento--h2 { grid-row: span 1; } }
+  @media (max-width: 640px) {
+    .v3-bento { grid-template-columns: 1fr; } .bento--w2 { grid-column: span 1; }
+    .v3-hero { padding: 22px; } .v3-hero__medals { margin-left: 0; align-items: flex-start; }
+  }
+  @media (prefers-reduced-motion: reduce) { .v3-hero, .bento, .mc-bar { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div id="sidebarRoot"></div>
+  <div class="main">
+    <header class="top-header" id="topHeader"></header>
+    <div class="page">
+      <div class="page-inner v3-wrap" id="v3Root"></div>
+    </div>
+  </div>
+</div>
+
+<span class="v3-tag">Propuesta · Perfil v3 — dashboard de carrera</span>
+
+<script type="module">
+import { mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher, getRoleFromQuery } from './shared/sidebar.js?v=0.4.5';
+
+const I = {
+  medal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="15" r="6"/><path d="M8.2 10 5 3M15.8 10 19 3M9 3h6"/></svg>',
+  trophy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 0 12 0V3H6z"/><path d="M6 5H3v2a3 3 0 0 0 3 3M18 5h3v2a3 3 0 0 1-3 3M9 21h6M12 15v6"/></svg>',
+  chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>',
+  cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+  heart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>',
+  history:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>',
+  award:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M8.2 13.5 7 22l5-3 5 3-1.2-8.5"/></svg>',
+  olimpico:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="6" cy="9" r="3.4"/><circle cx="12" cy="9" r="3.4"/><circle cx="18" cy="9" r="3.4"/><circle cx="9" cy="15" r="3.4"/><circle cx="15" cy="15" r="3.4"/></svg>',
+  ringsBig:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1"><circle cx="6" cy="9" r="3.4"/><circle cx="12" cy="9" r="3.4"/><circle cx="18" cy="9" r="3.4"/><circle cx="9" cy="15" r="3.4"/><circle cx="15" cy="15" r="3.4"/></svg>'
+};
+const MED_EM = { Oro:'🥇', Plata:'🥈', Bronce:'🥉' };
+
+/* ── Misma deportista (Valentina) con carrera enriquecida para el dashboard ── */
+const A = {
+  nombre:'Valentina', apellido:'Ríos', segApellido:'Mejía', avatar:'VR',
+  tier:'olimpico', tierLabel:'Olímpico', deporteEmoji:'🏊', deporte:'Natación',
+  doc:'CC 1.032.987.456', nacimiento:'14 mar 1998', edad:28, nacionalidad:{pais:'Colombia', iso:'co'},
+  club:'Club Aqua Valle', liga:'Liga de Natación del Valle', federacion:'Fedecua',
+  desde:2012, ubicacion:'Cali, Valle del Cauca',
+  biometria:{ altura:'168 cm', peso:'61 kg', sangre:'O+', imc:'21.6' },
+  // Medallas a lo largo de la carrera (por año)
+  medallas:[
+    { anio:2019, medalla:'Oro',    evento:'Festival Infantil de Natación', prueba:'100m Libre' },
+    { anio:2021, medalla:'Bronce', evento:'Regional Juvenil Valle',         prueba:'50m Libre' },
+    { anio:2022, medalla:'Plata',  evento:'Campeonato Nacional Juvenil',    prueba:'100m Libre' },
+    { anio:2023, medalla:'Oro',    evento:'Copa Pacífico',                  prueba:'200m Estilo' },
+    { anio:2024, medalla:'Bronce', evento:'Campeonato Nacional Juvenil',    prueba:'100m Libre' },
+    { anio:2025, medalla:'Oro',    evento:'Juegos Regionales Valle',        prueba:'200m Estilo' },
+    { anio:2025, medalla:'Plata',  evento:'Copa Nacional de Natación',      prueba:'100m Libre' }
+  ],
+  // Mejor puesto por año (tendencia de ranking)
+  ranking:[ {anio:2019,pos:1}, {anio:2021,pos:5}, {anio:2022,pos:2}, {anio:2023,pos:1}, {anio:2024,pos:3}, {anio:2025,pos:1} ],
+  eventosTotales:12,
+  proximos:[
+    { evento:'Copa Colombia Deportes Acuáticos 2026', prueba:'100m Libre', fecha:'20 feb 2026' },
+    { evento:'Festival Deportivo SUID 2026',          prueba:'50m Libre',  fecha:'15 may 2026' }
+  ]
+};
+
+const cuenta = (k) => A.medallas.filter(m => m.medalla === k).length;
+const totalMed = A.medallas.length;
+const mejorPuesto = Math.min(...A.ranking.map(r => r.pos));
+const podios = A.ranking.filter(r => r.pos <= 3).length;
+const pctPodios = Math.round(podios / A.ranking.length * 100);
+const aniosCarrera = 2026 - A.desde;
+
+function medalsByYear() {
+  const map = {};
+  A.medallas.forEach(m => { (map[m.anio] ||= {Oro:0,Plata:0,Bronce:0}); map[m.anio][m.medalla]++; });
+  return Object.keys(map).sort().map(a => ({ anio:+a, ...map[a], total: map[a].Oro+map[a].Plata+map[a].Bronce }));
+}
+
+/* ── Gráfica de medallas por año (barras apiladas en CSS) ── */
+function barChart() {
+  const data = medalsByYear();
+  const max = Math.max(...data.map(d => d.total), 1);
+  const seg = (cls, n) => n ? `<div class="mc-bar mc-bar--${cls}" style="flex:${n}"></div>` : '';
+  return `<div class="mc-chart">${data.map(d => `
+    <div class="mc-col">
+      <div class="mc-barwrap" style="height:${(d.total / max * 100).toFixed(1)}%">
+        <div class="mc-stack">${seg('oro',d.Oro)}${seg('plata',d.Plata)}${seg('bronce',d.Bronce)}</div>
+      </div>
+      <div class="mc-year">'${String(d.anio).slice(2)}</div>
+    </div>`).join('')}</div>`;
+}
+
+/* ── Sparkline de tendencia de ranking (menor puesto = más arriba) ── */
+function sparkline() {
+  const r = A.ranking; const n = r.length;
+  const maxPos = Math.max(...r.map(p => p.pos));
+  const x = i => (i/(n-1))*96 + 2;
+  const y = pos => ((pos-1)/(Math.max(maxPos-1,1)))*30 + 6;
+  const pts = r.map((p,i) => `${x(i).toFixed(1)},${y(p.pos).toFixed(1)}`).join(' ');
+  const dots = r.map((p,i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(p.pos).toFixed(1)}" r="${p.pos===1?3:2.2}" fill="${p.pos===1?'#f5b400':'#d74009'}"/>`).join('');
+  return `<svg class="spark" viewBox="0 0 100 42" preserveAspectRatio="none">
+    <polyline points="${pts}" fill="none" stroke="#d74009" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+    ${dots}
+  </svg>`;
+}
+
+function timelineHTML() {
+  const items = [...A.medallas].sort((a,b) => b.anio - a.anio);
+  return `<div class="tl">${items.map(m => `
+    <div class="tl-item tl-item--${m.medalla.toLowerCase()}">
+      <div class="tl-year">${m.anio}</div>
+      <div class="tl-ev">${m.evento}</div>
+      <div class="tl-meta"><span class="em">${MED_EM[m.medalla]}</span> ${m.medalla} · ${m.prueba}</div>
+    </div>`).join('')}</div>`;
+}
+
+function render() {
+  const degPod = Math.round(pctPodios * 3.6);
+  document.getElementById('v3Root').innerHTML = `
+    <section class="v3-hero">
+      <div class="v3-hero__rings">${I.ringsBig}</div>
+      <div class="v3-ava-wrap">
+        <div class="v3-ava v3-ava--${A.tier}">${A.avatar}</div>
+        <span class="v3-flag v3-flag--${A.nacionalidad.iso}" title="${A.nacionalidad.pais}"></span>
+        <span class="v3-tier-ribbon tier--${A.tier}">${I.olimpico} ${A.tierLabel}</span>
+      </div>
+      <div class="v3-hero__id">
+        <h1 class="v3-hero__name">${A.nombre} ${A.apellido} ${A.segApellido}</h1>
+        <div class="v3-hero__sub">
+          <span>${A.deporteEmoji} ${A.deporte}</span><span class="dot"></span>
+          <span>${A.ubicacion}</span><span class="dot"></span>
+          <span>Carrera desde ${A.desde}</span>
+        </div>
+        <div class="v3-hero__chips">
+          <span class="v3-hchip">🏛️ ${A.club}</span>
+          <span class="v3-hchip">🏆 ${A.liga}</span>
+          <span class="v3-hchip">🎖️ ${A.federacion}</span>
+        </div>
+      </div>
+      <div class="v3-hero__medals">
+        <div class="v3-mset">
+          <div class="v3-mpill"><span class="v3-mpill__em">🥇</span><span><span class="v3-mpill__n">${cuenta('Oro')}</span> <span class="v3-mpill__l">Oro</span></span></div>
+          <div class="v3-mpill"><span class="v3-mpill__em">🥈</span><span><span class="v3-mpill__n">${cuenta('Plata')}</span> <span class="v3-mpill__l">Plata</span></span></div>
+          <div class="v3-mpill"><span class="v3-mpill__em">🥉</span><span><span class="v3-mpill__n">${cuenta('Bronce')}</span> <span class="v3-mpill__l">Bronce</span></span></div>
+        </div>
+        <div class="v3-best">Mejor resultado: <strong>${mejorPuesto}.° lugar</strong> · ${podios} podios</div>
+      </div>
+    </section>
+
+    <div class="v3-bento">
+      <div class="bento bento--w2" style="animation-delay:.04s">
+        <div class="bento__head">${I.medal}<span class="bento__title">Medallero <span>· por año</span></span></div>
+        <div class="med-top">
+          <div class="med-total">${totalMed}<small>Medallas</small></div>
+          <div class="med-break">
+            <div><span class="em">🥇</span>${cuenta('Oro')}</div>
+            <div><span class="em">🥈</span>${cuenta('Plata')}</div>
+            <div><span class="em">🥉</span>${cuenta('Bronce')}</div>
+          </div>
+        </div>
+        ${barChart()}
+      </div>
+
+      <div class="bento" style="animation-delay:.08s">
+        <div class="bento__head">${I.chart}<span class="bento__title">Podios</span></div>
+        <div class="pod-ring">
+          <div class="pod-ring__c" style="background:conic-gradient(var(--accent) ${degPod}deg, var(--border) ${degPod}deg)"><div class="pod-ring__in">${pctPodios}%</div></div>
+          <div class="pod-ring__t"><strong>${podios} de ${A.ranking.length}</strong><span>competencias en podio</span></div>
+        </div>
+        ${sparkline()}
+        <div class="spark__cap">Tendencia de puesto (menor = mejor)</div>
+      </div>
+
+      <div class="bento bento--h2" style="animation-delay:.12s">
+        <div class="bento__head">${I.history}<span class="bento__title">Trayectoria</span></div>
+        ${timelineHTML()}
+      </div>
+
+      <div class="bento kpi kpi--accent" style="animation-delay:.16s">
+        <div class="kpi__n">${mejorPuesto}<small>.°</small></div>
+        <div class="kpi__l">Mejor puesto histórico</div>
+      </div>
+      <div class="bento kpi" style="animation-delay:.2s">
+        <div class="kpi__n">${aniosCarrera}</div>
+        <div class="kpi__l">Años de carrera</div>
+      </div>
+      <div class="bento kpi" style="animation-delay:.24s">
+        <div class="kpi__n">${A.eventosTotales}</div>
+        <div class="kpi__l">Eventos disputados</div>
+      </div>
+
+      <div class="bento" style="animation-delay:.28s">
+        <div class="bento__head">${I.heart}<span class="bento__title">Biometría</span></div>
+        <div class="bio-grid">
+          <div class="bio-cell"><div class="bio-cell__l">Altura</div><div class="bio-cell__v">${A.biometria.altura}</div></div>
+          <div class="bio-cell"><div class="bio-cell__l">Peso</div><div class="bio-cell__v">${A.biometria.peso}</div></div>
+          <div class="bio-cell"><div class="bio-cell__l">Sangre</div><div class="bio-cell__v">${A.biometria.sangre}</div></div>
+          <div class="bio-cell"><div class="bio-cell__l">IMC</div><div class="bio-cell__v">${A.biometria.imc}</div></div>
+        </div>
+      </div>
+
+      <div class="bento bento--w2" style="animation-delay:.32s">
+        <div class="bento__head">${I.cal}<span class="bento__title">Próximos eventos</span></div>
+        ${A.proximos.map(e => `<div class="ev-row"><span class="ev-row__em">${A.deporteEmoji}</span><span style="flex:1"><span class="ev-row__nm">${e.evento}</span><span class="ev-row__sub">${e.prueba} · ${e.fecha}</span></span><span class="ev-row__st">Activo</span></div>`).join('')}
+      </div>
+
+      <div class="bento" style="animation-delay:.36s">
+        <div class="bento__head">${I.award}<span class="bento__title">Reconocimiento</span></div>
+        <div class="rec-row"><span class="rec-row__ico rec--club">🏛️</span><span><span class="rec-row__l">Club</span><span class="rec-row__v">${A.club}</span></span></div>
+        <div class="rec-row"><span class="rec-row__ico rec--liga">🏆</span><span><span class="rec-row__l">Liga</span><span class="rec-row__v">${A.liga}</span></span></div>
+        <div class="rec-row"><span class="rec-row__ico rec--fed">🎖️</span><span><span class="rec-row__l">Federación</span><span class="rec-row__v">${A.federacion}</span></span></div>
+      </div>
+    </div>
+  `;
+}
+
+/* ── Shell ── */
+const roleCode = getRoleFromQuery();
+const { role } = mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: 'perfil' });
+mountHeader({ headerEl: document.getElementById('topHeader'), role });
+mountBackdrop();
+mountDemoSwitcher({ roleCode });
+document.title = `Perfil v3 · ${A.nombre} ${A.apellido}`;
+render();
+</script>
+
+</body>
+</html>
